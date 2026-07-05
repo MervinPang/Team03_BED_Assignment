@@ -404,20 +404,9 @@ SELECT * FROM Inspection;
 ------------------------------------------------------------
 -- Order Details Query
 ------------------------------------------------------------
-SELECT
-    co.OrderID,
-    co.OrderType,
-    co.OrderStatus,
-    ISNULL(ua.Username, co.GuestName) AS CustomerName,
-    fs.StallName,
-    mi.ItemName,
-    oi.Quantity,
-    oi.UnitPrice,
-    oi.Subtotal,
-    co.TotalAmount,
-    p.PaymentMethod,
-    p.PaymentStatus,
-    co.OrderDateTime
+SELECT co.OrderID, co.OrderType, co.OrderStatus,
+ISNULL(ua.Username, co.GuestName) AS CustomerName,
+fs.StallName, mi.ItemName, oi.Quantity, oi.UnitPrice, oi.Subtotal, co.TotalAmount, p.PaymentMethod, p.PaymentStatus, co.OrderDateTime
 FROM CustomerOrder co
 LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
 JOIN OrderItem oi ON co.OrderID = oi.OrderID
@@ -430,14 +419,12 @@ ORDER BY co.OrderID;
 -- Active Order Query
 ------------------------------------------------------------
 
-SELECT *
-FROM CustomerOrder
+SELECT * FROM CustomerOrder
 WHERE OrderStatus IN ('Pending', 'Preparing', 'Ready');
 
 ------------------------------------------------------------
 -- Past Order Query
 ------------------------------------------------------------
 
-SELECT *
-FROM CustomerOrder
+SELECT * FROM CustomerOrder
 WHERE OrderStatus IN ('Completed', 'Cancelled');
