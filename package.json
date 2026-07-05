@@ -1,0 +1,27 @@
+{
+  "name": "team03_bed_assignment",
+  "version": "1.0.0",
+  "description": "Back-End Development Group Project for a Singapore Hawker Centre Management System built with Node.js, Express, RESTful APIs, and Microsoft SQL Server. (Mervin, Rayne, &amp; Louis)",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MervinPang/Team03_BED_Assignment.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/MervinPang/Team03_BED_Assignment/issues"
+  },
+  "homepage": "https://github.com/MervinPang/Team03_BED_Assignment#readme",
+  "dependencies": {
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "joi": "^18.2.3",
+    "mssql": "^12.7.0"
+  }
+}
