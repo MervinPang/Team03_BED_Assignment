@@ -385,3 +385,59 @@ INSERT INTO RentalAgreement (StallID, VendorUserID, StartDate, EndDate, RentalPr
 VALUES
 (1, 3, '2026-01-01', '2026-12-31', 1200.00, 'Monthly rental agreement for stall operations.'),
 (2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.');
+
+------------------------------------------------------------
+-- Verification Queries (HawkerManagementDB)
+------------------------------------------------------------
+SELECT * FROM UserAccount;
+SELECT * FROM HawkerCentre;
+SELECT * FROM FoodStall;
+SELECT * FROM Cuisine;
+SELECT * FROM MenuItem;
+SELECT * FROM CustomerOrder;
+SELECT * FROM OrderItem;
+SELECT * FROM Payment;
+SELECT * FROM Review;
+SELECT * FROM Complaint;
+SELECT * FROM Inspection;
+
+------------------------------------------------------------
+-- Order Details Query
+------------------------------------------------------------
+SELECT
+    co.OrderID,
+    co.OrderType,
+    co.OrderStatus,
+    ISNULL(ua.Username, co.GuestName) AS CustomerName,
+    fs.StallName,
+    mi.ItemName,
+    oi.Quantity,
+    oi.UnitPrice,
+    oi.Subtotal,
+    co.TotalAmount,
+    p.PaymentMethod,
+    p.PaymentStatus,
+    co.OrderDateTime
+FROM CustomerOrder co
+LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+JOIN OrderItem oi ON co.OrderID = oi.OrderID
+JOIN MenuItem mi ON oi.MenuItemID = mi.MenuItemID
+JOIN FoodStall fs ON mi.StallID = fs.StallID
+LEFT JOIN Payment p ON co.OrderID = p.OrderID
+ORDER BY co.OrderID;
+
+------------------------------------------------------------
+-- Active Order Query
+------------------------------------------------------------
+
+SELECT *
+FROM CustomerOrder
+WHERE OrderStatus IN ('Pending', 'Preparing', 'Ready');
+
+------------------------------------------------------------
+-- Past Order Query
+------------------------------------------------------------
+
+SELECT *
+FROM CustomerOrder
+WHERE OrderStatus IN ('Completed', 'Cancelled');
