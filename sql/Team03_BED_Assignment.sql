@@ -1,5 +1,9 @@
+/* Name: Mervin, Rayne, Louis */
+/* Team: Team 03 */
+/* Back-End Development Assignment */
+
 ------------------------------------------------------------
--- Create and Use Database
+-- Create and Use Database (HawkerManagementDB)
 ------------------------------------------------------------
 CREATE DATABASE HawkerManagementDB;
 GO
@@ -7,192 +11,275 @@ GO
 USE HawkerManagementDB;
 GO
 
-------------------------------------------------------------
--- Users Table
--- Stores all system users.
--- Supports Customer, Vendor and NEA Officer roles.
-------------------------------------------------------------
-CREATE TABLE Users (
-    user_id         INT                 IDENTITY(1,1)   PRIMARY KEY,
-    username        NVARCHAR(50)        NOT NULL        UNIQUE,
-    email           NVARCHAR(100)       NOT NULL        UNIQUE,
-    password_hash   NVARCHAR(255)       NOT NULL,
-    role            NVARCHAR(20)        NOT NULL
-        CHECK (role IN ('customer', 'vendor', 'nea_officer')),
-    created_at      DATETIME            DEFAULT GETDATE()
+/* Table: Users */
+CREATE TABLE UserAccount
+(
+    UserID          INT IDENTITY(1,1)       NOT NULL,
+    Username        VARCHAR(50)             NOT NULL,
+    Email           VARCHAR(100)            NOT NULL,
+    PasswordHash    VARCHAR(255)            NOT NULL,
+    Role            VARCHAR(20)             NOT NULL,
+    CreatedAt       DATETIME                NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT      PK_UserAccount          PRIMARY KEY (UserID),
+    CONSTRAINT      UQ_UserAccount_Username UNIQUE (Username),
+    CONSTRAINT      UQ_UserAccount_Email    UNIQUE (Email),
+    CONSTRAINT      CHK_UserAccount_Role    CHECK (Role IN ('customer', 'vendor', 'nea_officer'))
 );
 
-------------------------------------------------------------
--- Stalls Table
--- Stores hawker stall information displayed on the home page.
-------------------------------------------------------------
-CREATE TABLE Stalls (
-    stall_id        INT                 IDENTITY(1,1)   PRIMARY KEY,
-    stall_name      NVARCHAR(100)       NOT NULL,
-    cuisine_type    NVARCHAR(50)        NOT NULL,
-    description     NVARCHAR(255),
-    image_url       NVARCHAR(255),
-    is_active       BIT                 NOT NULL    DEFAULT 1,
-    created_at      DATETIME            DEFAULT GETDATE()
+/* Table: Operator */
+CREATE TABLE Operator
+(
+    OperatorID      INT IDENTITY(1,1)       NOT NULL,
+    OperatorName    VARCHAR(80)             NOT NULL,
+    ContactPerson   VARCHAR(80)             NOT NULL,
+    ContactNo       VARCHAR(15)             NULL,
+
+    CONSTRAINT      PK_Operator             PRIMARY KEY (OperatorID)
 );
 
-------------------------------------------------------------
--- MenuItems Table
--- Stores food menu items for each stall.
--- Supports vendor add / edit menu feature and ordering flow.
-------------------------------------------------------------
-CREATE TABLE MenuItems (
-    menu_item_id    INT                 IDENTITY(1,1)   PRIMARY KEY,
-    stall_id        INT                 NOT NULL,
-    item_name       NVARCHAR(100)       NOT NULL,
-    description     NVARCHAR(255),
-    price           DECIMAL(10,2)       NOT NULL
-        CHECK (price >= 0),
-    category        NVARCHAR(50),
-    image_url       NVARCHAR(255),
-    is_available    BIT                 NOT NULL    DEFAULT 1,
-    created_at      DATETIME            DEFAULT GETDATE(),
+/* Table: HawkerCentre */
+CREATE TABLE HawkerCentre
+(
+    HawkerCentreID  INT IDENTITY(1,1)       NOT NULL,
+    HCName          VARCHAR(80)             NOT NULL,
+    HCAddress       VARCHAR(150)            NOT NULL,
+    OperatorID      INT                     NOT NULL,
 
-    CONSTRAINT FK_MenuItems_Stalls
-    FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id)
+    CONSTRAINT      PK_HawkerCentre         PRIMARY KEY (HawkerCentreID),
+    CONSTRAINT      FK_HawkerCentre_Operator
+        FOREIGN KEY (OperatorID) REFERENCES Operator(OperatorID)
 );
 
-------------------------------------------------------------
--- Orders Table
--- Stores all customer and guest orders.
--- Supports Place Food Order and Order History.
-------------------------------------------------------------
-CREATE TABLE Orders (
-    order_id                INT                 IDENTITY(1,1)   PRIMARY KEY,
-    user_id                 INT                 NULL,
-    guest_name              NVARCHAR(100)       NULL,
-    guest_email             NVARCHAR(100)       NULL,
-    order_status            NVARCHAR(30)        NOT NULL    DEFAULT 'Pending'
-        CHECK (order_status IN ('Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled')),
-    order_type              NVARCHAR(20)        NOT NULL
-        CHECK (order_type IN ('Guest', 'Member')),
-    total_amount            DECIMAL(10,2)       NOT NULL    DEFAULT 0
-        CHECK (total_amount >= 0),
-    special_instructions    NVARCHAR(255)       NULL,
-    created_at              DATETIME            DEFAULT GETDATE(),
-    updated_at              DATETIME            DEFAULT GETDATE(),
+/* Table: FoodStall */
+CREATE TABLE FoodStall
+(
+    StallID         INT IDENTITY(1,1)       NOT NULL,
+    VendorUserID    INT                     NULL,
+    StallUnitNo     VARCHAR(10)             NOT NULL,
+    StallName       VARCHAR(80)             NOT NULL,
+    StallDesc       VARCHAR(300)            NULL,
+    StallImage      VARCHAR(255)            NULL,
+    IsActive        BIT                     NOT NULL DEFAULT 1,
+    HawkerCentreID  INT                     NOT NULL,
 
-    CONSTRAINT FK_Orders_Users
-    FOREIGN KEY (user_id)   REFERENCES Users(user_id),
-
-    CONSTRAINT CK_Orders_UserType
-    CHECK (
-        (order_type = 'Member' AND user_id IS NOT NULL)
-        OR
-        (order_type = 'Guest' AND user_id IS NULL AND guest_name IS NOT NULL AND guest_email IS NOT NULL)
-    )
+    CONSTRAINT      PK_FoodStall            PRIMARY KEY (StallID),
+    CONSTRAINT      FK_FoodStall_UserAccount
+        FOREIGN KEY (VendorUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT FK_FoodStall_HawkerCentre
+        FOREIGN KEY (HawkerCentreID) REFERENCES HawkerCentre(HawkerCentreID)
 );
 
-------------------------------------------------------------
--- OrderItems Table
--- Stores food items inside each order.
--- One order can contain many order items.
-------------------------------------------------------------
-CREATE TABLE OrderItems (
-    order_item_id   INT                 IDENTITY(1,1)   PRIMARY KEY,
-    order_id        INT                 NOT NULL,
-    menu_item_id    INT                 NOT NULL,
-    quantity        INT                 NOT NULL
-        CHECK (quantity > 0),
-    unit_price      DECIMAL(10,2)       NOT NULL
-        CHECK (unit_price >= 0),
-    subtotal AS (quantity * unit_price) PERSISTED,
+/* Table: Cuisine */
+CREATE TABLE Cuisine
+(
+    CuisineID       INT IDENTITY(1,1)       NOT NULL,
+    CuisineName     VARCHAR(50)             NOT NULL,
+    CuisineDesc     VARCHAR(300)            NULL,
 
-    CONSTRAINT FK_OrderItems_Orders
-    FOREIGN KEY (order_id) REFERENCES Orders(order_id)
-    ON DELETE CASCADE,
-
-    CONSTRAINT FK_OrderItems_MenuItems
-    FOREIGN KEY (menu_item_id) REFERENCES MenuItems(menu_item_id)
+    CONSTRAINT      PK_Cuisine              PRIMARY KEY (CuisineID),
+    CONSTRAINT      UQ_Cuisine_CuisineName  UNIQUE (CuisineName)
 );
 
-------------------------------------------------------------
--- Payments Table
--- Stores payment details for each order.
--- Supports Checkout and Payment.
-------------------------------------------------------------
-CREATE TABLE Payments (
-    payment_id              INT                 IDENTITY(1,1)   PRIMARY KEY,
-    order_id                INT                 NOT NULL        UNIQUE,
-    payment_method          NVARCHAR(30)        NOT NULL
-        CHECK (payment_method IN ('Card', 'PayNow', 'Cash')),
-    payment_status          NVARCHAR(30)        NOT NULL        DEFAULT 'Pending'
-        CHECK (payment_status IN ('Pending', 'Successful', 'Failed', 'Refunded')),
-    amount                  DECIMAL(10,2)       NOT NULL
-        CHECK (amount >= 0),
-    transaction_reference   NVARCHAR(100) NOT NULL UNIQUE,
-    paid_at                 DATETIME            NULL,
-    created_at              DATETIME            DEFAULT GETDATE(),
+/* Table: MenuItem */
+CREATE TABLE MenuItem
+(
+    MenuItemID      INT IDENTITY(1,1)       NOT NULL,
+    StallID         INT                     NOT NULL,
+    ItemName        VARCHAR(100)            NOT NULL,
+    ItemDesc        VARCHAR(300)            NULL,
+    ItemPrice       DECIMAL(6,2)            NOT NULL,
+    ItemCategory    VARCHAR(40)             NOT NULL,
+    ItemImage       VARCHAR(255)            NULL,
+    IsAvailable     BIT                     NOT NULL DEFAULT 1,
+    CreatedAt       DATETIME                NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_Payments_Orders
-    FOREIGN KEY (order_id)  REFERENCES Orders(order_id)
+    CONSTRAINT      PK_MenuItem             PRIMARY KEY (MenuItemID),
+    CONSTRAINT      FK_MenuItem_FoodStall
+        FOREIGN KEY (StallID) REFERENCES FoodStall(StallID),
+    CONSTRAINT      CHK_MenuItem_ItemPrice  CHECK (ItemPrice >= 0.01)
 );
 
-------------------------------------------------------------
--- Reviews Table
--- Stores customer reviews and ratings for stalls.
-------------------------------------------------------------
-CREATE TABLE Reviews (
-    review_id               INT             IDENTITY(1,1)   PRIMARY KEY,
-    user_id                 INT             NOT NULL,
-    stall_id                INT             NOT NULL,
-    rating                  INT             NOT NULL
-        CHECK (rating BETWEEN 1 AND 5),
-    comment                 NVARCHAR(500),
-    created_at              DATETIME        NOT NULL DEFAULT GETDATE(),
+/* Table: MenuItemCuisine */
+CREATE TABLE MenuItemCuisine
+(
+    MenuItemID      INT                     NOT NULL,
+    CuisineID       INT                     NOT NULL,
 
-    CONSTRAINT FK_Reviews_Users
-    FOREIGN KEY (user_id)   REFERENCES Users(user_id),
-
-    CONSTRAINT FK_Reviews_Stalls
-    FOREIGN KEY (stall_id)  REFERENCES Stalls(stall_id)
+    CONSTRAINT      PK_MenuItemCuisine      PRIMARY KEY (MenuItemID, CuisineID),
+    CONSTRAINT      FK_MenuItemCuisine_MenuItem
+        FOREIGN KEY (MenuItemID) REFERENCES MenuItem(MenuItemID),
+    CONSTRAINT      FK_MenuItemCuisine_Cuisine
+        FOREIGN KEY (CuisineID) REFERENCES Cuisine(CuisineID)
 );
 
-------------------------------------------------------------
--- Complaints Table
--- Stores customer complaints for NEA/operator follow-up.
-------------------------------------------------------------
-CREATE TABLE Complaints (
-    complaint_id            INT             IDENTITY(1,1)   PRIMARY KEY,
-    user_id                 INT             NOT NULL,
-    stall_id                INT             NOT NULL,
-    complaint_title         NVARCHAR(100)   NOT NULL,
-    complaint_description   NVARCHAR(500)   NOT NULL,
-    complaint_status        NVARCHAR(30)    NOT NULL        DEFAULT 'Pending'
-        CHECK (complaint_status IN ('Pending', 'In Review', 'Resolved')),
-    created_at              DATETIME        NOT NULL        DEFAULT GETDATE(),
-    resolved_at             DATETIME        NULL,
+/* Table: CustomerOrder */
+CREATE TABLE CustomerOrder
+(
+    OrderID              INT IDENTITY(1,1)  NOT NULL,
+    UserID               INT                NULL,
+    GuestName            VARCHAR(80)        NULL,
+    GuestEmail           VARCHAR(100)       NULL,
+    OrderType            VARCHAR(20)        NOT NULL,
+    OrderStatus          VARCHAR(30)        NOT NULL DEFAULT 'Pending',
+    TotalAmount          DECIMAL(8,2)       NOT NULL DEFAULT 0,
+    SpecialInstructions  VARCHAR(300)       NULL,
+    OrderDateTime        DATETIME           NOT NULL DEFAULT GETDATE(),
+    UpdatedAt            DATETIME           NOT NULL DEFAULT GETDATE(),
 
-    CONSTRAINT FK_Complaints_Users
-    FOREIGN KEY (user_id) REFERENCES Users(user_id),
-
-    CONSTRAINT FK_Complaints_Stalls
-    FOREIGN KEY (stall_id) REFERENCES Stalls(stall_id)
+    CONSTRAINT          PK_CustomerOrder    PRIMARY KEY (OrderID),
+    CONSTRAINT          FK_CustomerOrder_UserAccount
+        FOREIGN KEY (UserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT          CHK_CustomerOrder_OrderType
+        CHECK (OrderType IN ('Guest', 'Member')),
+    CONSTRAINT          CHK_CustomerOrder_OrderStatus
+        CHECK (OrderStatus IN ('Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled')),
+    CONSTRAINT          CHK_CustomerOrder_TotalAmount
+        CHECK (TotalAmount >= 0),
+    CONSTRAINT          CHK_CustomerOrder_GuestOrMember
+        CHECK (
+            (OrderType = 'Member' AND UserID IS NOT NULL)
+            OR
+            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL)
+        )
 );
 
-------------------------------------------------------------
--- InspectionReports Table
--- Stores NEA inspection records for stalls.
-------------------------------------------------------------
-CREATE TABLE InspectionReports (
-    inspection_id           INT             IDENTITY(1,1)   PRIMARY KEY,
-    officer_id              INT             NOT NULL,
-    stall_id                INT             NOT NULL,
-    hygiene_grade           NVARCHAR(5)     NOT NULL
-        CHECK (hygiene_grade IN ('A', 'B', 'C', 'D')),
-    inspection_notes        NVARCHAR(500),
-    inspection_status       NVARCHAR(30)    NOT NULL        DEFAULT 'Submitted'
-        CHECK (inspection_status IN ('Submitted', 'Reviewed', 'Follow-up Required')),
-    inspection_date         DATETIME        NOT NULL        DEFAULT GETDATE(),
+/* Table: OrderItem */
+CREATE TABLE OrderItem
+(
+    OrderItemID         INT IDENTITY(1,1)       NOT NULL,
+    OrderID             INT                     NOT NULL,
+    MenuItemID          INT                     NOT NULL,
+    Quantity            INT                     NOT NULL,
+    UnitPrice           DECIMAL(6,2)            NOT NULL,
+    Subtotal            AS (Quantity * UnitPrice) PERSISTED,
 
-    CONSTRAINT FK_InspectionReports_Users
-    FOREIGN KEY (officer_id)    REFERENCES Users(user_id),
+    CONSTRAINT          PK_OrderItem            PRIMARY KEY (OrderItemID),
+    CONSTRAINT          FK_OrderItem_CustomerOrder
+        FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID)
+        ON DELETE CASCADE,
+    CONSTRAINT          FK_OrderItem_MenuItem
+        FOREIGN KEY (MenuItemID) REFERENCES MenuItem(MenuItemID),
+    CONSTRAINT          CHK_OrderItem_Quantity  CHECK (Quantity >= 1),
+    CONSTRAINT          CHK_OrderItem_UnitPrice CHECK (UnitPrice >= 0.01)
+);
 
-    CONSTRAINT FK_InspectionReports_Stalls
-    FOREIGN KEY (stall_id)      REFERENCES Stalls(stall_id)
+/* Table: Payment */
+CREATE TABLE Payment
+(
+    PaymentID              INT IDENTITY(1,1)               NOT NULL,
+    OrderID                INT                             NOT NULL,
+    PaymentMethod          VARCHAR(30)                     NOT NULL,
+    PaymentStatus          VARCHAR(30)                     NOT NULL DEFAULT 'Pending',
+    Amount                 DECIMAL(8,2)                    NOT NULL,
+    TransactionReference   VARCHAR(100)                    NOT NULL,
+    PaidAt                 DATETIME                        NULL,
+    CreatedAt              DATETIME                        NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT             PK_Payment                      PRIMARY KEY (PaymentID),
+    CONSTRAINT             UQ_Payment_OrderID              UNIQUE (OrderID),
+    CONSTRAINT             UQ_Payment_TransactionReference UNIQUE (TransactionReference),
+    CONSTRAINT             FK_Payment_CustomerOrder
+        FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID),
+    CONSTRAINT             CHK_Payment_Method
+        CHECK (PaymentMethod IN ('Cash', 'Card', 'PayNow')),
+    CONSTRAINT             CHK_Payment_Status
+        CHECK (PaymentStatus IN ('Pending', 'Successful', 'Failed', 'Refunded')),
+    CONSTRAINT             CHK_Payment_Amount
+        CHECK (Amount >= 0)
+);
+
+/* Table: Review */
+CREATE TABLE Review
+(
+    ReviewID        INT IDENTITY(1,1)       NOT NULL,
+    UserID          INT                     NOT NULL,
+    StallID         INT                     NOT NULL,
+    Rating          INT                     NOT NULL,
+    ReviewComment   VARCHAR(500)            NULL,
+    ReviewDateTime  DATETIME                NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT      PK_Review               PRIMARY KEY (ReviewID),
+    CONSTRAINT      FK_Review_UserAccount
+        FOREIGN KEY (UserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT      FK_Review_FoodStall
+        FOREIGN KEY (StallID) REFERENCES FoodStall(StallID),
+    CONSTRAINT      CHK_Review_Rating       CHECK (Rating BETWEEN 1 AND 5)
+);
+
+/* Table: Complaint */
+CREATE TABLE Complaint
+(
+    ComplaintID          INT IDENTITY(1,1) NOT NULL,
+    UserID               INT               NOT NULL,
+    StallID              INT               NOT NULL,
+    ComplaintTitle       VARCHAR(100)      NOT NULL,
+    ComplaintDesc        VARCHAR(500)      NOT NULL,
+    ComplaintStatus      VARCHAR(30)       NOT NULL DEFAULT 'Pending',
+    CreatedAt            DATETIME          NOT NULL DEFAULT GETDATE(),
+    ResolvedAt           DATETIME          NULL,
+
+    CONSTRAINT           PK_Complaint      PRIMARY KEY (ComplaintID),
+    CONSTRAINT           FK_Complaint_UserAccount
+        FOREIGN KEY (UserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT           FK_Complaint_FoodStall
+        FOREIGN KEY (StallID) REFERENCES FoodStall(StallID),
+    CONSTRAINT           CHK_Complaint_Status
+        CHECK (ComplaintStatus IN ('Pending', 'In Review', 'Resolved'))
+);
+
+/* Table: Inspection */
+CREATE TABLE Inspection
+(
+    InspectionID      INT IDENTITY(1,1) NOT NULL,
+    OfficerUserID     INT               NOT NULL,
+    StallID           INT               NOT NULL,
+    InspectionDate    DATETIME          NOT NULL DEFAULT GETDATE(),
+    HygieneGrade      CHAR(1)           NOT NULL,
+    InspectionStatus  VARCHAR(30)       NOT NULL DEFAULT 'Submitted',
+
+    CONSTRAINT        PK_Inspection     PRIMARY KEY (InspectionID),
+    CONSTRAINT        FK_Inspection_UserAccount
+        FOREIGN KEY (OfficerUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT        FK_Inspection_FoodStall
+        FOREIGN KEY (StallID) REFERENCES FoodStall(StallID),
+    CONSTRAINT        CHK_Inspection_HygieneGrade
+        CHECK (HygieneGrade IN ('A','B','C','D')),
+    CONSTRAINT        CHK_Inspection_Status
+        CHECK (InspectionStatus IN ('Submitted', 'Reviewed', 'Follow-up Required'))
+);
+
+/* Table: InspectionRemark */
+CREATE TABLE InspectionRemark
+(
+    InspectionRemarkID  INT IDENTITY(1,1)   NOT NULL,
+    InspectionID        INT                 NOT NULL,
+    RemarkText          VARCHAR(500)        NOT NULL,
+
+    CONSTRAINT          PK_InspectionRemark PRIMARY KEY (InspectionRemarkID),
+    CONSTRAINT          FK_InspectionRemark_Inspection
+        FOREIGN KEY (InspectionID) REFERENCES Inspection(InspectionID)
+        ON DELETE CASCADE
+);
+
+/* Table: RentalAgreement */
+CREATE TABLE RentalAgreement
+(
+    AgreementID       INT IDENTITY(1,1)     NOT NULL,
+    StallID           INT                   NOT NULL,
+    VendorUserID      INT                   NOT NULL,
+    StartDate         DATE                  NOT NULL,
+    EndDate           DATE                  NOT NULL,
+    RentalPrice       DECIMAL(8,2)          NOT NULL,
+    TermCondition     VARCHAR(800)          NULL,
+
+    CONSTRAINT        PK_RentalAgreement    PRIMARY KEY (AgreementID),
+    CONSTRAINT        FK_RentalAgreement_FoodStall
+        FOREIGN KEY (StallID) REFERENCES FoodStall(StallID),
+    CONSTRAINT        FK_RentalAgreement_UserAccount
+        FOREIGN KEY (VendorUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT        CHK_RentalAgreement_EndDate
+        CHECK (EndDate >= StartDate),
+    CONSTRAINT        CHK_RentalAgreement_RentalPrice
+        CHECK (RentalPrice >= 0.01)
 );
