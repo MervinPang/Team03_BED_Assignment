@@ -283,3 +283,105 @@ CREATE TABLE RentalAgreement
     CONSTRAINT        CHK_RentalAgreement_RentalPrice
         CHECK (RentalPrice >= 0.01)
 );
+
+------------------------------------------------------------
+-- Insert Sample Data (HawkerManagementDB)
+------------------------------------------------------------
+INSERT INTO UserAccount (Username, Email, PasswordHash, Role)
+VALUES
+('mervin_customer', 'mervin.customer@example.com', 'hashedpassword123', 'customer'),
+('leris_customer', 'customer.two@example.com', 'hashedpassword123', 'customer'),
+('louis_vendor', 'rayne.vendor@example.com', 'hashedpassword123', 'vendor'),
+('rayne_nea', 'louis.nea@example.com', 'hashedpassword123', 'nea_officer');
+
+INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
+VALUES
+('Pang Food Operations', 'Adrian Chua', '81234567'),
+('Singapore Hawker Group', 'Benjamin Koh', '82345678');
+
+INSERT INTO HawkerCentre (HCName, HCAddress, OperatorID)
+VALUES
+('Beauty World Food Centre', '144 Upper Bukit Timah Road, Singapore 588177', 1),
+('Maxwell Food Centre', '1 Kadayanallur Street, Singapore 069184', 2);
+
+INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallImage, IsActive, HawkerCentreID)
+VALUES
+(3, '#01-01', 'Ah Tan Chicken Rice', 'Popular chicken rice stall serving steamed and roasted chicken rice.', 'chickenrice.jpg', 1, 1),
+(3, '#01-02', 'Muthu Prata House', 'Prata stall selling crispy prata and curry dishes.', 'prata.jpg', 1, 1),
+(3, '#02-01', 'Selera Nasi Lemak', 'Traditional nasi lemak with chicken wing and sambal.', 'nasilemak.jpg', 1, 2);
+
+INSERT INTO Cuisine (CuisineName, CuisineDesc)
+VALUES
+('Chinese', 'Chinese hawker dishes'),
+('Indian', 'Indian hawker dishes'),
+('Malay', 'Malay hawker dishes'),
+('Drinks', 'Beverages and desserts');
+
+INSERT INTO MenuItem (StallID, ItemName, ItemDesc, ItemPrice, ItemCategory, ItemImage, IsAvailable)
+VALUES
+(1, 'Chicken Rice', 'Steamed chicken rice with chilli sauce.', 4.50, 'Main Dish', 'chickenrice.jpg', 1),
+(1, 'Roasted Chicken Rice', 'Roasted chicken served with fragrant rice.', 5.00, 'Main Dish', 'roastedchickenrice.jpg', 1),
+(1, 'Chicken Soup', 'Warm chicken soup served as a side.', 1.20, 'Side', 'chickensoup.jpg', 1),
+(2, 'Plain Prata', 'Crispy plain prata with curry.', 1.50, 'Main Dish', 'plainprata.jpg', 1),
+(2, 'Egg Prata', 'Prata with egg served with curry.', 2.20, 'Main Dish', 'eggprata.jpg', 1),
+(3, 'Nasi Lemak Chicken Wing', 'Nasi lemak with fried chicken wing, egg and sambal.', 4.80, 'Main Dish', 'nasilemak.jpg', 1),
+(3, 'Iced Milo', 'Cold Milo drink.', 1.80, 'Drink', 'icedmilo.jpg', 1);
+
+INSERT INTO MenuItemCuisine (MenuItemID, CuisineID)
+VALUES
+(1, 1),
+(2, 1),
+(3, 1),
+(4, 2),
+(5, 2),
+(6, 3),
+(7, 4);
+
+INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, OrderType, OrderStatus, TotalAmount, SpecialInstructions)
+VALUES
+(1, NULL, NULL, 'Member', 'Pending', 9.50, 'Less chilli please'),
+(NULL, 'Guest Customer', 'guest.customer@example.com', 'Guest', 'Preparing', 6.80, 'Takeaway order'),
+(1, NULL, NULL, 'Member', 'Completed', 4.80, NULL);
+
+INSERT INTO OrderItem (OrderID, MenuItemID, Quantity, UnitPrice)
+VALUES
+(1, 1, 1, 4.50),
+(1, 2, 1, 5.00),
+(2, 4, 2, 1.50),
+(2, 5, 1, 2.20),
+(2, 7, 1, 1.80),
+(3, 6, 1, 4.80);
+
+INSERT INTO Payment (OrderID, PaymentMethod, PaymentStatus, Amount, TransactionReference, PaidAt)
+VALUES
+(1, 'PayNow', 'Successful', 9.50, 'PAYNOW-ORDER-0001', GETDATE()),
+(2, 'Cash', 'Pending', 6.80, 'CASH-ORDER-0002', NULL),
+(3, 'Card', 'Successful', 4.80, 'CARD-ORDER-0003', GETDATE());
+
+INSERT INTO Review (UserID, StallID, Rating, ReviewComment)
+VALUES
+(1, 1, 5, 'Chicken rice was delicious and affordable.'),
+(2, 2, 4, 'Prata was crispy and served quickly.'),
+(1, 3, 5, 'Nasi lemak was tasty and filling.');
+
+INSERT INTO Complaint (UserID, StallID, ComplaintTitle, ComplaintDesc, ComplaintStatus)
+VALUES
+(2, 1, 'Long waiting time', 'The waiting time was longer than expected during lunch hour.', 'Pending'),
+(1, 2, 'Wrong order received', 'I ordered egg prata but received plain prata.', 'In Review');
+
+INSERT INTO Inspection (OfficerUserID, StallID, HygieneGrade, InspectionStatus)
+VALUES
+(4, 1, 'A', 'Submitted'),
+(4, 2, 'B', 'Follow-up Required'),
+(4, 3, 'A', 'Reviewed');
+
+INSERT INTO InspectionRemark (InspectionID, RemarkText)
+VALUES
+(1, 'Stall is clean and food handling practices are good.'),
+(2, 'Minor cleanliness improvements required near preparation area.'),
+(3, 'Good hygiene standards observed.');
+
+INSERT INTO RentalAgreement (StallID, VendorUserID, StartDate, EndDate, RentalPrice, TermCondition)
+VALUES
+(1, 3, '2026-01-01', '2026-12-31', 1200.00, 'Monthly rental agreement for stall operations.'),
+(2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.');
