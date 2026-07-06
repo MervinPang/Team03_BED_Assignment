@@ -92,3 +92,11 @@ async function deleteOrder(req, res) {
 
     }
 }
+
+module.exports = {
+    createOrder,
+    getAllOrders,
+    getOrderById,
+    updateOrderStatus,
+    deleteOrder,
+};
