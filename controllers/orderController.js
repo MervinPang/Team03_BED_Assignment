@@ -47,3 +47,48 @@ async function createOrder(req, res) {
         });
     }
 }
+
+// Update order status
+async function updateOrderStatus(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+
+        const updatedOrder = await orderModel.updateOrderStatus(id, req.body.OrderStatus);
+
+        if (!updatedOrder) {
+            return res.status(404).json({
+                error: "Order not found",
+            });
+        }
+        res.json(updatedOrder);
+
+    } catch (error) {
+        console.error("Controller error (updateOrderStatus):", error);
+        res.status(500).json({
+            error: "Failed to update order",
+        });
+    }
+}
+
+// Delete order
+async function deleteOrder(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+
+        const deleted = await orderModel.deleteOrder(id);
+
+        if (!deleted) {
+            return res.status(404).json({
+                error: "Order not found",
+            });
+        }
+        res.status(204).send();
+
+    } catch (error) {
+        console.error("Controller error (deleteOrder):", error);
+        res.status(500).json({
+            error: "Failed to delete order",
+        });
+
+    }
+}
