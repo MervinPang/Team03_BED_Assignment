@@ -1,7 +1,9 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-// Get all orders
+// Order Model - Handles database operations for Place Food Order
+
+// Retrieve all customer orders
 async function getAllOrders() {
     let connection;
 
@@ -145,15 +147,15 @@ async function createOrder(orderData) {
         // Insert main order record
         const orderRequest = new sql.Request(transaction);
 
-        orderRequest.input("UserID", sql.Int, orderData.UserID || null);
-        orderRequest.input("GuestName", sql.VarChar(80), orderData.GuestName || null);
-        orderRequest.input("GuestEmail", sql.VarChar(100), orderData.GuestEmail || null);
+        orderRequest.input("UserID", sql.Int, orderData.UserID ?? null);
+        orderRequest.input("GuestName", sql.VarChar(80), orderData.GuestName ?? null);
+        orderRequest.input("GuestEmail", sql.VarChar(100), orderData.GuestEmail ?? null);
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);
         orderRequest.input("TotalAmount", sql.Decimal(8, 2), totalAmount);
         orderRequest.input(
             "SpecialInstructions",
             sql.VarChar(300),
-            orderData.SpecialInstructions || null
+            orderData.SpecialInstructions ?? null
         );
 
         const orderResult = await orderRequest.query(`
@@ -165,7 +167,7 @@ async function createOrder(orderData) {
             SELECT SCOPE_IDENTITY() AS OrderID;
         `);
 
-        const newOrderId = parseInt(orderResult.recordset[0].OrderID);
+        const newOrderId = Number(orderResult.recordset[0].OrderID);
 
         // Insert food items for the order
         for (const item of validatedItems) {
@@ -220,23 +222,9 @@ async function updateOrderStatus(orderId, orderStatus) {
                 OrderStatus = @OrderStatus,
                 UpdatedAt = GETDATE()
             WHERE OrderID = @OrderID;
-
-            SELECT 
-                OrderID,
-                UserID,
-                GuestName,
-                GuestEmail,
-                OrderType,
-                OrderStatus,
-                TotalAmount,
-                SpecialInstructions,
-                OrderDateTime,
-                UpdatedAt
-            FROM CustomerOrder
-            WHERE OrderID = @OrderID;
         `);
 
-        if (result.recordset.length === 0) {
+        if (result.rowsAffected[0] === 0) {
             return null;
         }
 
@@ -273,6 +261,7 @@ async function deleteOrder(orderId) {
     }
 }
 
+// Export model functions for use in OrderController
 module.exports = {
     createOrder,
     getAllOrders,
