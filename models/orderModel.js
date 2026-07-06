@@ -203,6 +203,52 @@ async function createOrder(orderData) {
     }
 }
 
+// Update order status
+async function updateOrderStatus(orderId, orderStatus) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("OrderID", sql.Int, orderId);
+        request.input("OrderStatus", sql.VarChar(30), orderStatus);
+
+        const result = await request.query(`
+            UPDATE CustomerOrder
+            SET 
+                OrderStatus = @OrderStatus,
+                UpdatedAt = GETDATE()
+            WHERE OrderID = @OrderID;
+
+            SELECT 
+                OrderID,
+                UserID,
+                GuestName,
+                GuestEmail,
+                OrderType,
+                OrderStatus,
+                TotalAmount,
+                SpecialInstructions,
+                OrderDateTime,
+                UpdatedAt
+            FROM CustomerOrder
+            WHERE OrderID = @OrderID;
+        `);
+
+        if (result.recordset.length === 0) {
+            return null;
+        }
+
+        return await getOrderById(orderId);
+    } catch (error) {
+        console.error("Database error (updateOrderStatus):", error);
+        throw error;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
+
 // Delete order by ID
 async function deleteOrder(orderId) {
     let connection;
