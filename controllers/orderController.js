@@ -33,3 +33,17 @@ async function getOrderById(req, res) {
         });
     }
 }
+
+// Create new order
+async function createOrder(req, res) {
+    try {
+        const newOrder = await orderModel.createOrder(req.body);
+        res.status(201).json(newOrder);
+
+    } catch (error) {
+        console.error("Controller error (createOrder):", error);
+        res.status(500).json({
+            error: "Error creating order",
+        });
+    }
+}
