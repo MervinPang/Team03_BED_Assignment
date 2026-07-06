@@ -272,3 +272,11 @@ async function deleteOrder(orderId) {
         if (connection) await connection.close();
     }
 }
+
+module.exports = {
+    createOrder,
+    getAllOrders,
+    getOrderById,
+    updateOrderStatus,
+    deleteOrder,
+};
