@@ -1,6 +1,8 @@
 const orderModel = require("../models/orderModel");
 
-// Get all orders
+// Order Controller - Handles HTTP requests for Place Food Order
+
+// Retrieve all customer orders
 async function getAllOrders(req, res) {
     try {
         const orders = await orderModel.getAllOrders();
@@ -11,7 +13,7 @@ async function getAllOrders(req, res) {
     }
 }
 
-// Get order by ID
+// Retrieve a customer order by its ID
 async function getOrderById(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -34,7 +36,7 @@ async function getOrderById(req, res) {
     }
 }
 
-// Create new order
+// Create a new customer order
 async function createOrder(req, res) {
     try {
         const newOrder = await orderModel.createOrder(req.body);
@@ -42,13 +44,23 @@ async function createOrder(req, res) {
 
     } catch (error) {
         console.error("Controller error (createOrder):", error);
+
+        if (
+            error.message.includes("does not exist") ||
+            error.message.includes("is not available")
+        ) {
+            return res.status(400).json({
+                error: error.message,
+            });
+        }
+
         res.status(500).json({
             error: "Error creating order",
         });
     }
 }
 
-// Update order status
+// Update an existing order status
 async function updateOrderStatus(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -65,12 +77,12 @@ async function updateOrderStatus(req, res) {
     } catch (error) {
         console.error("Controller error (updateOrderStatus):", error);
         res.status(500).json({
-            error: "Failed to update order",
+            error: "Failed to update order status",
         });
     }
 }
 
-// Delete order
+// Delete a customer order
 async function deleteOrder(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -93,6 +105,7 @@ async function deleteOrder(req, res) {
     }
 }
 
+// Export controller functions for use in order routes
 module.exports = {
     createOrder,
     getAllOrders,
