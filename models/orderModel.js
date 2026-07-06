@@ -202,3 +202,27 @@ async function createOrder(orderData) {
         if (connection) await connection.close();
     }
 }
+
+// Delete order by ID
+async function deleteOrder(orderId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("OrderID", sql.Int, orderId);
+
+        const result = await request.query(`
+            DELETE FROM CustomerOrder
+            WHERE OrderID = @OrderID;
+        `);
+
+        return result.rowsAffected[0] > 0;
+    } catch (error) {
+        console.error("Database error (deleteOrder):", error);
+        throw error;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
