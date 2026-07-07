@@ -240,20 +240,51 @@ async function updateOrderStatus(orderId, orderStatus) {
 // Delete order by ID
 async function deleteOrder(orderId) {
     let connection;
+    let transaction;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const request = connection.request();
-        request.input("OrderID", sql.Int, orderId);
+        // Transaction ensures payment, order items and order are deleted together
+        await transaction.begin();
 
-        const result = await request.query(`
+        const paymentRequest = new sql.Request(transaction);
+        paymentRequest.input("OrderID", sql.Int, orderId);
+
+        await paymentRequest.query(`
+            DELETE FROM Payment
+            WHERE OrderID = @OrderID;
+        `);
+
+        const itemRequest = new sql.Request(transaction);
+        itemRequest.input("OrderID", sql.Int, orderId);
+
+        await itemRequest.query(`
+            DELETE FROM OrderItem
+            WHERE OrderID = @OrderID;
+        `);
+
+        const orderRequest = new sql.Request(transaction);
+        orderRequest.input("OrderID", sql.Int, orderId);
+
+        const result = await orderRequest.query(`
             DELETE FROM CustomerOrder
             WHERE OrderID = @OrderID;
         `);
 
+        await transaction.commit();
+
         return result.rowsAffected[0] > 0;
     } catch (error) {
+        if (transaction) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Rollback error:", rollbackError);
+            }
+        }
+
         console.error("Database error (deleteOrder):", error);
         throw error;
     } finally {
