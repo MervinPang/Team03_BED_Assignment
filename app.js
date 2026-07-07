@@ -36,3 +36,11 @@ app.delete("/orders/:id", validateOrderId, orderController.deleteOrder);
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });
+
+// Graceful shutdown
+process.on("SIGINT", async () => {
+    console.log("Server is gracefully shutting down");
+    await sql.close();
+    console.log("Database connections closed");
+    process.exit(0);
+});
