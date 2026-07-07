@@ -70,3 +70,64 @@ const orderStatusSchema = Joi.object({
             "string.base": "Order status must be a string",
         }),
 });
+
+// Middleware to validate order data for POST
+function validateOrder(req, res, next) {
+    const { error } = orderSchema.validate(req.body, { abortEarly: false });
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({ error: errorMessage });
+    }
+
+    // Extra business rule for guest/member checkout
+    if (req.body.OrderType === "Member" && !req.body.UserID) {
+        return res.status(400).json({
+            error: "UserID is required for member orders",
+        });
+    }
+
+    if (
+        req.body.OrderType === "Guest" &&
+        (!req.body.GuestName || !req.body.GuestEmail)
+    ) {
+        return res.status(400).json({
+            error: "Guest name and guest email are required for guest orders",
+        });
+    }
+
+    next();
+}
+
+// Middleware to validate order status for PUT
+function validateOrderStatus(req, res, next) {
+    const { error } = orderStatusSchema.validate(req.body, {
+        abortEarly: false,
+    });
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({ error: errorMessage });
+    }
+
+    next();
+}
+
+// Middleware to validate order ID from URL parameters
+function validateOrderId(req, res, next) {
+    const id = parseInt(req.params.id);
+
+    if (isNaN(id) || id <= 0) {
+        return res.status(400).json({
+            error: "Invalid order ID. ID must be a positive number",
+        });
+    }
+
+    next();
+}
