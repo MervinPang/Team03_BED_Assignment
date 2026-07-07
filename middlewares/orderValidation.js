@@ -8,13 +8,13 @@ const orderSchema = Joi.object({
         "number.positive": "UserID must be a positive number",
     }),
 
-    GuestName: Joi.string().min(1).max(80).allow(null, "").messages({
+    GuestName: Joi.string().trim().min(1).max(80).allow(null, "").messages({
         "string.base": "Guest name must be a string",
         "string.min": "Guest name must be at least 1 character long",
         "string.max": "Guest name cannot exceed 80 characters",
     }),
 
-    GuestEmail: Joi.string().email().max(100).allow(null, "").messages({
+    GuestEmail: Joi.string().trim().email().max(100).allow(null, "").messages({
         "string.base": "Guest email must be a string",
         "string.email": "Guest email must be a valid email address",
         "string.max": "Guest email cannot exceed 100 characters",
@@ -26,7 +26,7 @@ const orderSchema = Joi.object({
         "string.base": "Order type must be a string",
     }),
 
-    SpecialInstructions: Joi.string().max(300).allow(null, "").messages({
+    SpecialInstructions: Joi.string().trim().max(300).allow(null, "").messages({
         "string.base": "Special instructions must be a string",
         "string.max": "Special instructions cannot exceed 300 characters",
     }),
@@ -64,8 +64,7 @@ const orderStatusSchema = Joi.object({
         .valid("Pending", "Preparing", "Ready", "Completed", "Cancelled")
         .required()
         .messages({
-            "any.only":
-                "Order status must be Pending, Preparing, Ready, Completed or Cancelled",
+            "any.only": "Order status must be Pending, Preparing, Ready, Completed or Cancelled",
             "any.required": "Order status is required",
             "string.base": "Order status must be a string",
         }),
@@ -73,7 +72,7 @@ const orderStatusSchema = Joi.object({
 
 // Middleware to validate order data for POST
 function validateOrder(req, res, next) {
-    const { error } = orderSchema.validate(req.body, { abortEarly: false });
+    const { error, value } = orderSchema.validate(req.body, { abortEarly: false });
 
     if (error) {
         const errorMessage = error.details
@@ -83,28 +82,37 @@ function validateOrder(req, res, next) {
         return res.status(400).json({ error: errorMessage });
     }
 
-    // Extra business rule for guest/member checkout
-    if (req.body.OrderType === "Member" && !req.body.UserID) {
+    // Check for duplicate menu items
+    const menuItemIds = value.items.map((item) => item.MenuItemID);
+    const hasDuplicates = new Set(menuItemIds).size !== menuItemIds.length;
+
+    if (hasDuplicates) {
+        return res.status(400).json({
+            error: "Duplicate menu items are not allowed. Please update the quantity instead.",
+        });
+    }
+
+    // Business rule for member checkout
+    if (value.OrderType === "Member" && !value.UserID) {
         return res.status(400).json({
             error: "UserID is required for member orders",
         });
     }
 
-    if (
-        req.body.OrderType === "Guest" &&
-        (!req.body.GuestName || !req.body.GuestEmail)
-    ) {
+    // Business rule for guest checkout
+    if (value.OrderType === "Guest" && (!value.GuestName || !value.GuestEmail)) {
         return res.status(400).json({
             error: "Guest name and guest email are required for guest orders",
         });
     }
 
+    req.body = value;
     next();
 }
 
 // Middleware to validate order status for PUT
 function validateOrderStatus(req, res, next) {
-    const { error } = orderStatusSchema.validate(req.body, {
+    const { error, value } = orderStatusSchema.validate(req.body, {
         abortEarly: false,
     });
 
@@ -116,14 +124,15 @@ function validateOrderStatus(req, res, next) {
         return res.status(400).json({ error: errorMessage });
     }
 
+    req.body = value;
     next();
 }
 
 // Middleware to validate order ID from URL parameters
 function validateOrderId(req, res, next) {
-    const id = parseInt(req.params.id);
+    const id = Number(req.params.id);
 
-    if (isNaN(id) || id <= 0) {
+    if (!Number.isInteger(id) || id <= 0) {
         return res.status(400).json({
             error: "Invalid order ID. ID must be a positive number",
         });
