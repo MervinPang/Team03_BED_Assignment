@@ -131,3 +131,9 @@ function validateOrderId(req, res, next) {
 
     next();
 }
+
+module.exports = {
+    validateOrder,
+    validateOrderStatus,
+    validateOrderId,
+};
