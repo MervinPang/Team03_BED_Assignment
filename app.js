@@ -29,3 +29,4 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/orders", orderController.getAllOrders);
 app.get("/orders/:id", validateOrderId, orderController.getOrderById);
 app.post("/orders", validateOrder, orderController.createOrder);
+app.put("/orders/:id/status", validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
