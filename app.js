@@ -31,3 +31,8 @@ app.get("/orders/:id", validateOrderId, orderController.getOrderById);
 app.post("/orders", validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", validateOrderId, orderController.deleteOrder);
+
+// Start server
+app.listen(port, () => {
+    console.log(`Server running on port ${port}`);
+});
