@@ -57,3 +57,16 @@ const orderSchema = Joi.object({
             "any.required": "Items are required",
         }),
 });
+
+// Validation schema for updating order status
+const orderStatusSchema = Joi.object({
+    OrderStatus: Joi.string()
+        .valid("Pending", "Preparing", "Ready", "Completed", "Cancelled")
+        .required()
+        .messages({
+            "any.only":
+                "Order status must be Pending, Preparing, Ready, Completed or Cancelled",
+            "any.required": "Order status is required",
+            "string.base": "Order status must be a string",
+        }),
+});
