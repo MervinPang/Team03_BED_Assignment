@@ -50,11 +50,35 @@ async function getPaymentByOrderId(req, res) {
         }
 
         res.json(payment);
-        
+
     } catch (error) {
         console.error("Controller error (getPaymentByOrderId):", error);
         res.status(500).json({
             error: "Error retrieving payment by order ID",
+        });
+    }
+}
+
+// Create new payment
+async function createPayment(req, res) {
+    try {
+        const newPayment = await paymentModel.createPayment(req.body);
+        res.status(201).json(newPayment);
+    } catch (error) {
+        console.error("Controller error (createPayment):", error);
+
+        if (
+            error.message === "Order does not exist" ||
+            error.message === "Payment already exists for this order" ||
+            error.message === "Payment amount does not match order total"
+        ) {
+            return res.status(400).json({
+                error: error.message,
+            });
+        }
+
+        res.status(500).json({
+            error: "Error creating payment",
         });
     }
 }
