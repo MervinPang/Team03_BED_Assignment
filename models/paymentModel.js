@@ -4,13 +4,17 @@ const dbConfig = require("../dbConfig");
 // Payment Model - Handles database operations for Checkout and Payment
 
 // Retrieve all payments
-async function getAllPayments() {
+async function getAllPayments(user) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        const result = await connection.request().query(`
+        const request = connection.request();
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
+
+        const result = await request().query(`
             SELECT
                 p.PaymentID,
                 p.OrderID,
@@ -24,6 +28,10 @@ async function getAllPayments() {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            WHERE
+                @Role IN ('vendor', 'nea_officer')
+                OR
+                (co.UserID = @UserID)
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -37,7 +45,7 @@ async function getAllPayments() {
 }
 
 // Retrieve payment by Payment ID
-async function getPaymentById(paymentId) {
+async function getPaymentById(paymentId, user) {
     let connection;
 
     try {
@@ -45,6 +53,8 @@ async function getPaymentById(paymentId) {
 
         const request = connection.request();
         request.input("PaymentID", sql.Int, paymentId);
+        request.input("UserID", sql.Int, user?.id || null);
+        request.input("Role", sql.VarChar(20), user?.role || null);
 
         const result = await request.query(`
             SELECT
@@ -60,7 +70,13 @@ async function getPaymentById(paymentId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.PaymentID = @PaymentID;
+            WHERE
+                p.PaymentID = @PaymentID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR
+                    co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -77,7 +93,7 @@ async function getPaymentById(paymentId) {
 }
 
 // Retrieve payment by Order ID
-async function getPaymentByOrderId(orderId) {
+async function getPaymentByOrderId(orderId, user) {
     let connection;
 
     try {
@@ -85,6 +101,8 @@ async function getPaymentByOrderId(orderId) {
 
         const request = connection.request();
         request.input("OrderID", sql.Int, orderId);
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
 
         const result = await request.query(`
             SELECT
@@ -100,7 +118,13 @@ async function getPaymentByOrderId(orderId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.OrderID = @OrderID;
+            WHERE
+                p.OrderID = @OrderID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR
+                    co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -133,7 +157,7 @@ async function createPayment(paymentData) {
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
 
         const orderResult = await orderRequest.query(`
-            SELECT OrderID, TotalAmount
+            SELECT OrderID, UserID, TotalAmount
             FROM CustomerOrder
             WHERE OrderID = @OrderID;
         `);
@@ -194,7 +218,10 @@ async function createPayment(paymentData) {
         // Commit transaction after payment is created successfully
         await transaction.commit();
 
-        return await getPaymentById(newPaymentId);
+        return await getPaymentById(newPaymentId, {
+            id: order.UserID,
+            role: "customer",
+        });
     } catch (error) {
         if (transaction) {
             try {
@@ -237,7 +264,10 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
             return null;
         }
 
-        return await getPaymentById(paymentId);
+        return await getPaymentById(paymentId, {
+            id: null,
+            role: "vendor",
+        });
     } catch (error) {
         console.error("Database error (updatePaymentStatus):", error);
         throw error;

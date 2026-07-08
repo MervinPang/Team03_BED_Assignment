@@ -5,7 +5,7 @@ const paymentModel = require("../models/paymentModel");
 // Retrieve all payments
 async function getAllPayments(req, res) {
     try {
-        const payments = await paymentModel.getAllPayments();
+        const payments = await paymentModel.getAllPayments(req.user);
         res.json(payments);
     } catch (error) {
         console.error("Controller error (getAllPayments):", error);
@@ -18,7 +18,7 @@ async function getPaymentById(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const payment = await paymentModel.getPaymentById(id);
+        const payment = await paymentModel.getPaymentById(id, req.user);
 
         if (!payment) {
             return res.status(404).json({
@@ -41,7 +41,7 @@ async function getPaymentByOrderId(req, res) {
     try {
         const orderId = parseInt(req.params.orderId);
 
-        const payment = await paymentModel.getPaymentByOrderId(orderId);
+        const payment = await paymentModel.getPaymentByOrderId(orderId, req.user);
 
         if (!payment) {
             return res.status(404).json({
