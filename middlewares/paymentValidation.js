@@ -89,3 +89,29 @@ function validatePaymentStatus(req, res, next) {
     req.body = value;
     next();
 }
+
+// Middleware to validate PaymentID from URL parameters
+function validatePaymentId(req, res, next) {
+    const id = Number(req.params.id);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({
+            error: "Invalid payment ID. ID must be a positive number",
+        });
+    }
+
+    next();
+}
+
+// Middleware to validate OrderID from URL parameters
+function validateOrderIdParam(req, res, next) {
+    const orderId = Number(req.params.orderId);
+
+    if (!Number.isInteger(orderId) || orderId <= 0) {
+        return res.status(400).json({
+            error: "Invalid order ID. ID must be a positive number",
+        });
+    }
+
+    next();
+}
