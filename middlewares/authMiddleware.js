@@ -19,6 +19,21 @@ function verifyJWT(req, res, next) {
             "POST /feedback": ["customer"],
             // Only vendors can update order status
             "PUT /orders/[0-9]+/status": ["vendor"],
+
+            // Orders
+            "GET /orders": ["customer", "vendor", "nea_officer"],
+            "GET /orders/[0-9]+": ["customer", "vendor", "nea_officer"],
+            "POST /orders": ["customer"],
+            "PUT /orders/[0-9]+/status": ["vendor"],
+            "DELETE /orders/[0-9]+": ["customer"],
+
+            // Payments
+            "GET /payments": ["customer", "vendor", "nea_officer"],
+            "GET /payments/[0-9]+": ["customer", "vendor", "nea_officer"],
+            "GET /payments/order/[0-9]+": ["customer", "vendor", "nea_officer"],
+            "POST /payments": ["customer"],
+            "PUT /payments/[0-9]+/status": ["vendor"],
+            "DELETE /payments/[0-9]+": ["customer"],
         };
 
         const requestedEndpoint = `${req.method} ${req.url}`;
