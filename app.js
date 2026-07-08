@@ -14,6 +14,13 @@ const {
     validateOrderId,
 } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
 
+const userController = require("./controllers/userController");
+
+const {
+    validateRegistration,
+    validateLogin,
+} = require("./middlewares/userValidation"); // Import User Validation Middleware
+
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -31,6 +38,10 @@ app.get("/orders/:id", validateOrderId, orderController.getOrderById);
 app.post("/orders", validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", validateOrderId, orderController.deleteOrder);
+
+// Routes for User Registration and Login
+app.post("/register", validateRegistration, userController.registerUser);
+app.post("/login", validateLogin, userController.loginUser);
 
 // Start server
 app.listen(port, () => {
