@@ -116,6 +116,7 @@ function validateOrderIdParam(req, res, next) {
     next();
 }
 
+// Export validation middleware for use in app.js
 module.exports = {
     validatePayment,
     validatePaymentStatus,
