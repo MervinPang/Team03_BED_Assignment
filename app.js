@@ -8,6 +8,8 @@ dotenv.config();
 
 const orderController = require("./controllers/orderController");
 
+const paymentController = require("./controllers/paymentController");
+
 const {
     validateOrder,
     validateOrderStatus,
