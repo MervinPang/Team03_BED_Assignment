@@ -41,3 +41,15 @@ const paymentSchema = Joi.object({
         "any.required": "Transaction reference is required",
     }),
 });
+
+// Validation schema for updating payment status
+const paymentStatusSchema = Joi.object({
+    PaymentStatus: Joi.string()
+        .valid("Pending", "Successful", "Failed", "Refunded")
+        .required()
+        .messages({
+            "any.only": "Payment status must be Pending, Successful, Failed or Refunded",
+            "any.required": "Payment status is required",
+            "string.base": "Payment status must be a string",
+        }),
+});
