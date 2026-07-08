@@ -115,3 +115,10 @@ function validateOrderIdParam(req, res, next) {
 
     next();
 }
+
+module.exports = {
+    validatePayment,
+    validatePaymentStatus,
+    validatePaymentId,
+    validateOrderIdParam,
+};
