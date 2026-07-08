@@ -53,3 +53,39 @@ const paymentStatusSchema = Joi.object({
             "string.base": "Payment status must be a string",
         }),
 });
+
+// Middleware to validate payment data for POST
+function validatePayment(req, res, next) {
+    const { error, value } = paymentSchema.validate(req.body, {
+        abortEarly: false,
+    });
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({ error: errorMessage });
+    }
+
+    req.body = value;
+    next();
+}
+
+// Middleware to validate payment status for PUT
+function validatePaymentStatus(req, res, next) {
+    const { error, value } = paymentStatusSchema.validate(req.body, {
+        abortEarly: false,
+    });
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({ error: errorMessage });
+    }
+
+    req.body = value;
+    next();
+}
