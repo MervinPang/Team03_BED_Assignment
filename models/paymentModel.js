@@ -3,6 +3,7 @@ const dbConfig = require("../dbConfig");
 
 // Payment Model - Handles database operations for Checkout and Payment
 
+// Retrieve all payments
 async function getAllPayments() {
     let connection;
 
@@ -35,6 +36,7 @@ async function getAllPayments() {
     }
 }
 
+// Retrieve payment by Payment ID
 async function getPaymentById(paymentId) {
     let connection;
 
@@ -74,6 +76,7 @@ async function getPaymentById(paymentId) {
     }
 }
 
+// Retrieve payment by Order ID
 async function getPaymentByOrderId(orderId) {
     let connection;
 
@@ -113,6 +116,7 @@ async function getPaymentByOrderId(orderId) {
     }
 }
 
+// Create a new payment
 async function createPayment(paymentData) {
     let connection;
     let transaction;
@@ -121,9 +125,10 @@ async function createPayment(paymentData) {
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
 
+        // Start database transaction
         await transaction.begin();
 
-        // Check that the order exists and retrieve the actual total amount
+        // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
 
@@ -139,7 +144,7 @@ async function createPayment(paymentData) {
 
         const order = orderResult.recordset[0];
 
-        // Prevent duplicate payment for the same order
+        // Check for an existing payment
         const existingPaymentRequest = new sql.Request(transaction);
         existingPaymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
 
@@ -153,17 +158,19 @@ async function createPayment(paymentData) {
             throw new Error("Payment already exists for this order");
         }
 
-        // Amount must match order total
+        // Verify payment amount matches the order total
         if (Number(paymentData.Amount) !== Number(order.TotalAmount)) {
             throw new Error("Payment amount does not match order total");
         }
 
+        // Determine payment status and payment time
         const paymentStatus =
             paymentData.PaymentStatus ||
             (paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful");
 
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
+        // Insert payment record
         const paymentRequest = new sql.Request(transaction);
 
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
@@ -184,13 +191,14 @@ async function createPayment(paymentData) {
 
         const newPaymentId = Number(paymentResult.recordset[0].PaymentID);
 
+        // Commit transaction after payment is created successfully
         await transaction.commit();
 
         return await getPaymentById(newPaymentId);
     } catch (error) {
         if (transaction) {
             try {
-                await transaction.rollback();
+                await transaction.rollback(); // Roll back all changes if an error occurs
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
@@ -203,6 +211,7 @@ async function createPayment(paymentData) {
     }
 }
 
+// Update payment status
 async function updatePaymentStatus(paymentId, paymentStatus) {
     let connection;
 
@@ -237,6 +246,7 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
     }
 }
 
+// Delete payment by Payment ID
 async function deletePayment(paymentId) {
     let connection;
 
@@ -260,6 +270,7 @@ async function deletePayment(paymentId) {
     }
 }
 
+// Export model functions for use in PaymentController
 module.exports = {
     createPayment,
     getAllPayments,
