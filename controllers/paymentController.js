@@ -129,3 +129,13 @@ async function deletePayment(req, res) {
         });
     }
 }
+
+// Export controller functions for use in payment routes
+module.exports = {
+    createPayment,
+    getAllPayments,
+    getPaymentById,
+    getPaymentByOrderId,
+    updatePaymentStatus,
+    deletePayment,
+};
