@@ -203,7 +203,39 @@ async function createPayment(paymentData) {
     }
 }
 
-async function updatePaymentStatus(paymentId, paymentStatus) { }
+async function updatePaymentStatus(paymentId, paymentStatus) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const paidAt = paymentStatus === "Successful" ? new Date() : null;
+
+        const request = connection.request();
+        request.input("PaymentID", sql.Int, paymentId);
+        request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
+        request.input("PaidAt", sql.DateTime, paidAt);
+
+        const result = await request.query(`
+            UPDATE Payment
+            SET
+                PaymentStatus = @PaymentStatus,
+                PaidAt = @PaidAt
+            WHERE PaymentID = @PaymentID;
+        `);
+
+        if (result.rowsAffected[0] === 0) {
+            return null;
+        }
+
+        return await getPaymentById(paymentId);
+    } catch (error) {
+        console.error("Database error (updatePaymentStatus):", error);
+        throw error;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
 
 async function deletePayment(paymentId) { }
 
