@@ -82,3 +82,50 @@ async function createPayment(req, res) {
         });
     }
 }
+
+// Update payment status
+async function updatePaymentStatus(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+
+        const updatedPayment = await paymentModel.updatePaymentStatus(
+            id,
+            req.body.PaymentStatus
+        );
+
+        if (!updatedPayment) {
+            return res.status(404).json({
+                error: "Payment not found",
+            });
+        }
+
+        res.json(updatedPayment);
+    } catch (error) {
+        console.error("Controller error (updatePaymentStatus):", error);
+        res.status(500).json({
+            error: "Failed to update payment status",
+        });
+    }
+}
+
+// Delete payment
+async function deletePayment(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+
+        const deleted = await paymentModel.deletePayment(id);
+
+        if (!deleted) {
+            return res.status(404).json({
+                error: "Payment not found",
+            });
+        }
+
+        res.status(204).send();
+    } catch (error) {
+        console.error("Controller error (deletePayment):", error);
+        res.status(500).json({
+            error: "Failed to delete payment",
+        });
+    }
+}
