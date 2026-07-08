@@ -62,13 +62,13 @@ async function getPaymentByOrderId(req, res) {
 // Create new payment
 async function createPayment(req, res) {
     try {
-        const newPayment = await paymentModel.createPayment(req.body);
+        const newPayment = await paymentModel.createPayment(req.body, req.user);
         res.status(201).json(newPayment);
     } catch (error) {
         console.error("Controller error (createPayment):", error);
 
         if (
-            error.message === "Order does not exist" ||
+            error.message === "Order does not exist or you do not have access to this order" ||
             error.message === "Payment already exists for this order" ||
             error.message === "Payment amount does not match order total"
         ) {

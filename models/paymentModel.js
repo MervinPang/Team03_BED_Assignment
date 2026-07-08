@@ -14,7 +14,7 @@ async function getAllPayments(user) {
         request.input("UserID", sql.Int, user.id);
         request.input("Role", sql.VarChar(20), user.role);
 
-        const result = await request().query(`
+        const result = await request.query(`
             SELECT
                 p.PaymentID,
                 p.OrderID,
@@ -141,7 +141,7 @@ async function getPaymentByOrderId(orderId, user) {
 }
 
 // Create a new payment
-async function createPayment(paymentData) {
+async function createPayment(paymentData, user) {
     let connection;
     let transaction;
 
@@ -155,15 +155,22 @@ async function createPayment(paymentData) {
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
+        orderRequest.input("UserID", sql.Int, user.id);
+        orderRequest.input("Role", sql.VarChar(20), user.role);
 
         const orderResult = await orderRequest.query(`
             SELECT OrderID, UserID, TotalAmount
             FROM CustomerOrder
-            WHERE OrderID = @OrderID;
+            WHERE
+                OrderID = @OrderID
+                AND (
+                    @Role IN ('vendor','nea_officer')
+                    OR UserID = @UserID
+                );
         `);
 
         if (orderResult.recordset.length === 0) {
-            throw new Error("Order does not exist");
+            throw new Error("Order does not exist or you do not have access to this order");
         }
 
         const order = orderResult.recordset[0];
@@ -285,10 +292,19 @@ async function deletePayment(paymentId) {
 
         const request = connection.request();
         request.input("PaymentID", sql.Int, paymentId);
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
 
         const result = await request.query(`
-            DELETE FROM Payment
-            WHERE PaymentID = @PaymentID;
+            DELETE p
+            FROM Payment p
+            JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            WHERE
+                p.PaymentID = @PaymentID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         return result.rowsAffected[0] > 0;
