@@ -48,6 +48,14 @@ app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
 
+// Routes for Checkout and Payment
+app.get("/payments", verifyJWT, paymentController.getAllPayments);
+app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
+app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
+app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
+app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
+app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
+
 // Routes for User Registration and Login
 app.post("/register", validateRegistration, userController.registerUser);
 app.post("/login", validateLogin, userController.loginUser);
