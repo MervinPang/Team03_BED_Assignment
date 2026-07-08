@@ -237,7 +237,28 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
     }
 }
 
-async function deletePayment(paymentId) { }
+async function deletePayment(paymentId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("PaymentID", sql.Int, paymentId);
+
+        const result = await request.query(`
+            DELETE FROM Payment
+            WHERE PaymentID = @PaymentID;
+        `);
+
+        return result.rowsAffected[0] > 0;
+    } catch (error) {
+        console.error("Database error (deletePayment):", error);
+        throw error;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
 
 module.exports = {
     createPayment,
