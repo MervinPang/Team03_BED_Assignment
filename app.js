@@ -7,8 +7,8 @@ const path = require("path");
 dotenv.config();
 
 const orderController = require("./controllers/orderController");
-
 const paymentController = require("./controllers/paymentController");
+const userController = require("./controllers/userController");
 
 const {
     validateOrder,
@@ -16,7 +16,12 @@ const {
     validateOrderId,
 } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
 
-const userController = require("./controllers/userController");
+const {
+    validatePayment,
+    validatePaymentStatus,
+    validatePaymentId,
+    validateOrderIdParam,
+} = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
 
 const {
     validateRegistration,
