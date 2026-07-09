@@ -4,16 +4,22 @@ const dbConfig = require("../dbConfig");
 // Payment Model - Handles database operations for Checkout and Payment
 
 // Retrieve all payments
-async function getAllPayments() {
+async function getAllPayments(user) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        const result = await connection.request().query(`
+        const request = connection.request();
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
+
+        const result = await request.query(`
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -24,6 +30,10 @@ async function getAllPayments() {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                @Role IN ('vendor', 'nea_officer')
+                OR co.UserID = @UserID
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -37,7 +47,7 @@ async function getAllPayments() {
 }
 
 // Retrieve payment by Payment ID
-async function getPaymentById(paymentId) {
+async function getPaymentById(paymentId, user) {
     let connection;
 
     try {
@@ -45,11 +55,15 @@ async function getPaymentById(paymentId) {
 
         const request = connection.request();
         request.input("PaymentID", sql.Int, paymentId);
+        request.input("UserID", sql.Int, user?.id || null);
+        request.input("Role", sql.VarChar(20), user?.role || null);
 
         const result = await request.query(`
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -60,7 +74,13 @@ async function getPaymentById(paymentId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.PaymentID = @PaymentID;
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                p.PaymentID = @PaymentID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -77,7 +97,7 @@ async function getPaymentById(paymentId) {
 }
 
 // Retrieve payment by Order ID
-async function getPaymentByOrderId(orderId) {
+async function getPaymentByOrderId(orderId, user) {
     let connection;
 
     try {
@@ -85,11 +105,15 @@ async function getPaymentByOrderId(orderId) {
 
         const request = connection.request();
         request.input("OrderID", sql.Int, orderId);
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
 
         const result = await request.query(`
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -100,7 +124,13 @@ async function getPaymentByOrderId(orderId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.OrderID = @OrderID;
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                p.OrderID = @OrderID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -117,7 +147,7 @@ async function getPaymentByOrderId(orderId) {
 }
 
 // Create a new payment
-async function createPayment(paymentData) {
+async function createPayment(paymentData, user) {
     let connection;
     let transaction;
 
@@ -131,15 +161,22 @@ async function createPayment(paymentData) {
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
+        orderRequest.input("UserID", sql.Int, user.id);
+        orderRequest.input("Role", sql.VarChar(20), user.role);
 
         const orderResult = await orderRequest.query(`
-            SELECT OrderID, TotalAmount
+            SELECT OrderID, UserID, TotalAmount
             FROM CustomerOrder
-            WHERE OrderID = @OrderID;
+            WHERE
+                OrderID = @OrderID
+                AND (
+                    @Role IN ('vendor','nea_officer')
+                    OR UserID = @UserID
+                );
         `);
 
         if (orderResult.recordset.length === 0) {
-            throw new Error("Order does not exist");
+            throw new Error("Order does not exist or you do not have access to this order");
         }
 
         const order = orderResult.recordset[0];
@@ -155,7 +192,7 @@ async function createPayment(paymentData) {
         `);
 
         if (existingPaymentResult.recordset.length > 0) {
-            throw new Error("Payment already exists for this order");
+            throw new Error("Payment has already been made for this order");
         }
 
         // Verify payment amount matches the order total
@@ -194,7 +231,10 @@ async function createPayment(paymentData) {
         // Commit transaction after payment is created successfully
         await transaction.commit();
 
-        return await getPaymentById(newPaymentId);
+        return await getPaymentById(newPaymentId, {
+            id: order.UserID,
+            role: "customer",
+        });
     } catch (error) {
         if (transaction) {
             try {
@@ -237,7 +277,10 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
             return null;
         }
 
-        return await getPaymentById(paymentId);
+        return await getPaymentById(paymentId, {
+            id: null,
+            role: "vendor",
+        });
     } catch (error) {
         console.error("Database error (updatePaymentStatus):", error);
         throw error;
@@ -247,7 +290,7 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
 }
 
 // Delete payment by Payment ID
-async function deletePayment(paymentId) {
+async function deletePayment(paymentId, user) {
     let connection;
 
     try {
@@ -255,10 +298,19 @@ async function deletePayment(paymentId) {
 
         const request = connection.request();
         request.input("PaymentID", sql.Int, paymentId);
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
 
         const result = await request.query(`
-            DELETE FROM Payment
-            WHERE PaymentID = @PaymentID;
+            DELETE p
+            FROM Payment p
+            JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            WHERE
+                p.PaymentID = @PaymentID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         return result.rowsAffected[0] > 0;

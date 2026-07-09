@@ -5,7 +5,7 @@ const paymentModel = require("../models/paymentModel");
 // Retrieve all payments
 async function getAllPayments(req, res) {
     try {
-        const payments = await paymentModel.getAllPayments();
+        const payments = await paymentModel.getAllPayments(req.user);
         res.json(payments);
     } catch (error) {
         console.error("Controller error (getAllPayments):", error);
@@ -18,7 +18,7 @@ async function getPaymentById(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const payment = await paymentModel.getPaymentById(id);
+        const payment = await paymentModel.getPaymentById(id, req.user);
 
         if (!payment) {
             return res.status(404).json({
@@ -41,7 +41,7 @@ async function getPaymentByOrderId(req, res) {
     try {
         const orderId = parseInt(req.params.orderId);
 
-        const payment = await paymentModel.getPaymentByOrderId(orderId);
+        const payment = await paymentModel.getPaymentByOrderId(orderId, req.user);
 
         if (!payment) {
             return res.status(404).json({
@@ -62,14 +62,14 @@ async function getPaymentByOrderId(req, res) {
 // Create new payment
 async function createPayment(req, res) {
     try {
-        const newPayment = await paymentModel.createPayment(req.body);
+        const newPayment = await paymentModel.createPayment(req.body, req.user);
         res.status(201).json(newPayment);
     } catch (error) {
         console.error("Controller error (createPayment):", error);
 
         if (
-            error.message === "Order does not exist" ||
-            error.message === "Payment already exists for this order" ||
+            error.message === "Order does not exist or you do not have access to this order" ||
+            error.message === "Payment has already been made for this order" ||
             error.message === "Payment amount does not match order total"
         ) {
             return res.status(400).json({
@@ -113,7 +113,7 @@ async function deletePayment(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const deleted = await paymentModel.deletePayment(id);
+        const deleted = await paymentModel.deletePayment(id, req.user);
 
         if (!deleted) {
             return res.status(404).json({

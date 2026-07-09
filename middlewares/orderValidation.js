@@ -2,12 +2,6 @@ const Joi = require("joi"); // Import Joi for validation
 
 // Validation schema for creating an order
 const orderSchema = Joi.object({
-    UserID: Joi.number().integer().positive().allow(null).messages({
-        "number.base": "UserID must be a number",
-        "number.integer": "UserID must be an integer",
-        "number.positive": "UserID must be a positive number",
-    }),
-
     GuestName: Joi.string().trim().min(1).max(80).allow(null, "").messages({
         "string.base": "Guest name must be a string",
         "string.min": "Guest name must be at least 1 character long",
@@ -89,13 +83,6 @@ function validateOrder(req, res, next) {
     if (hasDuplicates) {
         return res.status(400).json({
             error: "Duplicate menu items are not allowed. Please update the quantity instead.",
-        });
-    }
-
-    // Business rule for member checkout
-    if (value.OrderType === "Member" && !value.UserID) {
-        return res.status(400).json({
-            error: "UserID is required for member orders",
         });
     }
 
