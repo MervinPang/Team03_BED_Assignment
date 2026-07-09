@@ -9,6 +9,7 @@ dotenv.config();
 const orderController = require("./controllers/orderController");
 const paymentController = require("./controllers/paymentController");
 const userController = require("./controllers/userController");
+const inspectionController = require("./controllers/inspectionController");
 
 const {
     validateOrder,
@@ -30,6 +31,9 @@ const {
 
 const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
+const { validateInspection } = require("./middlewares/inspectionValidation"); // Import Inspection Validation Middleware
+
+const { authenticateToken } = require("./middlewares/authenticateToken"); // Import Token Authentication Middleware
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -60,6 +64,11 @@ app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.dele
 app.post("/register", validateRegistration, userController.registerUser);
 app.post("/login", validateLogin, userController.loginUser);
 
+// Routes for Inspections
+app.post("/inspections", verifyJWT, validateInspection, inspectionController.submitInspection);
+app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHistory);
+
+// Start server
 // Start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
