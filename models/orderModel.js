@@ -202,7 +202,7 @@ async function createOrder(orderData, user) {
 
         await transaction.commit();
 
-        return await getOrderById(newOrderId);
+        return await getOrderById(newOrderId, user);
     } catch (error) {
         if (transaction) {
             try {
