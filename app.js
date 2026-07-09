@@ -10,6 +10,7 @@ const orderController = require("./controllers/orderController");
 const paymentController = require("./controllers/paymentController");
 const userController = require("./controllers/userController");
 const inspectionController = require("./controllers/inspectionController");
+const complaintController = require("./controllers/complaintController");
 
 const {
     validateOrder,
@@ -32,6 +33,8 @@ const {
 const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
 const { validateInspection } = require("./middlewares/inspectionValidation"); // Import Inspection Validation Middleware
+
+const { validateComplaint, validateComplaintStatus } = require("./middlewares/complaintValidation");
 
 // Create Express app
 const app = express();
@@ -66,6 +69,11 @@ app.post("/login", validateLogin, userController.loginUser);
 // Routes for Inspections
 app.post("/inspections", verifyJWT, validateInspection, inspectionController.submitInspection);
 app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHistory);
+
+//Routes for complaints 
+app.post("/complaints", verifyJWT, validateComplaint, complaintController.submitComplaint);
+app.get("/complaints/:stallId", verifyJWT, complaintController.getComplaintsByStall);
+app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, complaintController.updateComplaintStatus);
 
 // Start server
 app.listen(port, () => {
