@@ -11,6 +11,7 @@ const paymentController = require("./controllers/paymentController");
 const userController = require("./controllers/userController");
 
 const {
+<<<<<<< HEAD
   validateOrder,
   validateOrderStatus,
   validateOrderId,
@@ -26,6 +27,23 @@ const {
 const {
   validateRegistration,
   validateLogin,
+=======
+    validateOrder,
+    validateOrderStatus,
+    validateOrderId,
+} = require("./middlewares/orderValidation"); // Import Order Validation Middleware
+
+const {
+    validatePayment,
+    validatePaymentStatus,
+    validatePaymentId,
+    validateOrderIdParam,
+} = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
+
+const {
+    validateRegistration,
+    validateLogin,
+>>>>>>> main
 } = require("./middlewares/userValidation"); // Import User Validation Middleware
 
 const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
@@ -43,6 +61,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
+<<<<<<< HEAD
 app.get(
   "/orders/:id",
   verifyJWT,
@@ -97,6 +116,20 @@ app.delete(
   validatePaymentId,
   paymentController.deletePayment,
 );
+=======
+app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById);
+app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
+app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
+app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
+
+// Routes for Checkout and Payment
+app.get("/payments", verifyJWT, paymentController.getAllPayments);
+app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
+app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
+app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
+app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
+app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
+>>>>>>> main
 
 // Routes for User Registration and Login
 app.post("/register", validateRegistration, userController.registerUser);
@@ -104,13 +137,25 @@ app.post("/login", validateLogin, userController.loginUser);
 
 // Start server
 app.listen(port, () => {
+<<<<<<< HEAD
   console.log(`Server running on port ${port}`);
+=======
+    console.log(`Server running on port ${port}`);
+>>>>>>> main
 });
 
 // Graceful shutdown
 process.on("SIGINT", async () => {
+<<<<<<< HEAD
   console.log("Server is gracefully shutting down");
   await sql.close();
   console.log("Database connections closed");
   process.exit(0);
 });
+=======
+    console.log("Server is gracefully shutting down");
+    await sql.close();
+    console.log("Database connections closed");
+    process.exit(0);
+});
+>>>>>>> main
