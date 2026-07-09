@@ -1,14 +1,21 @@
-const { sql, poolPromise } = require("../config/db");
-const { deriveHygieneGrade } = require("../utils/hygieneGrade");
+const sql = require("mssql");
+const dbConfig = require("../dbConfig");
 
-//submission of inspection report
+// Hygiene grade derivation function
+function deriveHygieneGrade(score) {
+  if (score >= 85) return "A";
+  if (score >= 70) return "B";
+  if (score >= 50) return "C";
+  return "D";
+}
+
 async function submitInspection(req, res) {
   try {
     const { stall_id, score, remarks } = req.body;
     const officer_id = req.user.user_id;
     const hygiene_grade = deriveHygieneGrade(score);
 
-    const pool = await poolPromise;
+    const pool = await sql.connect(dbConfig);
 
     const stallCheck = await pool
       .request()
@@ -34,16 +41,14 @@ async function submitInspection(req, res) {
     res.status(201).json(result.recordset[0]);
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ error: "Server error while submitting inspection report." });
+    res.status(500).json({ error: "Server error while submitting inspection report." });
   }
 }
-//retrieval of inspection history
+
 async function getInspectionHistory(req, res) {
   try {
     const { stallId } = req.params;
-    const pool = await poolPromise;
+    const pool = await sql.connect(dbConfig);
 
     const result = await pool.request().input("stall_id", sql.Int, stallId)
       .query(`
@@ -55,9 +60,7 @@ async function getInspectionHistory(req, res) {
     res.status(200).json(result.recordset);
   } catch (err) {
     console.error(err);
-    res
-      .status(500)
-      .json({ error: "Server error while retrieving inspection history." });
+    res.status(500).json({ error: "Server error while retrieving inspection history." });
   }
 }
 

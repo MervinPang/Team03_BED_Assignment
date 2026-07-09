@@ -5,7 +5,7 @@ const orderModel = require("../models/orderModel");
 // Retrieve all customer orders
 async function getAllOrders(req, res) {
     try {
-        const orders = await orderModel.getAllOrders();
+        const orders = await orderModel.getAllOrders(req.user);
         res.json(orders);
     } catch (error) {
         console.error("Controller error (getAllOrders):", error);
@@ -18,7 +18,7 @@ async function getOrderById(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const order = await orderModel.getOrderById(id);
+        const order = await orderModel.getOrderById(id, req.user);
 
         if (!order) {
             return res.status(404).json({

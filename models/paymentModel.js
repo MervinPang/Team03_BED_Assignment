@@ -18,6 +18,8 @@ async function getAllPayments(user) {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -28,10 +30,6 @@ async function getAllPayments(user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE
-                @Role IN ('vendor', 'nea_officer')
-                OR
-                (co.UserID = @UserID)
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -60,6 +58,8 @@ async function getPaymentById(paymentId, user) {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -70,13 +70,7 @@ async function getPaymentById(paymentId, user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE
-                p.PaymentID = @PaymentID
-                AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR
-                    co.UserID = @UserID
-                );
+            WHERE p.PaymentID = @PaymentID;
         `);
 
         if (result.recordset.length === 0) {
@@ -108,6 +102,8 @@ async function getPaymentByOrderId(orderId, user) {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -118,13 +114,7 @@ async function getPaymentByOrderId(orderId, user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE
-                p.OrderID = @OrderID
-                AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR
-                    co.UserID = @UserID
-                );
+            WHERE p.OrderID = @OrderID;
         `);
 
         if (result.recordset.length === 0) {
