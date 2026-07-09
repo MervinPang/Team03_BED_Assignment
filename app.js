@@ -69,7 +69,6 @@ app.post("/inspections", verifyJWT, validateInspection, inspectionController.sub
 app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHistory);
 
 // Start server
-// Start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
 });

@@ -1,5 +1,5 @@
 // User Controller - Handles HTTP requests for User Registration and Login
-const bcrypt = require("bcryptjs");
+const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const userModel = require("../models/userModel");
 
