@@ -126,7 +126,7 @@ async function getPaymentByOrderId(orderId, user) {
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-                p.OrderID = @OrderID;
+                p.OrderID = @OrderID
                 AND (
                     @Role IN ('vendor', 'nea_officer')
                     OR co.UserID = @UserID
@@ -192,7 +192,7 @@ async function createPayment(paymentData, user) {
         `);
 
         if (existingPaymentResult.recordset.length > 0) {
-            throw new Error("Payment already exists for this order");
+            throw new Error("Payment has already been made for this order");
         }
 
         // Verify payment amount matches the order total

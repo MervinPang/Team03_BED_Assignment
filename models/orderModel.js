@@ -220,7 +220,7 @@ async function createOrder(orderData, user) {
 }
 
 // Update order status
-async function updateOrderStatus(orderId, orderStatus) {
+async function updateOrderStatus(orderId, orderStatus, user) {
     let connection;
 
     try {
@@ -242,7 +242,7 @@ async function updateOrderStatus(orderId, orderStatus) {
             return null;
         }
 
-        return await getOrderById(orderId);
+        return await getOrderById(orderId, user);
     } catch (error) {
         console.error("Database error (updateOrderStatus):", error);
         throw error;

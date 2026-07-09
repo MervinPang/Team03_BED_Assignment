@@ -65,7 +65,7 @@ async function updateOrderStatus(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const updatedOrder = await orderModel.updateOrderStatus(id, req.body.OrderStatus);
+        const updatedOrder = await orderModel.updateOrderStatus(id, req.body.OrderStatus, req.user);
 
         if (!updatedOrder) {
             return res.status(404).json({
