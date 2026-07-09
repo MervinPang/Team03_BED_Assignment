@@ -14,7 +14,7 @@ async function getAllOrders(user) {
         request.input("UserID", sql.Int, user.id);
         request.input("Role", sql.VarChar(20), user.role);
 
-        const result = await connection.request().query(`
+        const result = await request.query(`
             SELECT
                 co.OrderID,
                 co.OrderType,
