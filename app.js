@@ -31,9 +31,6 @@ const {
 
 const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
-const { validateInspection } = require("./middlewares/inspectionValidation"); // Import Inspection Validation Middleware
-
-const { authenticateToken } = require("./middlewares/authenticateToken"); // Import Token Authentication Middleware
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
