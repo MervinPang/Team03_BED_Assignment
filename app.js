@@ -46,18 +46,18 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
-app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById);
+app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById);
 app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
-app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
-app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
+app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
+app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
-app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
-app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
+app.get("/payments/:id", validatePaymentId, verifyJWT, paymentController.getPaymentById);
+app.get("/payments/order/:orderId", validateOrderIdParam, verifyJWT, paymentController.getPaymentByOrderId);
 app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
-app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
-app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
+app.put("/payments/:id/status", validatePaymentId, verifyJWT, validatePaymentStatus, paymentController.updatePaymentStatus);
+app.delete("/payments/:id", validatePaymentId, verifyJWT, paymentController.deletePayment);
 
 // Routes for User Registration and Login
 app.post("/register", validateRegistration, userController.registerUser);

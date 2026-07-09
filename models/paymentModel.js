@@ -14,6 +14,8 @@ async function getAllPayments() {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -24,6 +26,7 @@ async function getAllPayments() {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -50,6 +53,8 @@ async function getPaymentById(paymentId) {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -60,6 +65,7 @@ async function getPaymentById(paymentId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE p.PaymentID = @PaymentID;
         `);
 
@@ -90,6 +96,8 @@ async function getPaymentByOrderId(orderId) {
             SELECT
                 p.PaymentID,
                 p.OrderID,
+                co.UserID,
+                ISNULL(ua.Username, co.GuestName) AS CustomerName,
                 p.PaymentMethod,
                 p.PaymentStatus,
                 p.Amount,
@@ -100,6 +108,7 @@ async function getPaymentByOrderId(orderId) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE p.OrderID = @OrderID;
         `);
 

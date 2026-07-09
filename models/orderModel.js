@@ -4,11 +4,15 @@ const dbConfig = require("../dbConfig");
 // Order Model - Handles database operations for Place Food Order
 
 // Retrieve all customer orders
-async function getAllOrders() {
+async function getAllOrders(user) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("UserID", sql.Int, user.id);
+        request.input("Role", sql.VarChar(20), user.role);
 
         const result = await connection.request().query(`
             SELECT
@@ -21,6 +25,9 @@ async function getAllOrders() {
                 co.UpdatedAt
             FROM CustomerOrder co
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                @Role IN ('vendor', 'nea_officer')
+                OR co.UserID = @UserID
             ORDER BY co.OrderDateTime DESC;
         `);
 
@@ -34,7 +41,7 @@ async function getAllOrders() {
 }
 
 // Get full order details by ID
-async function getOrderById(orderId) {
+async function getOrderById(orderId, user) {
     let connection;
 
     try {
@@ -42,6 +49,8 @@ async function getOrderById(orderId) {
 
         const orderRequest = connection.request();
         orderRequest.input("OrderID", sql.Int, orderId);
+        orderRequest.input("UserID", sql.Int, user?.id || null);
+        orderRequest.input("Role", sql.VarChar(20), user?.role || null);
 
         const orderResult = await orderRequest.query(`
             SELECT 
@@ -58,7 +67,12 @@ async function getOrderById(orderId) {
                 ISNULL(ua.Username, co.GuestName) AS CustomerName
             FROM CustomerOrder co
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
-            WHERE co.OrderID = @OrderID;
+            WHERE
+                co.OrderID = @OrderID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         if (orderResult.recordset.length === 0) {
