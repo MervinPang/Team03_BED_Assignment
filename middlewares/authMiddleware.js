@@ -11,6 +11,7 @@ function verifyJWT(req, res, next) {
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
+            console.log("JWT verification error:", err.message); 
             return res.status(403).json({ error: "Forbidden" });
         }
 
@@ -42,6 +43,10 @@ function verifyJWT(req, res, next) {
 
         const requestedEndpoint = `${req.method} ${req.url}`;
         const userRole = decoded.role;
+
+        console.log("Requested endpoint:", requestedEndpoint); // ADDED
+        console.log("User role:", userRole); // ADDED
+        console.log("Available endpoints:", Object.keys(authorizedRoles)); // ADDED
 
         const authorizedRole = Object.entries(authorizedRoles).find(
             ([endpoint, roles]) => {
