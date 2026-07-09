@@ -1,4 +1,5 @@
-const { sql, poolPromise } = require("../config/db");
+const sql = require("mssql");
+const dbConfig = require("../dbConfig");
 
 // Hygiene grade derivation function
 function deriveHygieneGrade(score) {
@@ -14,7 +15,7 @@ async function submitInspection(req, res) {
     const officer_id = req.user.user_id;
     const hygiene_grade = deriveHygieneGrade(score);
 
-    const pool = await poolPromise;
+    const pool = await sql.connect(dbConfig);
 
     const stallCheck = await pool
       .request()
@@ -47,7 +48,7 @@ async function submitInspection(req, res) {
 async function getInspectionHistory(req, res) {
   try {
     const { stallId } = req.params;
-    const pool = await poolPromise;
+    const pool = await sql.connect(dbConfig);
 
     const result = await pool.request().input("stall_id", sql.Int, stallId)
       .query(`
