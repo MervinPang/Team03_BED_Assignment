@@ -1,87 +1,116 @@
-require("dotenv").config();
 const express = require("express");
+const sql = require("mssql");
+const dotenv = require("dotenv");
+const path = require("path");
+
+// Load environment variables
+dotenv.config();
+
+const orderController = require("./controllers/orderController");
+const paymentController = require("./controllers/paymentController");
+const userController = require("./controllers/userController");
+
+const {
+  validateOrder,
+  validateOrderStatus,
+  validateOrderId,
+} = require("./middlewares/orderValidation"); // Import Order Validation Middleware
+
+const {
+  validatePayment,
+  validatePaymentStatus,
+  validatePaymentId,
+  validateOrderIdParam,
+} = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
+
+const {
+  validateRegistration,
+  validateLogin,
+} = require("./middlewares/userValidation"); // Import User Validation Middleware
+
+const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
+
+// Create Express app
 const app = express();
+const port = process.env.PORT || 3000;
 
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-const { sql, poolPromise } = require("./config/db");
-const authenticateToken = require("./middleware/authenticateToken");
-const { authorizeRoles } = require("./middleware/authorize");
-const { validateInspection } = require("./middleware/validateInspection");
+// Serve static files from the public directory
+app.use(express.static(path.join(__dirname, "public")));
 
-//hygeine grade derivation function
-function deriveHygieneGrade(score) {
-  if (score >= 85) return "A";
-  if (score >= 70) return "B";
-  if (score >= 50) return "C";
-  return "D";
-}
-
-//submission of inspection report
-app.post(
-  "/inspections",
-  authenticateToken,
-  authorizeRoles("NEA Officer"),
-  validateInspection,
-  async (req, res) => {
-    try {
-      const { stall_id, score, remarks } = req.body;
-      const officer_id = req.user.user_id;
-      const hygiene_grade = deriveHygieneGrade(score);
-
-      const pool = await poolPromise;
-
-      const stallCheck = await pool
-        .request()
-        .input("stall_id", sql.Int, stall_id)
-        .query("SELECT stall_id FROM Stall WHERE stall_id = @stall_id");
-
-      if (stallCheck.recordset.length === 0) {
-        return res.status(400).json({ error: "Stall does not exist." });
-      }
-
-      const result = await pool
-        .request()
-        .input("stall_id", sql.Int, stall_id)
-        .input("officer_id", sql.Int, officer_id)
-        .input("score", sql.Int, score)
-        .input("remarks", sql.NVarChar, remarks || null)
-        .input("hygiene_grade", sql.Char(1), hygiene_grade).query(`
-                INSERT INTO Inspection (stall_id, officer_id, score, remarks, hygiene_grade)
-                OUTPUT INSERTED.*
-                VALUES (@stall_id, @officer_id, @score, @remarks, @hygiene_grade)
-            `);
-
-      res.status(201).json(result.recordset[0]);
-    } catch (err) {
-      console.error(err);
-      res
-        .status(500)
-        .json({ error: "Server error while submitting inspection report." });
-    }
-  },
+// Routes for Place Food Order
+app.get("/orders", verifyJWT, orderController.getAllOrders);
+app.get(
+  "/orders/:id",
+  verifyJWT,
+  validateOrderId,
+  orderController.getOrderById,
+);
+app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
+app.put(
+  "/orders/:id/status",
+  verifyJWT,
+  validateOrderId,
+  validateOrderStatus,
+  orderController.updateOrderStatus,
+);
+app.delete(
+  "/orders/:id",
+  verifyJWT,
+  validateOrderId,
+  orderController.deleteOrder,
 );
 
-app.get("/inspections/:stallId", authenticateToken, async (req, res) => {
-  try {
-    const { stallId } = req.params;
-    const pool = await poolPromise;
+// Routes for Checkout and Payment
+app.get("/payments", verifyJWT, paymentController.getAllPayments);
+app.get(
+  "/payments/:id",
+  verifyJWT,
+  validatePaymentId,
+  paymentController.getPaymentById,
+);
+app.get(
+  "/payments/order/:orderId",
+  verifyJWT,
+  validateOrderIdParam,
+  paymentController.getPaymentByOrderId,
+);
+app.post(
+  "/payments",
+  verifyJWT,
+  validatePayment,
+  paymentController.createPayment,
+);
+app.put(
+  "/payments/:id/status",
+  verifyJWT,
+  validatePaymentId,
+  validatePaymentStatus,
+  paymentController.updatePaymentStatus,
+);
+app.delete(
+  "/payments/:id",
+  verifyJWT,
+  validatePaymentId,
+  paymentController.deletePayment,
+);
 
-    const result = await pool.request().input("stall_id", sql.Int, stallId)
-      .query(`
-                SELECT * FROM Inspection
-                WHERE stall_id = @stall_id
-                ORDER BY inspection_date DESC
-            `);
+// Routes for User Registration and Login
+app.post("/register", validateRegistration, userController.registerUser);
+app.post("/login", validateLogin, userController.loginUser);
 
-    res.status(200).json(result.recordset);
-  } catch (err) {
-    console.error(err);
-    res
-      .status(500)
-      .json({ error: "Server error while retrieving inspection history." });
-  }
+// Start server
+app.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+// Graceful shutdown
+process.on("SIGINT", async () => {
+  console.log("Server is gracefully shutting down");
+  await sql.close();
+  console.log("Database connections closed");
+  process.exit(0);
+});
