@@ -113,7 +113,7 @@ async function deletePayment(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const deleted = await paymentModel.deletePayment(id);
+        const deleted = await paymentModel.deletePayment(id, req.user);
 
         if (!deleted) {
             return res.status(404).json({

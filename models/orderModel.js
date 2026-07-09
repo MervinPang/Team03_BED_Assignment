@@ -110,7 +110,7 @@ async function getOrderById(orderId, user) {
 }
 
 // Create a new order
-async function createOrder(orderData) {
+async function createOrder(orderData, user) {
     let connection;
     let transaction;
 
@@ -161,7 +161,7 @@ async function createOrder(orderData) {
         // Insert main order record
         const orderRequest = new sql.Request(transaction);
 
-        orderRequest.input("UserID", sql.Int, orderData.UserID ?? null);
+        orderRequest.input("UserID", sql.Int, user.id);
         orderRequest.input("GuestName", sql.VarChar(80), orderData.GuestName ?? null);
         orderRequest.input("GuestEmail", sql.VarChar(100), orderData.GuestEmail ?? null);
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);

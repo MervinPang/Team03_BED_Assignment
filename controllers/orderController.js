@@ -39,7 +39,7 @@ async function getOrderById(req, res) {
 // Create a new customer order
 async function createOrder(req, res) {
     try {
-        const newOrder = await orderModel.createOrder(req.body);
+        const newOrder = await orderModel.createOrder(req.body, req.user);
         res.status(201).json(newOrder);
 
     } catch (error) {

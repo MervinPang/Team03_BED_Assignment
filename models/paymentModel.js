@@ -30,6 +30,10 @@ async function getAllPayments(user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                @Role IN ('vendor', 'nea_officer')
+                OR co.UserID = @UserID
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -70,7 +74,13 @@ async function getPaymentById(paymentId, user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.PaymentID = @PaymentID;
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                p.PaymentID = @PaymentID
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -114,7 +124,13 @@ async function getPaymentByOrderId(orderId, user) {
                 co.TotalAmount
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            WHERE p.OrderID = @OrderID;
+            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            WHERE
+                p.OrderID = @OrderID;
+                AND (
+                    @Role IN ('vendor', 'nea_officer')
+                    OR co.UserID = @UserID
+                );
         `);
 
         if (result.recordset.length === 0) {
@@ -274,7 +290,7 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
 }
 
 // Delete payment by Payment ID
-async function deletePayment(paymentId) {
+async function deletePayment(paymentId, user) {
     let connection;
 
     try {
