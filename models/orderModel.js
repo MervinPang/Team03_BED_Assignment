@@ -97,10 +97,18 @@ async function getOrderById(orderId, user) {
             WHERE oi.OrderID = @OrderID;
         `);
 
+        const order = orderResult.recordset[0];
+
+        if (order.OrderType === "Member") {
+            delete order.GuestName;
+            delete order.GuestEmail;
+        }
+
         return {
-            ...orderResult.recordset[0],
+            ...order,
             items: itemResult.recordset,
         };
+        
     } catch (error) {
         console.error("Database error (getOrderById):", error);
         throw error;
