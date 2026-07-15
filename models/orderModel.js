@@ -195,6 +195,7 @@ async function createOrder(orderData, user) {
 
         let totalAmount = 0;
         const validatedItems = [];
+        let selectedStallId = null;
 
         // Fetch prices from database instead of trusting frontend price
         for (const item of orderData.items) {
@@ -202,9 +203,16 @@ async function createOrder(orderData, user) {
             menuRequest.input("MenuItemID", sql.Int, item.MenuItemID);
 
             const menuResult = await menuRequest.query(`
-                SELECT MenuItemID, ItemPrice, IsAvailable
-                FROM MenuItem
-                WHERE MenuItemID = @MenuItemID;
+                SELECT
+                mi.MenuItemID,
+                mi.ItemPrice,
+                mi.IsAvailable,
+                mi.StallID,
+                fs.IsActive
+                FROM MenuItem mi
+                JOIN FoodStall fs
+                    ON mi.StallID = fs.StallID
+                WHERE mi.MenuItemID = @MenuItemID;
             `);
 
             if (menuResult.recordset.length === 0) {
@@ -215,6 +223,22 @@ async function createOrder(orderData, user) {
 
             if (!menuItem.IsAvailable) {
                 throw new Error(`Menu item ${item.MenuItemID} is not available`);
+            }
+
+            if (!menuItem.IsActive) {
+                throw new Error(
+                    "The selected food stall is currently unavailable"
+                );
+            }
+
+            if (selectedStallId === null) {
+                selectedStallId = menuItem.StallID;
+            }
+
+            if (menuItem.StallID !== selectedStallId) {
+                throw new Error(
+                    "All items in an order must come from the same food stall"
+                );
             }
 
             const quantity = item.Quantity;
