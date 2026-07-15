@@ -243,6 +243,13 @@ async function createOrder(orderData, user) {
 
             const quantity = item.Quantity;
             const unitPrice = menuItem.ItemPrice;
+
+            if (!Number.isFinite(unitPrice)) {
+                throw new Error(
+                    `Invalid price configured for menu item ${item.MenuItemID}`
+                );
+            }
+
             const subtotal = quantity * unitPrice;
 
             totalAmount += subtotal;

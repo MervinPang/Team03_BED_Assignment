@@ -48,6 +48,7 @@ async function createOrder(req, res) {
         if (
             error.message.includes("does not exist") ||
             error.message.includes("is not available") ||
+            error.message.includes("Invalid price configured") ||
             error.message === "All items in an order must come from the same food stall" ||
             error.message === "The selected food stall is currently unavailable"
         ) {
