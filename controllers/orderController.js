@@ -30,7 +30,7 @@ async function getOrderById(req, res) {
 
     } catch (error) {
         console.error("Controller error (getOrderById):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving order",
         });
     }
@@ -103,7 +103,7 @@ async function updateOrderStatus(req, res) {
                 error: error.message,
             });
         }
-        
+
         return res.status(500).json({
             error: "Failed to update order status",
         });
