@@ -15,7 +15,7 @@ async function getAllOrders(user) {
         request.input("Role", sql.VarChar(20), user.role);
 
         const result = await request.query(`
-            SELECT
+            SELECT DISTINCT
                 co.OrderID,
                 co.OrderType,
                 co.OrderStatus,
@@ -26,9 +26,29 @@ async function getAllOrders(user) {
             FROM CustomerOrder co
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-                @Role IN ('vendor', 'nea_officer')
-                OR co.UserID = @UserID
-            ORDER BY co.OrderDateTime DESC;
+        (
+            @Role = 'customer'
+            AND co.UserID = @UserID
+        )
+        OR
+        (
+            @Role = 'vendor'
+            AND EXISTS (
+                SELECT 1
+                FROM OrderItem oi
+                JOIN MenuItem mi
+                    ON oi.MenuItemID = mi.MenuItemID
+                JOIN FoodStall fs
+                    ON mi.StallID = fs.StallID
+                WHERE oi.OrderID = co.OrderID
+                  AND fs.VendorUserID = @UserID
+            )
+        )
+        OR
+        (
+            @Role = 'nea_officer'
+        )
+    ORDER BY co.OrderDateTime DESC;
         `);
 
         return result.recordset;
@@ -72,8 +92,26 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
                 co.OrderID = @OrderID
                 AND (
                     @AllowInternalAccess = 1
-                    OR @Role IN ('vendor', 'nea_officer')
-                    OR co.UserID = @UserID
+                    OR (
+                        @Role = 'customer'
+                        AND co.UserID = @UserID
+                    )
+                    OR (
+                        @Role = 'vendor'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE oi.OrderID = co.OrderID
+                                AND fs.VendorUserID = @UserID
+                        )
+                    )
+                    OR (
+                        @Role = 'nea_officer'
+                    )
                 );
         `);
 
