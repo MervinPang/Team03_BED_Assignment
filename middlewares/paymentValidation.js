@@ -24,7 +24,7 @@ const paymentSchema = Joi.object({
         .valid("Pending", "Successful", "Failed", "Refunded")
         .optional()
         .messages({
-            "any.only": "Payment status must be Pending, Successful, Failed or Refunded",
+            "any.only": "Initial payment status must be Pending, Successful or Failed",
             "string.base": "Payment status must be a string",
         }),
 
@@ -63,7 +63,7 @@ const paymentStatusSchema = Joi.object({
             "any.required": "Payment status is required",
             "string.base": "Payment status must be a string",
         }),
-});
+}).unknown(false);
 
 // Middleware to validate payment data for POST
 function validatePayment(req, res, next) {
