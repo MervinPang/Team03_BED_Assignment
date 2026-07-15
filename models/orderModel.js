@@ -26,29 +26,29 @@ async function getAllOrders(user) {
             FROM CustomerOrder co
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-        (
-            @Role = 'customer'
-            AND co.UserID = @UserID
-        )
-        OR
-        (
-            @Role = 'vendor'
-            AND EXISTS (
-                SELECT 1
-                FROM OrderItem oi
-                JOIN MenuItem mi
-                    ON oi.MenuItemID = mi.MenuItemID
-                JOIN FoodStall fs
-                    ON mi.StallID = fs.StallID
-                WHERE oi.OrderID = co.OrderID
-                  AND fs.VendorUserID = @UserID
+            (
+                @Role = 'customer'
+                AND co.UserID = @UserID
             )
-        )
-        OR
-        (
-            @Role = 'nea_officer'
-        )
-    ORDER BY co.OrderDateTime DESC;
+            OR
+            (
+                @Role = 'vendor'
+                AND EXISTS (
+                    SELECT 1
+                    FROM OrderItem oi
+                    JOIN MenuItem mi
+                        ON oi.MenuItemID = mi.MenuItemID
+                    JOIN FoodStall fs
+                        ON mi.StallID = fs.StallID
+                    WHERE oi.OrderID = co.OrderID
+                    AND fs.VendorUserID = @UserID
+                )
+            )
+            OR
+            (
+                @Role = 'nea_officer'
+            )
+            ORDER BY co.OrderDateTime DESC;
         `);
 
         return result.recordset;
