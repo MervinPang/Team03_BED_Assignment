@@ -30,7 +30,7 @@ const {
     validateLogin,
 } = require("./middlewares/userValidation"); // Import User Validation Middleware
 
-const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
+const { verifyJWT, optionalJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
 const { validateInspection } = require("./middlewares/inspectionValidation"); // Import Inspection Validation Middleware
 
@@ -50,7 +50,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
 app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById);
-app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
+app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
 

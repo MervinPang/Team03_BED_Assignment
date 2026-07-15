@@ -11,7 +11,7 @@ function verifyJWT(req, res, next) {
 
     jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
         if (err) {
-            console.log("JWT verification error:", err.message); 
+            console.log("JWT verification error:", err.message);
             return res.status(403).json({ error: "Forbidden" });
         }
 
@@ -69,6 +69,39 @@ function verifyJWT(req, res, next) {
     });
 }
 
+// Optional Authentication Middleware
+// Allows guests to continue without a token,
+// but verifies the token when one is provided.
+function optionalJWT(req, res, next) {
+    const authorizationHeader = req.headers.authorization;
+
+    // No token means the request continues as a guest
+    if (!authorizationHeader) {
+        req.user = null;
+        return next();
+    }
+
+    const [scheme, token] = authorizationHeader.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+        return res.status(401).json({
+            error: "Authorization header must use the Bearer token format",
+        });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+        if (error) {
+            return res.status(403).json({
+                error: "Invalid or expired authentication token",
+            });
+        }
+
+        req.user = decoded;
+        next();
+    });
+}
+
 module.exports = {
     verifyJWT,
+    optionalJWT,
 };
