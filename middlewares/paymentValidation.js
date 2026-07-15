@@ -9,7 +9,7 @@ const paymentSchema = Joi.object({
         "number.integer": "OrderID must be an integer",
         "number.positive": "OrderID must be a positive number",
         "any.required": "OrderID is required",
-    }),
+    }).unknown(false),
 
     PaymentMethod: Joi.string()
         .valid("Cash", "Card", "PayNow")
@@ -34,13 +34,24 @@ const paymentSchema = Joi.object({
         "any.required": "Amount is required",
     }),
 
-    TransactionReference: Joi.string().trim().max(100).required().messages({
-        "string.base": "Transaction reference must be a string",
-        "string.empty": "Transaction reference cannot be empty",
-        "string.max": "Transaction reference cannot exceed 100 characters",
-        "any.required": "Transaction reference is required",
+    TransactionReference: Joi.when("PaymentMethod", {
+        is: "Cash",
+
+        // Cash payments do not require an external transaction reference
+        then: Joi.string().trim().max(100).allow(null, "").optional().messages({
+            "string.base": "Transaction reference must be a string",
+            "string.max": "Transaction reference cannot exceed 100 characters",
+        }),
+
+        // Card and PayNow payments require a transaction reference
+        otherwise: Joi.string().trim().max(100).required().messages({
+            "string.base": "Transaction reference must be a string",
+            "string.empty": "Transaction reference cannot be empty",
+            "string.max": "Transaction reference cannot exceed 100 characters",
+            "any.required": "Transaction reference is required for Card and PayNow payments",
+        }),
     }),
-});
+}).unknown(false);
 
 // Validation schema for updating payment status
 const paymentStatusSchema = Joi.object({

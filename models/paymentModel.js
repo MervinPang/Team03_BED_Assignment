@@ -268,12 +268,13 @@ async function createPayment(paymentData, user) {
 
         // Insert payment record
         const paymentRequest = new sql.Request(transaction);
+        const transactionReference = paymentData.PaymentMethod === "Cash" ? paymentData.TransactionReference || null : paymentData.TransactionReference;
 
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
         paymentRequest.input("PaymentMethod", sql.VarChar(30), paymentData.PaymentMethod);
         paymentRequest.input("PaymentStatus", sql.VarChar(30), paymentStatus);
         paymentRequest.input("Amount", sql.Decimal(8, 2), paymentData.Amount);
-        paymentRequest.input("TransactionReference", sql.VarChar(100), paymentData.TransactionReference);
+        paymentRequest.input("TransactionReference", sql.VarChar(100), transactionReference);
         paymentRequest.input("PaidAt", sql.DateTime, paidAt);
 
         const paymentResult = await paymentRequest.query(`
@@ -320,7 +321,7 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
         const request = connection.request();
-        request.input("UserID",sql.Int,user.id);
+        request.input("UserID", sql.Int, user.id);
         request.input("PaymentID", sql.Int, paymentId);
         request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
         request.input("PaidAt", sql.DateTime, paidAt);
