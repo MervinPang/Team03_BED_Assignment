@@ -311,7 +311,7 @@ async function createPayment(paymentData, user) {
 }
 
 // Update payment status
-async function updatePaymentStatus(paymentId, paymentStatus) {
+async function updatePaymentStatus(paymentId, paymentStatus, user) {
     let connection;
 
     try {
@@ -320,6 +320,7 @@ async function updatePaymentStatus(paymentId, paymentStatus) {
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
         const request = connection.request();
+        request.input("UserID",sql.Int,user.id);
         request.input("PaymentID", sql.Int, paymentId);
         request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
         request.input("PaidAt", sql.DateTime, paidAt);

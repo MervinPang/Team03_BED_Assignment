@@ -90,7 +90,8 @@ async function updatePaymentStatus(req, res) {
 
         const updatedPayment = await paymentModel.updatePaymentStatus(
             id,
-            req.body.PaymentStatus
+            req.body.PaymentStatus,
+            req.user
         );
 
         if (!updatedPayment) {
