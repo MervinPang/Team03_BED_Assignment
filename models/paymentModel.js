@@ -365,52 +365,83 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
 // Delete payment by Payment ID
 async function deletePayment(paymentId, user) {
     let connection;
+    let transaction;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const request = connection.request();
-        request.input("PaymentID", sql.Int, paymentId);
-        request.input("UserID", sql.Int, user.id);
-        request.input("Role", sql.VarChar(20), user.role);
+        await transaction.begin();
 
-        const result = await request.query(`
-            DELETE p
+        // Verify payment ownership and retrieve its current state
+        const paymentRequest = new sql.Request(transaction);
+
+        paymentRequest.input("PaymentID", sql.Int, paymentId);
+        paymentRequest.input("UserID", sql.Int, user.id);
+
+        const paymentResult = await paymentRequest.query(`
+            SELECT
+                p.PaymentID,
+                p.PaymentStatus,
+                co.OrderID,
+                co.OrderStatus
             FROM Payment p
-            JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
             WHERE
-                co.OrderID = @OrderID
-                AND (
-                    @AllowInternalAccess = 1
-                    OR (
-                        @Role = 'customer'
-                        AND co.UserID = @UserID
-                    )
-                    OR (
-                        @Role = 'vendor'
-                        AND EXISTS (
-                            SELECT 1
-                            FROM OrderItem oi
-                            JOIN MenuItem mi
-                                ON oi.MenuItemID = mi.MenuItemID
-                            JOIN FoodStall fs
-                                ON mi.StallID = fs.StallID
-                            WHERE oi.OrderID = co.OrderID
-                                AND fs.VendorUserID = @UserID
-                        )
-                    )
-                    OR (
-                        @Role = 'nea_officer'
-                    )
-                );
+                p.PaymentID = @PaymentID
+                AND co.UserID = @UserID;
         `);
+        if (paymentResult.recordset.length === 0) {
+            await transaction.rollback();
+            return null;
+        }
+
+        const payment = paymentResult.recordset[0];
+
+        // Successful or refunded payments should remain for transaction records
+        if (
+            payment.PaymentStatus === "Successful" ||
+            payment.PaymentStatus === "Refunded"
+        ) {
+            throw new Error(
+                "Successful or refunded payments cannot be deleted"
+            );
+        }
+
+        // Payment deletion is only allowed while the order is pending
+        if (payment.OrderStatus !== "Pending") {
+            throw new Error(
+                "Payments can only be deleted for pending orders"
+            );
+        }
+
+        const deleteRequest = new sql.Request(transaction);
+        deleteRequest.input("PaymentID", sql.Int, paymentId);
+
+        const result = await deleteRequest.query(`
+            DELETE FROM Payment
+            WHERE PaymentID = @PaymentID;
+        `);
+        await transaction.commit();
 
         return result.rowsAffected[0] > 0;
+        
     } catch (error) {
+        if (transaction) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Rollback error:", rollbackError);
+            }
+        }
+
         console.error("Database error (deletePayment):", error);
         throw error;
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 

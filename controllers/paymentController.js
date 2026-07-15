@@ -119,7 +119,7 @@ async function updatePaymentStatus(req, res) {
 // Delete payment
 async function deletePayment(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const id = Number(req.params.id);
 
         const deleted = await paymentModel.deletePayment(id, req.user);
 
@@ -132,6 +132,16 @@ async function deletePayment(req, res) {
         res.status(204).send();
     } catch (error) {
         console.error("Controller error (deletePayment):", error);
+        
+        if (
+            error.message === "Successful or refunded payments cannot be deleted" ||
+            error.message === "Payments can only be deleted for pending orders"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+        
         res.status(500).json({
             error: "Failed to delete payment",
         });
