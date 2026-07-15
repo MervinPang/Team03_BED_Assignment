@@ -68,11 +68,18 @@ async function createPayment(req, res) {
         console.error("Controller error (createPayment):", error);
 
         if (
-            error.message === "Order does not exist or you do not have access to this order" ||
+            error.message === "Order does not exist or you do not have access to this order"
+        ) {
+             return res.status(404).json({
+                error: error.message,
+             });
+        }
+
+        if (
             error.message === "Payment has already been made for this order" ||
             error.message === "Payment amount does not match order total"
         ) {
-            return res.status(400).json({
+            return res.status(409).json({
                 error: error.message,
             });
         }
