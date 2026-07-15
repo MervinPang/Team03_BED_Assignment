@@ -125,6 +125,7 @@ async function createOrder(orderData, user) {
     let transaction;
 
     try {
+        const userId = isMemberOrder ? user.id : null;
         const isMemberOrder = orderData.OrderType === "Member";
         const isGuestOrder = orderData.OrderType === "Guest";
 
@@ -145,12 +146,6 @@ async function createOrder(orderData, user) {
                 "Logged-in users must create member orders"
             );
         }
-
-        const userId = isMemberOrder ? user.id : null;
-        const guestName =
-            isGuestOrder ? orderData.GuestName : null;
-        const guestEmail =
-            isGuestOrder ? orderData.GuestEmail : null;
 
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
@@ -196,8 +191,8 @@ async function createOrder(orderData, user) {
 
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("UserID", sql.Int, userId);
-        const guestName = orderData.OrderType === "Guest" ? orderData.GuestName : null;
-        const guestEmail = orderData.OrderType === "Guest" ? orderData.GuestEmail : null;
+        orderRequest.input("GuestName", sql.VarChar(80), guestName);
+        orderRequest.input("GuestEmail", sql.VarChar(100), guestEmail);
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);
         orderRequest.input("TotalAmount", sql.Decimal(8, 2), totalAmount);
         orderRequest.input("SpecialInstructions", sql.VarChar(300), orderData.SpecialInstructions ?? null);
@@ -267,7 +262,6 @@ async function updateOrderStatus(orderId, orderStatus, user) {
                 co.OrderStatus = @OrderStatus,
                 co.UpdatedAt = GETDATE()
             FROM CustomerOrder co
-            WHERE co.OrderID = @OrderID
             WHERE co.OrderID = @OrderID
             AND EXISTS (
                 SELECT 1
