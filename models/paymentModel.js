@@ -366,10 +366,29 @@ async function deletePayment(paymentId, user) {
             FROM Payment p
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             WHERE
-                p.PaymentID = @PaymentID
+                co.OrderID = @OrderID
                 AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR co.UserID = @UserID
+                    @AllowInternalAccess = 1
+                    OR (
+                        @Role = 'customer'
+                        AND co.UserID = @UserID
+                    )
+                    OR (
+                        @Role = 'vendor'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE oi.OrderID = co.OrderID
+                                AND fs.VendorUserID = @UserID
+                        )
+                    )
+                    OR (
+                        @Role = 'nea_officer'
+                    )
                 );
         `);
 
