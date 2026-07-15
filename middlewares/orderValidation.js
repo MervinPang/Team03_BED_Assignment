@@ -77,11 +77,13 @@ const orderSchema = Joi.object({
                 Quantity: Joi.number()
                     .integer()
                     .min(1)
+                    .max(50)
                     .required()
                     .messages({
                         "number.base": "Quantity must be a number",
                         "number.integer": "Quantity must be an integer",
                         "number.min": "Quantity must be at least 1",
+                        "number.max": "Quantity cannot exceed 50 per menu item",
                         "any.required": "Quantity is required",
                     }),
             }).unknown(false)
