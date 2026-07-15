@@ -163,7 +163,6 @@ async function createOrder(orderData, user) {
     let transaction;
 
     try {
-        const userId = isMemberOrder ? user.id : null;
         const isMemberOrder = orderData.OrderType === "Member";
         const isGuestOrder = orderData.OrderType === "Guest";
 
@@ -184,6 +183,10 @@ async function createOrder(orderData, user) {
                 "Logged-in users must create member orders"
             );
         }
+
+        const userId = isMemberOrder ? user.id : null;
+        const guestName = isGuestOrder ? orderData.GuestName : null;
+        const guestEmail = isGuestOrder ? orderData.GuestEmail : null;
 
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);

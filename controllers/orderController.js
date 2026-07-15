@@ -5,11 +5,11 @@ const orderModel = require("../models/orderModel");
 // Retrieve all customer orders
 async function getAllOrders(req, res) {
     try {
-        const order = await orderModel.getAllOrders(req.user);
-        return res.status(200).json(order);
+        const orders = await orderModel.getAllOrders(req.user);
+        return res.status(200).json(orders);
     } catch (error) {
         console.error("Controller error (getAllOrders):", error);
-        res.status(500).json({ error: "Error retrieving orders" });
+        return res.status(500).json({ error: "Error retrieving orders" });
     }
 }
 
@@ -40,7 +40,7 @@ async function getOrderById(req, res) {
 async function createOrder(req, res) {
     try {
         const newOrder = await orderModel.createOrder(req.body, req.user);
-        res.status(201).json(newOrder);
+        return res.status(201).json(newOrder);
 
     } catch (error) {
         console.error("Controller error (createOrder):", error);
@@ -120,7 +120,7 @@ async function deleteOrder(req, res) {
                 error: "Order not found",
             });
         }
-        res.status(204).send();
+        return res.status(204).send();
 
     } catch (error) {
         console.error("Controller error (deleteOrder):", error);
