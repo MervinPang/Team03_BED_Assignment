@@ -107,7 +107,7 @@ async function updatePaymentStatus(req, res) {
             });
         }
 
-        res.json(updatedPayment);
+        return res.status(200).json(updatedPayment);
     } catch (error) {
         console.error("Controller error (updatePaymentStatus):", error);
         res.status(500).json({

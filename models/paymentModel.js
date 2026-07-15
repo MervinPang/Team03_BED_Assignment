@@ -321,27 +321,39 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
         const request = connection.request();
-        request.input("UserID", sql.Int, user.id);
         request.input("PaymentID", sql.Int, paymentId);
         request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
         request.input("PaidAt", sql.DateTime, paidAt);
+        request.input("UserID", sql.Int, user.id);
 
         const result = await request.query(`
             UPDATE Payment
             SET
-                PaymentStatus = @PaymentStatus,
-                PaidAt = @PaidAt
-            WHERE PaymentID = @PaymentID;
+                p.PaymentStatus = @PaymentStatus,
+                p.PaidAt = @PaidAt
+            FROM Payment p
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
+            WHERE
+                p.PaymentID = @PaymentID
+                AND EXISTS (
+                    SELECT 1
+                    FROM OrderItem oi
+                    JOIN MenuItem mi
+                        ON oi.MenuItemID = mi.MenuItemID
+                    JOIN FoodStall fs
+                        ON mi.StallID = fs.StallID
+                    WHERE
+                        oi.OrderID = co.OrderID
+                        AND fs.VendorUserID = @UserID
+                );
         `);
 
         if (result.rowsAffected[0] === 0) {
             return null;
         }
 
-        return await getPaymentById(paymentId, {
-            id: null,
-            role: "vendor",
-        });
+        return await getPaymentById(paymentId, user);
     } catch (error) {
         console.error("Database error (updatePaymentStatus):", error);
         throw error;
