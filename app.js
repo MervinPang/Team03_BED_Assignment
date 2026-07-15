@@ -75,6 +75,12 @@ app.post("/complaints", verifyJWT, validateComplaint, complaintController.submit
 app.get("/complaints/:stallId", verifyJWT, complaintController.getComplaintsByStall);
 app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, complaintController.updateComplaintStatus);
 
+app.use((req, res) => {
+    res.status(404).json({
+        error: "API endpoint not found",
+    });
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
