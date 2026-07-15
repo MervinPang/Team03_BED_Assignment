@@ -6,7 +6,7 @@ const orderModel = require("../models/orderModel");
 async function getAllOrders(req, res) {
     try {
         const orders = await orderModel.getAllOrders(req.user);
-        res.json(orders);
+        return res.status(200).json(orders);
     } catch (error) {
         console.error("Controller error (getAllOrders):", error);
         res.status(500).json({ error: "Error retrieving orders" });
@@ -26,7 +26,7 @@ async function getOrderById(req, res) {
             });
         }
 
-        res.json(order);
+        return res.status(200).json(orders);
 
     } catch (error) {
         console.error("Controller error (getOrderById):", error);
@@ -69,7 +69,7 @@ async function createOrder(req, res) {
                 error: error.message,
             });
         }
-        
+
         res.status(500).json({
             error: "Error creating order",
         });
@@ -85,13 +85,23 @@ async function updateOrderStatus(req, res) {
 
         if (!updatedOrder) {
             return res.status(404).json({
-                error: "Order not found",
+                error: "Order not found or not assigned to this vendor",
             });
         }
-        res.json(updatedOrder);
+        return res.status(200).json(updatedOrder);
 
     } catch (error) {
         console.error("Controller error (updateOrderStatus):", error);
+
+        if (
+            error.message ===
+            "You are not authorised to update this order"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+        
         res.status(500).json({
             error: "Failed to update order status",
         });
