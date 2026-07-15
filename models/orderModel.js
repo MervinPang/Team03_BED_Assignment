@@ -196,8 +196,8 @@ async function createOrder(orderData, user) {
 
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("UserID", sql.Int, userId);
-        orderRequest.input("GuestName", sql.VarChar(80), guestName);
-        orderRequest.input("GuestEmail", sql.VarChar(100), guestEmail);
+        const guestName = orderData.OrderType === "Guest" ? orderData.GuestName : null;
+        const guestEmail = orderData.OrderType === "Guest" ? orderData.GuestEmail : null;
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);
         orderRequest.input("TotalAmount", sql.Decimal(8, 2), totalAmount);
         orderRequest.input("SpecialInstructions", sql.VarChar(300), orderData.SpecialInstructions ?? null);
