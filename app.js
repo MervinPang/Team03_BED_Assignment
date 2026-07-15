@@ -81,6 +81,14 @@ app.use((req, res) => {
     });
 });
 
+app.use((error, req, res, next) => {
+    console.error("Unhandled application error:", error);
+
+    return res.status(500).json({
+        error: "An unexpected server error occurred",
+    });
+});
+
 // Start server
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
