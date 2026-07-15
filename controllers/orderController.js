@@ -53,7 +53,23 @@ async function createOrder(req, res) {
                 error: error.message,
             });
         }
+        if (
+            error.message === "Authentication is required for member orders"
+        ) {
+            return res.status(401).json({
+                error: error.message,
+            });
+        }
 
+        if (
+            error.message === "Only customers can create member orders" ||
+            error.message === "Logged-in users must create member orders"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+        
         res.status(500).json({
             error: "Error creating order",
         });
@@ -87,7 +103,7 @@ async function deleteOrder(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const deleted = await orderModel.deleteOrder(id);
+        const deleted = await orderModel.deleteOrder(id, req.user);
 
         if (!deleted) {
             return res.status(404).json({
@@ -98,6 +114,18 @@ async function deleteOrder(req, res) {
 
     } catch (error) {
         console.error("Controller error (deleteOrder):", error);
+
+        // Handle business rule errors
+        if (
+            error.message === "Only pending orders can be deleted" ||
+            error.message === "Paid orders cannot be deleted"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        // Handle unexpected server errors
         res.status(500).json({
             error: "Failed to delete order",
         });

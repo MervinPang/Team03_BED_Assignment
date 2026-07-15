@@ -41,7 +41,7 @@ async function getAllOrders(user) {
 }
 
 // Get full order details by ID
-async function getOrderById(orderId, user) {
+async function getOrderById(orderId, user, allowInternalAccess = false) {
     let connection;
 
     try {
@@ -51,6 +51,7 @@ async function getOrderById(orderId, user) {
         orderRequest.input("OrderID", sql.Int, orderId);
         orderRequest.input("UserID", sql.Int, user?.id || null);
         orderRequest.input("Role", sql.VarChar(20), user?.role || null);
+        orderRequest.input("AllowInternalAccess", sql.Bit, allowInternalAccess);
 
         const orderResult = await orderRequest.query(`
             SELECT 
@@ -70,7 +71,8 @@ async function getOrderById(orderId, user) {
             WHERE
                 co.OrderID = @OrderID
                 AND (
-                    @Role IN ('vendor', 'nea_officer')
+                    @AllowInternalAccess = 1
+                    OR @Role IN ('vendor', 'nea_officer')
                     OR co.UserID = @UserID
                 );
         `);
@@ -108,7 +110,7 @@ async function getOrderById(orderId, user) {
             ...order,
             items: itemResult.recordset,
         };
-        
+
     } catch (error) {
         console.error("Database error (getOrderById):", error);
         throw error;
@@ -123,10 +125,36 @@ async function createOrder(orderData, user) {
     let transaction;
 
     try {
+        const isMemberOrder = orderData.OrderType === "Member";
+        const isGuestOrder = orderData.OrderType === "Guest";
+
+        if (isMemberOrder && !user) {
+            throw new Error(
+                "Authentication is required for member orders"
+            );
+        }
+
+        if (isMemberOrder && user.role !== "customer") {
+            throw new Error(
+                "Only customers can create member orders"
+            );
+        }
+
+        if (isGuestOrder && user) {
+            throw new Error(
+                "Logged-in users must create member orders"
+            );
+        }
+
+        const userId = isMemberOrder ? user.id : null;
+        const guestName =
+            isGuestOrder ? orderData.GuestName : null;
+        const guestEmail =
+            isGuestOrder ? orderData.GuestEmail : null;
+
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
 
-        // Transaction ensures order and order items are saved together
         await transaction.begin();
 
         let totalAmount = 0;
@@ -166,19 +194,13 @@ async function createOrder(orderData, user) {
             });
         }
 
-        // Insert main order record
         const orderRequest = new sql.Request(transaction);
-
-        orderRequest.input("UserID", sql.Int, user.id);
-        orderRequest.input("GuestName", sql.VarChar(80), orderData.GuestName ?? null);
-        orderRequest.input("GuestEmail", sql.VarChar(100), orderData.GuestEmail ?? null);
+        orderRequest.input("UserID", sql.Int, userId);
+        orderRequest.input("GuestName", sql.VarChar(80), guestName);
+        orderRequest.input("GuestEmail", sql.VarChar(100), guestEmail);
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);
         orderRequest.input("TotalAmount", sql.Decimal(8, 2), totalAmount);
-        orderRequest.input(
-            "SpecialInstructions",
-            sql.VarChar(300),
-            orderData.SpecialInstructions ?? null
-        );
+        orderRequest.input("SpecialInstructions", sql.VarChar(300), orderData.SpecialInstructions ?? null);
 
         const orderResult = await orderRequest.query(`
             INSERT INTO CustomerOrder
@@ -210,7 +232,7 @@ async function createOrder(orderData, user) {
 
         await transaction.commit();
 
-        return await getOrderById(newOrderId, user);
+        return await getOrderById(newOrderId, user, true);
     } catch (error) {
         if (transaction) {
             try {
@@ -237,13 +259,24 @@ async function updateOrderStatus(orderId, orderStatus, user) {
         const request = connection.request();
         request.input("OrderID", sql.Int, orderId);
         request.input("OrderStatus", sql.VarChar(30), orderStatus);
+        request.input("UserID", sql.Int, user.id);
 
         const result = await request.query(`
-            UPDATE CustomerOrder
+            UPDATE co
             SET 
-                OrderStatus = @OrderStatus,
-                UpdatedAt = GETDATE()
-            WHERE OrderID = @OrderID;
+                co.OrderStatus = @OrderStatus,
+                co.UpdatedAt = GETDATE()
+            FROM CustomerOrder co
+            WHERE co.OrderID = @OrderID
+            WHERE co.OrderID = @OrderID
+            AND EXISTS (
+                SELECT 1
+                FROM OrderItem oi
+                JOIN MenuItem mi ON oi.MenuItemID = mi.MenuItemID
+                JOIN FoodStall fs ON mi.StallID = fs.StallID
+                WHERE oi.OrderID = co.OrderID
+                  AND fs.VendorUserID = @UserID
+            );
         `);
 
         if (result.rowsAffected[0] === 0) {
@@ -260,7 +293,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
 }
 
 // Delete order by ID
-async function deleteOrder(orderId) {
+async function deleteOrder(orderId, user) {
     let connection;
     let transaction;
 
@@ -271,26 +304,62 @@ async function deleteOrder(orderId) {
         // Transaction ensures payment, order items and order are deleted together
         await transaction.begin();
 
+        const ownershipRequest = new sql.Request(transaction);
+        ownershipRequest.input("OrderID", sql.Int, orderId);
+        ownershipRequest.input("UserID", sql.Int, user.id);
+
+        const ownershipResult = await ownershipRequest.query(`
+            SELECT OrderID, OrderStatus
+            FROM CustomerOrder
+            WHERE OrderID = @OrderID
+              AND UserID = @UserID;
+        `);
+
+        if (ownershipResult.recordset.length === 0) {
+            await transaction.rollback();
+            return null;
+        }
+
+        const order = ownershipResult.recordset[0];
+
+        if (order.OrderStatus !== "Pending") {
+            throw new Error("Only pending orders can be deleted");
+        }
+
         const paymentRequest = new sql.Request(transaction);
         paymentRequest.input("OrderID", sql.Int, orderId);
 
-        await paymentRequest.query(`
-            DELETE FROM Payment
+        const paymentResult = await paymentRequest.query(`
+            SELECT PaymentStatus
+            FROM Payment
             WHERE OrderID = @OrderID;
         `);
 
-        const itemRequest = new sql.Request(transaction);
-        itemRequest.input("OrderID", sql.Int, orderId);
+        if (
+            paymentResult.recordset.some(
+                (payment) => payment.PaymentStatus === "Successful"
+            )
+        ) {
+            throw new Error("Paid orders cannot be deleted");
+        }
 
-        await itemRequest.query(`
+        const deletePaymentRequest = new sql.Request(transaction);
+        deletePaymentRequest.input("OrderID", sql.Int, orderId);
+        await deletePaymentRequest.query(`
+            DELETE FROM Payment WHERE OrderID = @OrderID;
+        `);
+
+        const deleteItemsRequest = new sql.Request(transaction);
+        deleteItemsRequest.input("OrderID", sql.Int, orderId);
+        await deleteItemsRequest.query(`
             DELETE FROM OrderItem
             WHERE OrderID = @OrderID;
         `);
 
-        const orderRequest = new sql.Request(transaction);
-        orderRequest.input("OrderID", sql.Int, orderId);
+        const deleteOrderRequest = new sql.Request(transaction);
+        deleteOrderRequest.input("OrderID", sql.Int, orderId);
 
-        const result = await orderRequest.query(`
+        const result = await deleteOrderRequest.query(`
             DELETE FROM CustomerOrder
             WHERE OrderID = @OrderID;
         `);
@@ -310,7 +379,9 @@ async function deleteOrder(orderId) {
         console.error("Database error (deleteOrder):", error);
         throw error;
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 
