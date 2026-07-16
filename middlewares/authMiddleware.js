@@ -38,7 +38,6 @@ function verifyJWT(req, res, next) {
             "GET /payments": ["customer", "vendor"],
             "GET /payments/[0-9]+": ["customer", "vendor"],
             "GET /payments/order/[0-9]+": ["customer", "vendor"],
-            "POST /payments": ["customer"],
             "PUT /payments/[0-9]+/status": ["vendor"],
             "DELETE /payments/[0-9]+": ["customer"],
 
