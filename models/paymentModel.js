@@ -292,10 +292,7 @@ async function createPayment(paymentData, user) {
         // Commit transaction after payment is created successfully
         await transaction.commit();
 
-        return await getPaymentById(newPaymentId, {
-            id: order.UserID,
-            role: "customer",
-        });
+        return await getPaymentById(newPaymentId, user);
     } catch (error) {
         if (transaction) {
             try {
@@ -367,12 +364,14 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
 async function deletePayment(paymentId, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
 
         await transaction.begin();
+        transactionStarted = true;
 
         // Verify payment ownership and retrieve its current state
         const paymentRequest = new sql.Request(transaction);
@@ -395,6 +394,7 @@ async function deletePayment(paymentId, user) {
         `);
         if (paymentResult.recordset.length === 0) {
             await transaction.rollback();
+            transactionStarted = false;
             return null;
         }
 
@@ -425,11 +425,12 @@ async function deletePayment(paymentId, user) {
             WHERE PaymentID = @PaymentID;
         `);
         await transaction.commit();
+        transactionStarted = false;
 
         return result.rowsAffected[0] > 0;
 
     } catch (error) {
-        if (transaction) {
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
             } catch (rollbackError) {
