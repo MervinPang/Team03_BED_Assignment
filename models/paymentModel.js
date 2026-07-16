@@ -32,8 +32,26 @@ async function getAllPayments(user) {
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-                @Role IN ('vendor', 'nea_officer')
-                OR co.UserID = @UserID
+            (
+                @Role='customer'
+                AND co.UserID=@UserID
+            )
+            OR
+            (
+                @Role='vendor'
+                AND EXISTS
+                (
+                    SELECT 1
+                    FROM OrderItem oi
+                    JOIN MenuItem mi
+                        ON oi.MenuItemID=mi.MenuItemID
+                    JOIN FoodStall fs
+                        ON mi.StallID=fs.StallID
+                    WHERE
+                        oi.OrderID=co.OrderID
+                        AND fs.VendorUserID=@UserID
+                )
+            )
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -73,15 +91,36 @@ async function getPaymentById(paymentId, user) {
                 co.OrderStatus,
                 co.TotalAmount
             FROM Payment p
-            JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua
+                ON co.UserID = ua.UserID
             WHERE
                 p.PaymentID = @PaymentID
-                AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR co.UserID = @UserID
+                AND
+                (
+                    (
+                        @Role='customer'
+                        AND co.UserID = @UserID
+                    )
+                    OR
+                    (
+                        @Role='vendor'
+                        AND EXISTS
+                        (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE
+                                oi.OrderID = co.OrderID
+                                AND fs.VendorUserID = @UserID
+                        )
+                    )
                 );
-        `);
+            `);
 
         if (result.recordset.length === 0) {
             return null;
@@ -128,10 +167,27 @@ async function getPaymentByOrderId(orderId, user) {
             WHERE
                 p.OrderID = @OrderID
                 AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR co.UserID = @UserID
+                    (
+                        @Role='customer'
+                        AND co.UserID=@UserID
+                    )
+                    OR
+                    (
+                        @Role='vendor'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE
+                                oi.OrderID = co.OrderID
+                            AND fs.VendorUserID = @UserID
+                        )
+                    )
                 );
-        `);
+            `);
 
         if (result.recordset.length === 0) {
             return null;
@@ -150,37 +206,80 @@ async function getPaymentByOrderId(orderId, user) {
 async function createPayment(paymentData, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
+        // Open the database connection
         connection = await sql.connect(dbConfig);
-        transaction = new sql.Transaction(connection);
 
-        // Start database transaction
+        // Create and start the database transaction
+        transaction = new sql.Transaction(connection);
         await transaction.begin();
+        transactionStarted = true;
+
+        // Guests must provide the reference returned during order creation
+        if (!user && !paymentData.GuestOrderReference) {
+            throw new Error(
+                "Guest order reference is required for guest checkout"
+            );
+        }
+
+        // Authenticated payment creation is restricted to customers
+        if (user && user.role !== "customer") {
+            throw new Error(
+                "Only customers can create payments"
+            );
+        }
 
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
+        const userId = user?.id || null;
+        const userRole = user?.role || null;
+        const guestOrderReference = paymentData.GuestOrderReference || null;
+
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
+<<<<<<< HEAD
         orderRequest.input("UserID", sql.Int, userId);
+=======
+        orderRequest.input("UserID", sql.Int, user.id);
+>>>>>>> origin/Mervin's-branch
         orderRequest.input("Role", sql.VarChar(20), userRole);
         orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
         const orderResult = await orderRequest.query(`
-            SELECT OrderID, UserID, TotalAmount
+            SELECT OrderID, UserID, GuestName, GuestEmail, GuestOrderReference, OrderType,
+            TotalAmount, OrderStatus
             FROM CustomerOrder
             WHERE
                 OrderID = @OrderID
-                AND (
-                    @Role IN ('vendor','nea_officer')
-                    OR UserID = @UserID
+                AND
+                (
+                    (
+                        @Role = 'customer'
+                        AND UserID = @UserID
+                    )
+                    OR
+                    (
+                        @Role IS NULL
+                        AND UserID IS NULL
+                        AND OrderType = 'Guest'
+                        AND GuestOrderReference = @GuestOrderReference
+                    )
                 );
-        `);
+            `);
 
         if (orderResult.recordset.length === 0) {
             throw new Error("Order does not exist or you do not have access to this order");
         }
 
         const order = orderResult.recordset[0];
+
+        // Payment is only allowed while the order is pending
+        if (order.OrderStatus !== "Pending") {
+            throw new Error(
+                "Payment can only be made for a pending order"
+            );
+        }
 
         // Check for an existing payment
         const existingPaymentRequest = new sql.Request(transaction);
@@ -196,26 +295,24 @@ async function createPayment(paymentData, user) {
             throw new Error("Payment has already been made for this order");
         }
 
-        // Verify payment amount matches the order total
-        if (Number(paymentData.Amount) !== Number(order.TotalAmount)) {
-            throw new Error("Payment amount does not match order total");
-        }
-
-        // Determine payment status and payment time
+        // The backend controls the initial payment status
+        // Cash requires vendor confirmation, while simulated digital payments
+        // are treated as successful
         const paymentStatus =
-            paymentData.PaymentStatus ||
-            (paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful");
+            paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful";
 
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
-        // Insert payment record
+        // Cash may have no reference, while Card and PayNow
+        // References are enforced by Joi validation
+        const transactionReference = paymentData.TransactionReference || null;
         const paymentRequest = new sql.Request(transaction);
 
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
         paymentRequest.input("PaymentMethod", sql.VarChar(30), paymentData.PaymentMethod);
         paymentRequest.input("PaymentStatus", sql.VarChar(30), paymentStatus);
-        paymentRequest.input("Amount", sql.Decimal(8, 2), paymentData.Amount);
-        paymentRequest.input("TransactionReference", sql.VarChar(100), paymentData.TransactionReference);
+        paymentRequest.input("Amount", sql.Decimal(10, 2), order.TotalAmount);
+        paymentRequest.input("TransactionReference", sql.VarChar(100), transactionReference);
         paymentRequest.input("PaidAt", sql.DateTime, paidAt);
 
         const paymentResult = await paymentRequest.query(`
@@ -229,22 +326,37 @@ async function createPayment(paymentData, user) {
 
         const newPaymentId = Number(paymentResult.recordset[0].PaymentID);
 
-        // Commit transaction after payment is created successfully
+        // Commit the transaction after successful insertion
         await transaction.commit();
+        transactionStarted = false;
 
-        return await getPaymentById(newPaymentId, {
-            id: order.UserID,
-            role: "customer",
-        });
+        // Retrieve the created payment for both member and guest checkout
+        return await getCreatedPaymentById(newPaymentId);
     } catch (error) {
-        if (transaction) {
+        // Roll back only when the transaction is still active
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback(); // Roll back all changes if an error occurs
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
         }
 
+        if (error.number === 2601 || error.number === 2627) {
+            if (
+                error.message.includes("UX_Payment_TransactionReference")
+            ) {
+                throw new Error("Transaction reference has already been used");
+            }
+
+            if (
+                error.message.includes("UQ_Payment_OrderID")
+            ) {
+                throw new Error("Payment has already been made for this order");
+            }
+        }
+        
         console.error("Database error (createPayment):", error);
         throw error;
     } finally {
@@ -252,74 +364,259 @@ async function createPayment(paymentData, user) {
     }
 }
 
-// Update payment status
-async function updatePaymentStatus(paymentId, paymentStatus) {
+// Retrieve a newly created payment by Payment ID
+// This internal function is used after a successful payment insertion
+async function getCreatedPaymentById(paymentId) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        const paidAt = paymentStatus === "Successful" ? new Date() : null;
-
         const request = connection.request();
+
         request.input("PaymentID", sql.Int, paymentId);
-        request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
-        request.input("PaidAt", sql.DateTime, paidAt);
 
         const result = await request.query(`
-            UPDATE Payment
-            SET
-                PaymentStatus = @PaymentStatus,
-                PaidAt = @PaidAt
-            WHERE PaymentID = @PaymentID;
+            SELECT p.PaymentID, p.OrderID, p.PaymentMethod, p.PaymentStatus, p.Amount,
+                p.TransactionReference, p.PaidAt, p.CreatedAt, co.OrderStatus, co.TotalAmount
+            FROM Payment p
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
+            WHERE
+                p.PaymentID = @PaymentID;
         `);
 
-        if (result.rowsAffected[0] === 0) {
+        if (result.recordset.length === 0) {
             return null;
         }
 
-        return await getPaymentById(paymentId, {
-            id: null,
-            role: "vendor",
-        });
+        return result.recordset[0];
     } catch (error) {
-        console.error("Database error (updatePaymentStatus):", error);
+        console.error("Database error (getCreatedPaymentById):", error);
+
         throw error;
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
+// Update payment status
+async function updatePaymentStatus(paymentId, paymentStatus, user) {
+    let connection;
+    let transaction;
+    let transactionStarted = false;
+
+    try {
+        connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
+
+        await transaction.begin();
+        transactionStarted = true;
+
+        // Retrieve the current payment status and verify vendor ownership
+        const currentPaymentRequest = new sql.Request(transaction);
+
+        currentPaymentRequest.input(
+            "PaymentID",
+            sql.Int,
+            paymentId
+        );
+
+        currentPaymentRequest.input(
+            "UserID",
+            sql.Int,
+            user.id
+        );
+
+        const currentPaymentResult =
+            await currentPaymentRequest.query(`
+                SELECT
+                    p.PaymentID,
+                    p.PaymentStatus,
+                    p.PaidAt
+                FROM Payment p
+                JOIN CustomerOrder co
+                    ON p.OrderID = co.OrderID
+                WHERE
+                    p.PaymentID = @PaymentID
+                    AND EXISTS
+                    (
+                        SELECT 1
+                        FROM OrderItem oi
+                        JOIN MenuItem mi
+                            ON oi.MenuItemID = mi.MenuItemID
+                        JOIN FoodStall fs
+                            ON mi.StallID = fs.StallID
+                        WHERE
+                            oi.OrderID = co.OrderID
+                            AND fs.VendorUserID = @UserID
+                    );
+            `);
+
+        if (currentPaymentResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+            return null;
+        }
+
+        const currentPayment =
+            currentPaymentResult.recordset[0];
+
+        const currentStatus =
+            currentPayment.PaymentStatus;
+
+        // Define valid status transitions
+        const allowedTransitions = {
+            Pending: ["Successful", "Failed"],
+            Successful: ["Refunded"],
+            Failed: ["Pending"],
+            Refunded: [],
+        };
+
+        const allowedNextStatuses =
+            allowedTransitions[currentStatus] || [];
+
+        if (!allowedNextStatuses.includes(paymentStatus)) {
+            throw new Error(
+                `Payment status cannot be changed from ${currentStatus} to ${paymentStatus}`
+            );
+        }
+
+        const updateRequest = new sql.Request(transaction);
+
+        updateRequest.input("PaymentID", sql.Int, paymentId);
+
+        updateRequest.input("PaymentStatus", sql.VarChar(30), paymentStatus);
+
+        await updateRequest.query(`
+            UPDATE Payment
+            SET
+                PaymentStatus = @PaymentStatus,
+                PaidAt =
+                    CASE
+                        WHEN @PaymentStatus = 'Successful'
+                             AND PaidAt IS NULL
+                            THEN GETDATE()
+                        ELSE PaidAt
+                    END
+            WHERE PaymentID = @PaymentID;
+        `);
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return await getPaymentById(paymentId, user);
+    } catch (error) {
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Rollback error:",
+                    rollbackError
+                );
+            }
+        }
+
+        console.error(
+            "Database error (updatePaymentStatus):",
+            error
+        );
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 
 // Delete payment by Payment ID
 async function deletePayment(paymentId, user) {
     let connection;
+    let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const request = connection.request();
-        request.input("PaymentID", sql.Int, paymentId);
-        request.input("UserID", sql.Int, user.id);
-        request.input("Role", sql.VarChar(20), user.role);
+        await transaction.begin();
+        transactionStarted = true;
 
-        const result = await request.query(`
-            DELETE p
+        // Verify payment ownership and retrieve its current state
+        const paymentRequest = new sql.Request(transaction);
+
+        paymentRequest.input("PaymentID", sql.Int, paymentId);
+        paymentRequest.input("UserID", sql.Int, user.id);
+
+        const paymentResult = await paymentRequest.query(`
+            SELECT
+                p.PaymentID,
+                p.PaymentStatus,
+                co.OrderID,
+                co.OrderStatus
             FROM Payment p
-            JOIN CustomerOrder co ON p.OrderID = co.OrderID
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
             WHERE
                 p.PaymentID = @PaymentID
-                AND (
-                    @Role IN ('vendor', 'nea_officer')
-                    OR co.UserID = @UserID
-                );
+                AND co.UserID = @UserID;
         `);
+        if (paymentResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+            return null;
+        }
+
+        const payment = paymentResult.recordset[0];
+
+        // Successful or refunded payments should remain for transaction records
+        if (
+            payment.PaymentStatus === "Successful" ||
+            payment.PaymentStatus === "Refunded"
+        ) {
+            throw new Error(
+                "Successful or refunded payments cannot be deleted"
+            );
+        }
+
+        // Payment deletion is only allowed while the order is pending
+        if (payment.OrderStatus !== "Pending") {
+            throw new Error(
+                "Payments can only be deleted for pending orders"
+            );
+        }
+
+        const deleteRequest = new sql.Request(transaction);
+        deleteRequest.input("PaymentID", sql.Int, paymentId);
+
+        const result = await deleteRequest.query(`
+            DELETE FROM Payment
+            WHERE PaymentID = @PaymentID;
+        `);
+        await transaction.commit();
+        transactionStarted = false;
 
         return result.rowsAffected[0] > 0;
+
     } catch (error) {
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error("Rollback error:", rollbackError);
+            }
+        }
+
         console.error("Database error (deletePayment):", error);
         throw error;
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 

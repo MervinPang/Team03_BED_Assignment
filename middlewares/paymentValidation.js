@@ -11,48 +11,48 @@ const paymentSchema = Joi.object({
         "any.required": "OrderID is required",
     }),
 
-    PaymentMethod: Joi.string()
-        .valid("Cash", "Card", "PayNow")
-        .required()
-        .messages({
+    GuestOrderReference: Joi.string().trim().min(10).max(50).optional().messages({
+        "string.base": "Guest order reference must be a string",
+        "string.empty": "Guest order reference cannot be empty",
+        "string.min": "Guest order reference is invalid",
+        "string.max": "Guest order reference cannot exceed 50 characters",
+    }),
+
+    PaymentMethod: Joi.string().valid("Cash", "Card", "PayNow").required().messages({
             "any.only": "Payment method must be Cash, Card or PayNow",
             "any.required": "Payment method is required",
             "string.base": "Payment method must be a string",
         }),
 
-    PaymentStatus: Joi.string()
-        .valid("Pending", "Successful", "Failed", "Refunded")
-        .optional()
-        .messages({
-            "any.only": "Payment status must be Pending, Successful, Failed or Refunded",
-            "string.base": "Payment status must be a string",
+    TransactionReference: Joi.when("PaymentMethod", {
+        is: "Cash",
+
+        // Cash payments do not require an external transaction reference
+        then: Joi.string().trim().max(100).allow(null, "").optional().messages({
+            "string.base": "Transaction reference must be a string",
+            "string.max": "Transaction reference cannot exceed 100 characters",
         }),
 
-    Amount: Joi.number().precision(2).min(0).required().messages({
-        "number.base": "Amount must be a number",
-        "number.min": "Amount cannot be negative",
-        "any.required": "Amount is required",
+        // Card and PayNow payments require a transaction reference
+        otherwise: Joi.string().trim().max(100).required().messages({
+            "string.base": "Transaction reference must be a string",
+            "string.empty": "Transaction reference cannot be empty",
+            "string.max": "Transaction reference cannot exceed 100 characters",
+            "any.required": "Transaction reference is required for Card and PayNow payments",
+        }),
     }),
 
-    TransactionReference: Joi.string().trim().max(100).required().messages({
-        "string.base": "Transaction reference must be a string",
-        "string.empty": "Transaction reference cannot be empty",
-        "string.max": "Transaction reference cannot exceed 100 characters",
-        "any.required": "Transaction reference is required",
-    }),
-});
+    // Keep your TransactionReference validation
+}).unknown(false);
 
 // Validation schema for updating payment status
 const paymentStatusSchema = Joi.object({
-    PaymentStatus: Joi.string()
-        .valid("Pending", "Successful", "Failed", "Refunded")
-        .required()
-        .messages({
+    PaymentStatus: Joi.string().valid("Pending", "Successful", "Failed", "Refunded").required().messages({
             "any.only": "Payment status must be Pending, Successful, Failed or Refunded",
             "any.required": "Payment status is required",
             "string.base": "Payment status must be a string",
         }),
-});
+}).unknown(false);
 
 // Middleware to validate payment data for POST
 function validatePayment(req, res, next) {

@@ -139,9 +139,9 @@ CREATE TABLE CustomerOrder
         CHECK (TotalAmount >= 0),
     CONSTRAINT          CHK_CustomerOrder_GuestOrMember
         CHECK (
-            (OrderType = 'Member' AND UserID IS NOT NULL)
+            (OrderType = 'Member' AND UserID IS NOT NULL AND GuestName IS NULL AND GuestEmail IS NULL AND GuestOrderReference IS NULL)
             OR
-            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL)
+            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL AND GuestOrderReference IS NULL)
         )
 );
 

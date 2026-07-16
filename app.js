@@ -60,11 +60,19 @@ app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrde
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
+<<<<<<< HEAD
 app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
 app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
 app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
 app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
+=======
+app.get("/payments/order/:orderId", validateOrderIdParam, verifyJWT, paymentController.getPaymentByOrderId);
+app.get("/payments/:id", validatePaymentId, verifyJWT, paymentController.getPaymentById);
+app.post("/payments", optionalJWT, validatePayment, paymentController.createPayment);
+app.put("/payments/:id/status", validatePaymentId, verifyJWT, validatePaymentStatus, paymentController.updatePaymentStatus);
+app.delete("/payments/:id", validatePaymentId, verifyJWT, paymentController.deletePayment);
+>>>>>>> origin/Mervin's-branch
 
 // Routes for User Registration and Login
 app.post("/register", validateRegistration, userController.registerUser);

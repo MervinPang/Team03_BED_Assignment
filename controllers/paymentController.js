@@ -6,19 +6,19 @@ const paymentModel = require("../models/paymentModel");
 async function getAllPayments(req, res) {
     try {
         const payments = await paymentModel.getAllPayments(req.user);
-        res.json(payments);
+        return res.status(200).json(payments);
     } catch (error) {
         console.error("Controller error (getAllPayments):", error);
-        res.status(500).json({ error: "Error retrieving payments" });
+        return res.status(500).json({ error: "Error retrieving payments" });
     }
 }
 
 // Retrieve payment by Payment ID
 async function getPaymentById(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const paymentId = Number(req.params.id);
 
-        const payment = await paymentModel.getPaymentById(id, req.user);
+        const payment = await paymentModel.getPaymentById(paymentId, req.user);
 
         if (!payment) {
             return res.status(404).json({
@@ -26,11 +26,11 @@ async function getPaymentById(req, res) {
             });
         }
 
-        res.json(payment);
+        return res.status(200).json(payment);
 
     } catch (error) {
         console.error("Controller error (getPaymentById):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving payment",
         });
     }
@@ -39,7 +39,7 @@ async function getPaymentById(req, res) {
 // Retrieve payment by Order ID
 async function getPaymentByOrderId(req, res) {
     try {
-        const orderId = parseInt(req.params.orderId);
+        const orderId = Number(req.params.orderId);
 
         const payment = await paymentModel.getPaymentByOrderId(orderId, req.user);
 
@@ -49,11 +49,11 @@ async function getPaymentByOrderId(req, res) {
             });
         }
 
-        res.json(payment);
+        return res.status(200).json(payment);
 
     } catch (error) {
         console.error("Controller error (getPaymentByOrderId):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving payment by order ID",
         });
     }
@@ -63,21 +63,45 @@ async function getPaymentByOrderId(req, res) {
 async function createPayment(req, res) {
     try {
         const newPayment = await paymentModel.createPayment(req.body, req.user);
-        res.status(201).json(newPayment);
+        return res.status(201).json(newPayment);
     } catch (error) {
         console.error("Controller error (createPayment):", error);
 
         if (
-            error.message === "Order does not exist or you do not have access to this order" ||
-            error.message === "Payment has already been made for this order" ||
-            error.message === "Payment amount does not match order total"
+            error.message === "Guest order reference is required for guest checkout"
         ) {
             return res.status(400).json({
                 error: error.message,
             });
         }
 
-        res.status(500).json({
+        if (
+            error.message === "Only customers can create payments"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+
+        if (
+            error.message === "Order does not exist or you do not have access to this order"
+        ) {
+            return res.status(404).json({
+                error: error.message,
+            });
+        }
+
+        if (
+            error.message === "Payment can only be made for a pending order" ||
+            error.message === "Payment has already been made for this order" ||
+            error.message === "Transaction reference has already been used"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
             error: "Error creating payment",
         });
     }
@@ -86,11 +110,12 @@ async function createPayment(req, res) {
 // Update payment status
 async function updatePaymentStatus(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const paymentId = Number(req.params.id);
 
         const updatedPayment = await paymentModel.updatePaymentStatus(
-            id,
-            req.body.PaymentStatus
+            paymentId,
+            req.body.PaymentStatus,
+            req.user
         );
 
         if (!updatedPayment) {
@@ -99,10 +124,21 @@ async function updatePaymentStatus(req, res) {
             });
         }
 
-        res.json(updatedPayment);
+        return res.status(200).json(updatedPayment);
     } catch (error) {
         console.error("Controller error (updatePaymentStatus):", error);
-        res.status(500).json({
+
+        if (
+            error.message.startsWith(
+                "Payment status cannot be changed"
+            )
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
             error: "Failed to update payment status",
         });
     }
@@ -111,9 +147,9 @@ async function updatePaymentStatus(req, res) {
 // Delete payment
 async function deletePayment(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const paymentId = Number(req.params.id);
 
-        const deleted = await paymentModel.deletePayment(id, req.user);
+        const deleted = await paymentModel.deletePayment(paymentId, req.user);
 
         if (!deleted) {
             return res.status(404).json({
@@ -121,10 +157,20 @@ async function deletePayment(req, res) {
             });
         }
 
-        res.status(204).send();
+        return res.status(204).send();
     } catch (error) {
         console.error("Controller error (deletePayment):", error);
-        res.status(500).json({
+
+        if (
+            error.message === "Successful or refunded payments cannot be deleted" ||
+            error.message === "Payments can only be deleted for pending orders"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
             error: "Failed to delete payment",
         });
     }
