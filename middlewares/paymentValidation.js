@@ -11,6 +11,13 @@ const paymentSchema = Joi.object({
         "any.required": "OrderID is required",
     }),
 
+    GuestOrderReference: Joi.string().trim().min(10).max(50).optional().messages({
+        "string.base": "Guest order reference must be a string",
+        "string.empty": "Guest order reference cannot be empty",
+        "string.min": "Guest order reference is invalid",
+        "string.max": "Guest order reference cannot exceed 50 characters",
+    }),
+
     PaymentMethod: Joi.string().valid("Cash", "Card", "PayNow").required().messages({
             "any.only": "Payment method must be Cash, Card or PayNow",
             "any.required": "Payment method is required",
@@ -34,6 +41,8 @@ const paymentSchema = Joi.object({
             "any.required": "Transaction reference is required for Card and PayNow payments",
         }),
     }),
+
+    // Keep your TransactionReference validation
 }).unknown(false);
 
 // Validation schema for updating payment status
