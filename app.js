@@ -74,7 +74,7 @@ app.get("/order-history/:id",verifyJWT,validateOrderHistoryId,orderHistoryContro
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
 app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
 app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
-app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
+app.post("/payments", optionalJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
 app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
 
