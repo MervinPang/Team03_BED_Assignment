@@ -238,11 +238,7 @@ async function createPayment(paymentData, user) {
         const guestOrderReference = paymentData.GuestOrderReference || null;
 
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
-<<<<<<< HEAD
         orderRequest.input("UserID", sql.Int, userId);
-=======
-        orderRequest.input("UserID", sql.Int, user.id);
->>>>>>> origin/Mervin's-branch
         orderRequest.input("Role", sql.VarChar(20), userRole);
         orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
