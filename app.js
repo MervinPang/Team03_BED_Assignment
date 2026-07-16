@@ -30,7 +30,7 @@ const {
     validateLogin,
 } = require("./middlewares/userValidation"); // Import User Validation Middleware
 
-const { verifyJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
+const { verifyJWT, optionalJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
 const { validateInspection } = require("./middlewares/inspectionValidation"); // Import Inspection Validation Middleware
 
@@ -54,7 +54,7 @@ app.use(express.static(path.join(__dirname, "public")));
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
 app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById);
-app.post("/orders", verifyJWT, validateOrder, orderController.createOrder);
+app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
 
@@ -83,6 +83,20 @@ app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, c
 app.post("/feedback", verifyJWT, validateFeedback, feedbackController.createFeedback);
 app.put("/feedback/:id", verifyJWT, validateReviewId, validateFeedback, feedbackController.updateFeedback);
 app.delete("/feedback/:id", verifyJWT, validateReviewId, feedbackController.deleteFeedback);
+
+app.use((req, res) => {
+    res.status(404).json({
+        error: "API endpoint not found",
+    });
+});
+
+app.use((error, req, res, next) => {
+    console.error("Unhandled application error:", error);
+
+    return res.status(500).json({
+        error: "An unexpected server error occurred",
+    });
+});
 
 // Start server
 app.listen(port, () => {

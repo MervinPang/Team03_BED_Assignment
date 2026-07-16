@@ -6,10 +6,10 @@ const orderModel = require("../models/orderModel");
 async function getAllOrders(req, res) {
     try {
         const orders = await orderModel.getAllOrders(req.user);
-        res.json(orders);
+        return res.status(200).json(orders);
     } catch (error) {
         console.error("Controller error (getAllOrders):", error);
-        res.status(500).json({ error: "Error retrieving orders" });
+        return res.status(500).json({ error: "Error retrieving orders" });
     }
 }
 
@@ -26,11 +26,11 @@ async function getOrderById(req, res) {
             });
         }
 
-        res.json(order);
+        return res.status(200).json(order);
 
     } catch (error) {
         console.error("Controller error (getOrderById):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving order",
         });
     }
@@ -40,21 +40,40 @@ async function getOrderById(req, res) {
 async function createOrder(req, res) {
     try {
         const newOrder = await orderModel.createOrder(req.body, req.user);
-        res.status(201).json(newOrder);
+        return res.status(201).json(newOrder);
 
     } catch (error) {
         console.error("Controller error (createOrder):", error);
 
         if (
             error.message.includes("does not exist") ||
-            error.message.includes("is not available")
+            error.message.includes("is not available") ||
+            error.message.includes("Invalid price configured") ||
+            error.message === "All items in an order must come from the same food stall" ||
+            error.message === "The selected food stall is currently unavailable"
         ) {
             return res.status(400).json({
                 error: error.message,
             });
         }
+        if (
+            error.message === "Authentication is required for member orders"
+        ) {
+            return res.status(401).json({
+                error: error.message,
+            });
+        }
 
-        res.status(500).json({
+        if (
+            error.message === "Only customers can create member orders" ||
+            error.message === "Logged-in users must create member orders"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
             error: "Error creating order",
         });
     }
@@ -69,14 +88,24 @@ async function updateOrderStatus(req, res) {
 
         if (!updatedOrder) {
             return res.status(404).json({
-                error: "Order not found",
+                error: "Order not found or not assigned to this vendor",
             });
         }
-        res.json(updatedOrder);
+        return res.status(200).json(updatedOrder);
 
     } catch (error) {
         console.error("Controller error (updateOrderStatus):", error);
-        res.status(500).json({
+
+        if (
+            error.message ===
+            "You are not authorised to update this order"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
             error: "Failed to update order status",
         });
     }
@@ -87,18 +116,30 @@ async function deleteOrder(req, res) {
     try {
         const id = parseInt(req.params.id);
 
-        const deleted = await orderModel.deleteOrder(id);
+        const deleted = await orderModel.deleteOrder(id, req.user);
 
         if (!deleted) {
             return res.status(404).json({
                 error: "Order not found",
             });
         }
-        res.status(204).send();
+        return res.status(204).send();
 
     } catch (error) {
         console.error("Controller error (deleteOrder):", error);
-        res.status(500).json({
+
+        // Handle business rule errors
+        if (
+            error.message === "Only pending orders can be deleted" ||
+            error.message === "Paid orders cannot be deleted"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        // Handle unexpected server errors
+        return res.status(500).json({
             error: "Failed to delete order",
         });
 
