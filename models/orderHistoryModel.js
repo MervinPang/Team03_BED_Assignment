@@ -243,8 +243,7 @@ async function getOrderHistoryById(orderId, userId) {
                 ? {
                       PaymentID: order.PaymentID,
                       PaymentMethod: order.PaymentMethod,
-                      PaymentStatus:
-                          order.RecordedPaymentStatus,
+                      PaymentStatus: order.RecordedPaymentStatus,
                       Amount: order.PaymentAmount,
                       PaidAt: order.PaidAt,
                   }
