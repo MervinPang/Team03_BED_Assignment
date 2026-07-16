@@ -184,8 +184,9 @@ async function getPaymentByOrderId(orderId, user) {
                             WHERE
                                 oi.OrderID = co.OrderID
                             AND fs.VendorUserID = @UserID
+                        )
                     )
-                )
+                );
             `);
 
         if (result.recordset.length === 0) {
