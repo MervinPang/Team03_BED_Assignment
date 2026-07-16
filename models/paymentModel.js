@@ -217,18 +217,52 @@ async function createPayment(paymentData, user) {
         await transaction.begin();
         transactionStarted = true;
 
+        // Guests must provide the reference returned during order creation
+        if (!user && !paymentData.GuestOrderReference) {
+            throw new Error(
+                "Guest order reference is required for guest checkout"
+            );
+        }
+
+        // Authenticated payment creation is restricted to customers
+        if (user && user.role !== "customer") {
+            throw new Error(
+                "Only customers can create payments"
+            );
+        }
+
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
+        const userId = user?.id || null;
+        const userRole = user?.role || null;
+        const guestOrderReference = paymentData.GuestOrderReference || null;
+
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
         orderRequest.input("UserID", sql.Int, user.id);
+        orderRequest.input("Role", sql.VarChar(20), userRole);
+        orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
         const orderResult = await orderRequest.query(`
-            SELECT OrderID, UserID, TotalAmount, OrderStatus
+            SELECT OrderID, UserID, GuestName, GuestEmail, GuestOrderReference, OrderType,
+            TotalAmount, OrderStatus
             FROM CustomerOrder
             WHERE
                 OrderID = @OrderID
-                AND UserID = @UserID;
-        `);
+                AND
+                (
+                    (
+                        @Role = 'customer'
+                        AND UserID = @UserID
+                    )
+                    OR
+                    (
+                        @Role IS NULL
+                        AND UserID IS NULL
+                        AND OrderType = 'Guest'
+                        AND GuestOrderReference = @GuestOrderReference
+                    )
+                );
+            `);
 
         if (orderResult.recordset.length === 0) {
             throw new Error("Order does not exist or you do not have access to this order");
@@ -288,12 +322,12 @@ async function createPayment(paymentData, user) {
 
         const newPaymentId = Number(paymentResult.recordset[0].PaymentID);
 
-        // Save all database changes
+        // Commit the transaction after successful insertion
         await transaction.commit();
         transactionStarted = false;
 
-        // Retrieve and return the created payment
-        return await getPaymentById(newPaymentId, user);
+        // Retrieve the created payment for both member and guest checkout
+        return await getCreatedPaymentById(newPaymentId);
     } catch (error) {
         // Roll back only when the transaction is still active
         if (transaction && transactionStarted) {
@@ -309,6 +343,44 @@ async function createPayment(paymentData, user) {
         throw error;
     } finally {
         if (connection) await connection.close();
+    }
+}
+
+// Retrieve a newly created payment by Payment ID
+// This internal function is used after a successful payment insertion
+async function getCreatedPaymentById(paymentId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+
+        request.input("PaymentID", sql.Int, paymentId);
+
+        const result = await request.query(`
+            SELECT p.PaymentID, p.OrderID, p.PaymentMethod, p.PaymentStatus, p.Amount,
+                p.TransactionReference, p.PaidAt, p.CreatedAt, co.OrderStatus, co.TotalAmount
+            FROM Payment p
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
+            WHERE
+                p.PaymentID = @PaymentID;
+        `);
+
+        if (result.recordset.length === 0) {
+            return null;
+        }
+
+        return result.recordset[0];
+    } catch (error) {
+        console.error("Database error (getCreatedPaymentById):", error);
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 
