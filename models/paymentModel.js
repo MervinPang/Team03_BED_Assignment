@@ -264,10 +264,11 @@ async function createPayment(paymentData, user) {
             throw new Error("Payment amount does not match order total");
         }
 
-        // Determine payment status and payment time
+        // The backend controls the initial payment status
+        // Cash requires vendor confirmation, while simulated digital payments
+        // are treated as successful
         const paymentStatus =
-            paymentData.PaymentStatus ||
-            (paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful");
+            paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful";
 
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
