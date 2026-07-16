@@ -3,6 +3,15 @@ const dbConfig = require("../dbConfig");
 
 // Order Model - Handles database operations for Place Food Order
 
+// Generate a reference used by guests to access their order securely
+function generateGuestOrderReference() {
+    const timestamp = Date.now().toString(36).toUpperCase();
+
+    const randomPart = Math.random().toString(36).substring(2, 10).toUpperCase();
+
+    return `GUEST-${timestamp}-${randomPart}`;
+}
+
 // Retrieve all customer orders
 async function getAllOrders(user) {
     let connection;
@@ -79,6 +88,7 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
                 co.UserID,
                 co.GuestName,
                 co.GuestEmail,
+                co.GuestOrderReference,
                 co.OrderType,
                 co.OrderStatus,
                 co.TotalAmount,
@@ -187,6 +197,7 @@ async function createOrder(orderData, user) {
         const userId = isMemberOrder ? user.id : null;
         const guestName = isGuestOrder ? orderData.GuestName : null;
         const guestEmail = isGuestOrder ? orderData.GuestEmail : null;
+        const guestOrderReference = isGuestOrder ? generateGuestOrderReference() : null;
 
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
@@ -265,15 +276,16 @@ async function createOrder(orderData, user) {
         orderRequest.input("UserID", sql.Int, userId);
         orderRequest.input("GuestName", sql.VarChar(80), guestName);
         orderRequest.input("GuestEmail", sql.VarChar(100), guestEmail);
+        orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
         orderRequest.input("OrderType", sql.VarChar(20), orderData.OrderType);
         orderRequest.input("TotalAmount", sql.Decimal(8, 2), totalAmount);
         orderRequest.input("SpecialInstructions", sql.VarChar(300), orderData.SpecialInstructions ?? null);
 
         const orderResult = await orderRequest.query(`
             INSERT INTO CustomerOrder
-                (UserID, GuestName, GuestEmail, OrderType, TotalAmount, SpecialInstructions)
+                (UserID, GuestName, GuestEmail, OrderType, GuestOrderReference, TotalAmount, SpecialInstructions)
             VALUES
-                (@UserID, @GuestName, @GuestEmail, @OrderType, @TotalAmount, @SpecialInstructions);
+                (@UserID, @GuestName, @GuestEmail, @OrderType, @GuestOrderReference, @TotalAmount, @SpecialInstructions);
 
             SELECT SCOPE_IDENTITY() AS OrderID;
         `);
