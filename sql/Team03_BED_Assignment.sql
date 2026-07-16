@@ -141,7 +141,7 @@ CREATE TABLE CustomerOrder
         CHECK (
             (OrderType = 'Member' AND UserID IS NOT NULL AND GuestName IS NULL AND GuestEmail IS NULL AND GuestOrderReference IS NULL)
             OR
-            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL AND GuestOrderReference IS NULL)
+            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL AND GuestOrderReference IS NOT NULL)
         )
 );
 
@@ -149,6 +149,27 @@ CREATE TABLE CustomerOrder
 CREATE UNIQUE INDEX UX_CustomerOrder_GuestOrderReference
 ON CustomerOrder(GuestOrderReference)
 WHERE GuestOrderReference IS NOT NULL;
+
+/* Table: OrderStatusHistory */
+CREATE TABLE OrderStatusHistory
+(
+    OrderStatusHistoryID INT IDENTITY(1,1)      NOT NULL,
+    OrderID              INT                    NOT NULL,
+    OrderStatus          VARCHAR(30)            NOT NULL,
+    StatusDateTime       DATETIME               NOT NULL DEFAULT GETDATE(),
+    UpdatedByUserID      INT                    NULL,
+
+    CONSTRAINT           PK_OrderStatusHistory  PRIMARY KEY (OrderStatusHistoryID),
+    CONSTRAINT           FK_OrderStatusHistory_CustomerOrder
+        FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID) ON DELETE CASCADE,
+    CONSTRAINT           FK_OrderStatusHistory_UserAccount
+        FOREIGN KEY (UpdatedByUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT           CHK_OrderStatusHistory_Status
+        CHECK (OrderStatus IN ('Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled'))
+);
+
+CREATE INDEX IX_OrderStatusHistory_OrderID_StatusDateTime
+ON OrderStatusHistory(OrderID, StatusDateTime);
 
 /* Table: OrderItem */
 CREATE TABLE OrderItem
@@ -348,11 +369,21 @@ VALUES
 (6, 3),
 (7, 4);
 
-INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, OrderType, OrderStatus, TotalAmount, SpecialInstructions)
+INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, GuestOrderReference, OrderType, OrderStatus, TotalAmount, SpecialInstructions)
 VALUES
-(1, NULL, NULL, 'Member', 'Pending', 9.50, 'Less chilli please'),
-(NULL, 'Guest Customer', 'guest.customer@example.com', 'Guest', 'Preparing', 6.80, 'Takeaway order'),
-(1, NULL, NULL, 'Member', 'Completed', 4.80, NULL);
+(1, NULL, NULL, NULL, 'Member', 'Pending', 9.50, 'Less chilli please'),
+(NULL, 'Guest Customer', 'guest.customer@example.com', 'GUEST-SAMPLE-ORDER-0002', 'Guest', 'Preparing', 6.80, 'Takeaway order'),
+(1, NULL, NULL, NULL, 'Member', 'Completed', 4.80, NULL);
+
+INSERT INTO OrderStatusHistory (OrderID, OrderStatus, StatusDateTime, UpdatedByUserID)
+VALUES
+(1, 'Pending', DATEADD(MINUTE, -20, GETDATE()), 1),
+(2, 'Pending', DATEADD(MINUTE, -35, GETDATE()), NULL),
+(2, 'Preparing', DATEADD(MINUTE, -15, GETDATE()), 3),
+(3, 'Pending', DATEADD(HOUR, -2, GETDATE()), 1),
+(3, 'Preparing', DATEADD(MINUTE, -100, GETDATE()), 3),
+(3, 'Ready', DATEADD(MINUTE, -70, GETDATE()), 3),
+(3, 'Completed', DATEADD(MINUTE, -60, GETDATE()), 3);
 
 INSERT INTO OrderItem (OrderID, MenuItemID, Quantity, UnitPrice)
 VALUES
