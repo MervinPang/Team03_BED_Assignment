@@ -206,13 +206,16 @@ async function getPaymentByOrderId(orderId, user) {
 async function createPayment(paymentData, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
+        // Open the database connection
         connection = await sql.connect(dbConfig);
-        transaction = new sql.Transaction(connection);
 
-        // Start database transaction
+        // Create and start the database transaction
+        transaction = new sql.Transaction(connection);
         await transaction.begin();
+        transactionStarted = true;
 
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
@@ -224,7 +227,7 @@ async function createPayment(paymentData, user) {
             FROM CustomerOrder
             WHERE
                 OrderID = @OrderID
-                AND OR UserID = @UserID
+                AND UserID = @UserID;
         `);
 
         if (orderResult.recordset.length === 0) {
@@ -262,9 +265,10 @@ async function createPayment(paymentData, user) {
 
         const paidAt = paymentStatus === "Successful" ? new Date() : null;
 
-        // Insert payment record
-        const paymentRequest = new sql.Request(transaction);
+        // Cash may have no reference, while Card and PayNow
+        // References are enforced by Joi validation
         const transactionReference = paymentData.PaymentMethod === "Cash" ? paymentData.TransactionReference || null : paymentData.TransactionReference;
+        const paymentRequest = new sql.Request(transaction);
 
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
         paymentRequest.input("PaymentMethod", sql.VarChar(30), paymentData.PaymentMethod);
@@ -284,14 +288,18 @@ async function createPayment(paymentData, user) {
 
         const newPaymentId = Number(paymentResult.recordset[0].PaymentID);
 
-        // Commit transaction after payment is created successfully
+        // Save all database changes
         await transaction.commit();
+        transactionStarted = false;
 
+        // Retrieve and return the created payment
         return await getPaymentById(newPaymentId, user);
     } catch (error) {
-        if (transaction) {
+        // Roll back only when the transaction is still active
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback(); // Roll back all changes if an error occurs
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
