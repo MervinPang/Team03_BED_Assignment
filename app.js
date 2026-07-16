@@ -40,6 +40,10 @@ const feedbackController = require("./controllers/feedbackController");
 
 const { validateFeedback, validateReviewId,} = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
 
+const analyticsController = require("./controllers/analyticsController");
+
+const { validateStallOwnership } = require("./middlewares/analyticsValidation");
+
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -83,6 +87,11 @@ app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, c
 app.post("/feedback", verifyJWT, validateFeedback, feedbackController.createFeedback);
 app.put("/feedback/:id", verifyJWT, validateReviewId, validateFeedback, feedbackController.updateFeedback);
 app.delete("/feedback/:id", verifyJWT, validateReviewId, feedbackController.deleteFeedback);
+
+// Routes for Vendor Sales Analytics 
+app.get("/analytics/revenue/:stallId", verifyJWT, validateStallOwnership, analyticsController.getRevenueAnalytics);
+app.get("/analytics/orders/:stallId", verifyJWT, validateStallOwnership, analyticsController.getOrderVolumeAnalytics);
+app.get("/analytics/top-items/:stallId", verifyJWT, validateStallOwnership, analyticsController.getTopSellingItems);
 
 app.use((req, res) => {
     res.status(404).json({
