@@ -267,7 +267,7 @@ async function createPayment(paymentData, user) {
 
         // Cash may have no reference, while Card and PayNow
         // References are enforced by Joi validation
-        const transactionReference = paymentData.PaymentMethod === "Cash" ? paymentData.TransactionReference || null : paymentData.TransactionReference;
+        const transactionReference = paymentData.TransactionReference || null;
         const paymentRequest = new sql.Request(transaction);
 
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
@@ -312,7 +312,6 @@ async function createPayment(paymentData, user) {
     }
 }
 
-// Update payment status
 // Update payment status
 async function updatePaymentStatus(paymentId, paymentStatus, user) {
     let connection;
