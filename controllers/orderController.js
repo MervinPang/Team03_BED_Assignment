@@ -96,11 +96,14 @@ async function updateOrderStatus(req, res) {
     } catch (error) {
         console.error("Controller error (updateOrderStatus):", error);
 
-        if (
-            error.message ===
-            "You are not authorised to update this order"
-        ) {
+        if (error.message === "You are not authorised to update this order") {
             return res.status(403).json({
+                error: error.message,
+            });
+        }
+
+        if (error.message.startsWith("Order status cannot be changed")) {
+            return res.status(409).json({
                 error: error.message,
             });
         }

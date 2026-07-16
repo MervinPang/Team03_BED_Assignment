@@ -344,38 +344,125 @@ async function createOrder(orderData, user) {
 // Update order status
 async function updateOrderStatus(orderId, orderStatus, user) {
     let connection;
+    let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const request = connection.request();
-        request.input("OrderID", sql.Int, orderId);
-        request.input("OrderStatus", sql.VarChar(30), orderStatus);
-        request.input("UserID", sql.Int, user.id);
+        await transaction.begin();
+        transactionStarted = true;
 
-        const result = await request.query(`
-            UPDATE co
-            SET 
-                co.OrderStatus = @OrderStatus,
-                co.UpdatedAt = GETDATE()
-            FROM CustomerOrder co
-            WHERE co.OrderID = @OrderID
-            AND EXISTS (
-                SELECT 1
-                FROM OrderItem oi
-                JOIN MenuItem mi ON oi.MenuItemID = mi.MenuItemID
-                JOIN FoodStall fs ON mi.StallID = fs.StallID
-                WHERE oi.OrderID = co.OrderID
-                  AND fs.VendorUserID = @UserID
-            );
-        `);
+        // Retrieve the current status and verify vendor ownership
+        const currentOrderRequest = new sql.Request(transaction);
+        
+        currentOrderRequest.input("OrderID", sql.Int, orderId);
+        currentOrderRequest.input("UserID", sql.Int, user.id);
+        const currentOrderResult =
+            await currentOrderRequest.query(`
+                SELECT
+                    co.OrderID,
+                    co.OrderStatus
+                FROM CustomerOrder co
+                WHERE
+                    co.OrderID = @OrderID
+                    AND EXISTS
+                    (
+                        SELECT 1
+                        FROM OrderItem oi
+                        JOIN MenuItem mi
+                            ON oi.MenuItemID =
+                               mi.MenuItemID
+                        JOIN FoodStall fs
+                            ON mi.StallID =
+                               fs.StallID
+                        WHERE
+                            oi.OrderID =
+                                co.OrderID
+                            AND fs.VendorUserID =
+                                @UserID
+                    );
+            `);
 
-        if (result.rowsAffected[0] === 0) {
+        if (currentOrderResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
             return null;
         }
 
-        return await getOrderById(orderId, user);
+        const currentStatus = currentOrderResult.recordset[0].OrderStatus;
+        const allowedTransitions = {
+            Pending: ["Preparing", "Cancelled",],
+            Preparing: ["Ready", "Cancelled",],
+            Ready: ["Completed",],
+            Completed: [],
+            Cancelled: [],
+        };
+
+        const allowedNextStatuses = allowedTransitions[currentStatus] || [];
+
+        if (
+            !allowedNextStatuses.includes(
+                orderStatus
+            )
+        ) {
+            throw new Error(
+                `Order status cannot be changed from ${currentStatus} to ${orderStatus}`
+            );
+        }
+
+        const updateRequest = new sql.Request(transaction);
+
+        updateRequest.input("OrderID", sql.Int, orderId);
+        updateRequest.input("OrderStatus", sql.VarChar(30), orderStatus);
+
+        await updateRequest.query(`
+            UPDATE CustomerOrder
+            SET
+                OrderStatus = @OrderStatus,
+                UpdatedAt = GETDATE()
+            WHERE
+                OrderID = @OrderID;
+        `);
+
+        // Add the new status to the timeline
+        const historyRequest = new sql.Request(transaction);
+
+        historyRequest.input("OrderID", sql.Int, orderId);
+        historyRequest.input("OrderStatus", sql.VarChar(30), orderStatus);
+        historyRequest.input("UpdatedByUserID", sql.Int, user.id);
+
+        await historyRequest.query(`
+            INSERT INTO OrderStatusHistory
+            (
+                OrderID,
+                OrderStatus,
+                UpdatedByUserID
+            )
+            VALUES
+            (
+                @OrderID,
+                @OrderStatus,
+                @UpdatedByUserID
+            );
+        `);
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return await getOrderById(orderId,user);
     } catch (error) {
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Rollback error:",
+                    rollbackError
+                );
+            }
+        }
         console.error("Database error (updateOrderStatus):", error);
         throw error;
     } finally {
