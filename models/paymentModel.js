@@ -412,17 +412,9 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
 
         const updateRequest = new sql.Request(transaction);
 
-        updateRequest.input(
-            "PaymentID",
-            sql.Int,
-            paymentId
-        );
+        updateRequest.input("PaymentID", sql.Int, paymentId);
 
-        updateRequest.input(
-            "PaymentStatus",
-            sql.VarChar(30),
-            paymentStatus
-        );
+        updateRequest.input("PaymentStatus", sql.VarChar(30), paymentStatus);
 
         await updateRequest.query(`
             UPDATE Payment
