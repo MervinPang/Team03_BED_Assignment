@@ -120,6 +120,7 @@ CREATE TABLE CustomerOrder
     UserID               INT                NULL,
     GuestName            VARCHAR(80)        NULL,
     GuestEmail           VARCHAR(100)       NULL,
+    GuestOrderReference  VARCHAR(50)        NULL,
     OrderType            VARCHAR(20)        NOT NULL,
     OrderStatus          VARCHAR(30)        NOT NULL DEFAULT 'Pending',
     TotalAmount          DECIMAL(8,2)       NOT NULL DEFAULT 0,
@@ -138,11 +139,16 @@ CREATE TABLE CustomerOrder
         CHECK (TotalAmount >= 0),
     CONSTRAINT          CHK_CustomerOrder_GuestOrMember
         CHECK (
-            (OrderType = 'Member' AND UserID IS NOT NULL)
+            (OrderType = 'Member' AND UserID IS NOT NULL AND GuestName IS NULL AND GuestEmail IS NULL AND GuestOrderReference IS NULL)
             OR
-            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL)
+            (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL AND GuestOrderReference IS NULL)
         )
 );
+
+/* Ensure each guest order reference is unique */
+CREATE UNIQUE INDEX UX_CustomerOrder_GuestOrderReference
+ON CustomerOrder(GuestOrderReference)
+WHERE GuestOrderReference IS NOT NULL;
 
 /* Table: OrderItem */
 CREATE TABLE OrderItem
