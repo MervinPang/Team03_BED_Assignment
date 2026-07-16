@@ -17,11 +17,6 @@ const paymentSchema = Joi.object({
             "string.base": "Payment method must be a string",
         }),
 
-    PaymentStatus: Joi.string().valid("Pending", "Successful", "Failed").optional().messages({
-            "any.only": "Initial payment status must be Pending, Successful or Failed",
-            "string.base": "Payment status must be a string",
-        }),
-
     Amount: Joi.number().precision(2).positive().required().messages({
         "number.base": "Amount must be a number",
         "number.positive": "Amount must be greater than zero",
