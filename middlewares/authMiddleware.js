@@ -49,6 +49,11 @@ function verifyJWT(req, res, next) {
             "POST /complaints": ["customer"],
             "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer"],
             "PUT /complaints/[0-9]+/status": ["vendor", "nea_officer"],
+
+            //Analytics
+            "GET /analytics/revenue/[0-9]+": ["vendor"],
+            "GET /analytics/orders/[0-9]+": ["vendor"],
+            "GET /analytics/top-items/[0-9]+": ["vendor"]
         };
 
         const requestedEndpoint = `${req.method} ${req.path}`;
