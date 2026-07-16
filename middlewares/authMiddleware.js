@@ -2,17 +2,24 @@
 const jwt = require("jsonwebtoken");
 
 function verifyJWT(req, res, next) {
-    const token =
-        req.headers.authorization && req.headers.authorization.split(" ")[1];
+    const authorizationHeader = req.headers.authorization;
 
-    if (!token) {
-        return res.status(401).json({ error: "Unauthorized" });
+    if (!authorizationHeader) {
+        return res.status(401).json({ error: "Authentication token is required" });
     }
 
-    jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
-        if (err) {
-            console.log("JWT verification error:", err.message);
-            return res.status(403).json({ error: "Forbidden" });
+    const [scheme, token] = authorizationHeader.split(" ");
+
+    if (scheme !== "Bearer" || !token) {
+        return res.status(401).json({
+            error: "Authorization header must use the Bearer token format",
+        });
+    }
+
+    jwt.verify(token, process.env.JWT_SECRET, (error, decoded) => {
+        if (error) {
+            console.error("JWT verification error:", error.message);
+            return res.status(403).json({ error: "Invalid or expired authentication token" });
         }
 
         const authorizedRoles = {
@@ -30,7 +37,7 @@ function verifyJWT(req, res, next) {
             // Payments
             "GET /payments": ["customer", "vendor"],
             "GET /payments/[0-9]+": ["customer", "vendor"],
-            "GET /payments/order/[0-9]+": ["customer", "vendor",],
+            "GET /payments/order/[0-9]+": ["customer", "vendor"],
             "POST /payments": ["customer"],
             "PUT /payments/[0-9]+/status": ["vendor"],
             "DELETE /payments/[0-9]+": ["customer"],
@@ -45,12 +52,8 @@ function verifyJWT(req, res, next) {
             "PUT /complaints/[0-9]+/status": ["vendor", "nea_officer"],
         };
 
-        const requestedEndpoint = `${req.method} ${req.url}`;
+        const requestedEndpoint = `${req.method} ${req.path}`;
         const userRole = decoded.role;
-
-        console.log("Requested endpoint:", requestedEndpoint); // ADDED
-        console.log("User role:", userRole); // ADDED
-        console.log("Available endpoints:", Object.keys(authorizedRoles)); // ADDED
 
         const authorizedRole = Object.entries(authorizedRoles).find(
             ([endpoint, roles]) => {
