@@ -9,12 +9,9 @@ const paymentSchema = Joi.object({
         "number.integer": "OrderID must be an integer",
         "number.positive": "OrderID must be a positive number",
         "any.required": "OrderID is required",
-    }).unknown(false),
+    }),
 
-    PaymentMethod: Joi.string()
-        .valid("Cash", "Card", "PayNow")
-        .required()
-        .messages({
+    PaymentMethod: Joi.string().valid("Cash", "Card", "PayNow").required().messages({
             "any.only": "Payment method must be Cash, Card or PayNow",
             "any.required": "Payment method is required",
             "string.base": "Payment method must be a string",
