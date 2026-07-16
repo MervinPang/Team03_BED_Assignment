@@ -484,6 +484,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
 async function deleteOrder(orderId, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
@@ -491,6 +492,7 @@ async function deleteOrder(orderId, user) {
 
         // Transaction ensures payment, order items and order are deleted together
         await transaction.begin();
+        transactionStarted = true;
 
         const ownershipRequest = new sql.Request(transaction);
         ownershipRequest.input("OrderID", sql.Int, orderId);
@@ -553,12 +555,14 @@ async function deleteOrder(orderId, user) {
         `);
 
         await transaction.commit();
+        transactionStarted = false;
 
         return result.rowsAffected[0] > 0;
     } catch (error) {
-        if (transaction) {
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
