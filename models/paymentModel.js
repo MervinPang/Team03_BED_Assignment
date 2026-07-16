@@ -91,8 +91,10 @@ async function getPaymentById(paymentId, user) {
                 co.OrderStatus,
                 co.TotalAmount
             FROM Payment p
-            JOIN CustomerOrder co ON p.OrderID = co.OrderID
-            LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
+            JOIN CustomerOrder co
+                ON p.OrderID = co.OrderID
+            LEFT JOIN UserAccount ua
+                ON co.UserID = ua.UserID
             WHERE
                 p.PaymentID = @PaymentID
                 AND
@@ -114,9 +116,10 @@ async function getPaymentById(paymentId, user) {
                                 ON mi.StallID = fs.StallID
                             WHERE
                                 oi.OrderID = co.OrderID
-                            AND fs.VendorUserID = @UserID
+                                AND fs.VendorUserID = @UserID
+                        )
                     )
-                )
+                );
             `);
 
         if (result.recordset.length === 0) {
