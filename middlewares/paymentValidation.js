@@ -22,9 +22,9 @@ const paymentSchema = Joi.object({
             "string.base": "Payment status must be a string",
         }),
 
-    Amount: Joi.number().precision(2).min(0).required().messages({
+    Amount: Joi.number().precision(2).positive().required().messages({
         "number.base": "Amount must be a number",
-        "number.min": "Amount cannot be negative",
+        "number.positive": "Amount must be greater than zero",
         "any.required": "Amount is required",
     }),
 
