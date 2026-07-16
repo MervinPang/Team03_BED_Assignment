@@ -329,7 +329,7 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
         request.input("UserID", sql.Int, user.id);
 
         const result = await request.query(`
-            UPDATE Payment
+            UPDATE p
             SET
                 p.PaymentStatus = @PaymentStatus,
                 p.PaidAt = @PaidAt
