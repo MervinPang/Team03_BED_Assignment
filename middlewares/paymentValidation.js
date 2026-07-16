@@ -17,12 +17,6 @@ const paymentSchema = Joi.object({
             "string.base": "Payment method must be a string",
         }),
 
-    Amount: Joi.number().precision(2).positive().required().messages({
-        "number.base": "Amount must be a number",
-        "number.positive": "Amount must be greater than zero",
-        "any.required": "Amount is required",
-    }),
-
     TransactionReference: Joi.when("PaymentMethod", {
         is: "Cash",
 

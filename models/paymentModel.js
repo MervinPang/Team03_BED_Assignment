@@ -259,11 +259,6 @@ async function createPayment(paymentData, user) {
             throw new Error("Payment has already been made for this order");
         }
 
-        // Verify payment amount matches the order total
-        if (Number(paymentData.Amount) !== Number(order.TotalAmount)) {
-            throw new Error("Payment amount does not match order total");
-        }
-
         // The backend controls the initial payment status
         // Cash requires vendor confirmation, while simulated digital payments
         // are treated as successful
@@ -279,7 +274,7 @@ async function createPayment(paymentData, user) {
         paymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
         paymentRequest.input("PaymentMethod", sql.VarChar(30), paymentData.PaymentMethod);
         paymentRequest.input("PaymentStatus", sql.VarChar(30), paymentStatus);
-        paymentRequest.input("Amount", sql.Decimal(8, 2), paymentData.Amount);
+        paymentRequest.input("Amount", sql.Decimal(10, 2), order.TotalAmount);
         paymentRequest.input("TransactionReference", sql.VarChar(100), transactionReference);
         paymentRequest.input("PaidAt", sql.DateTime, paidAt);
 
