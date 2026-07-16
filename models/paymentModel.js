@@ -99,15 +99,17 @@ async function getPaymentById(paymentId, user) {
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
                 p.PaymentID = @PaymentID
-                AND (
+                AND
+                (
                     (
                         @Role='customer'
-                        AND co.UserID=@UserID
+                        AND co.UserID = @UserID
                     )
                     OR
                     (
                         @Role='vendor'
-                        AND EXISTS (
+                        AND EXISTS
+                        (
                             SELECT 1
                             FROM OrderItem oi
                             JOIN MenuItem mi
@@ -168,7 +170,7 @@ async function getPaymentByOrderId(orderId, user) {
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-                p.PaymentID = @PaymentID
+                p.OrderID = @OrderID
                 AND (
                     (
                         @Role='customer'
