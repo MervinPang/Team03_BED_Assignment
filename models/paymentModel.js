@@ -220,9 +220,7 @@ async function createPayment(paymentData, user) {
             FROM CustomerOrder
             WHERE
                 OrderID = @OrderID
-                AND (
-                    OR UserID = @UserID
-                );
+                AND OR UserID = @UserID
         `);
 
         if (orderResult.recordset.length === 0) {
@@ -230,18 +228,6 @@ async function createPayment(paymentData, user) {
         }
 
         const order = orderResult.recordset[0];
-
-        if (order.OrderStatus === "Cancelled") {
-            throw new Error(
-                "Payment cannot be made for a cancelled order"
-            );
-        }
-
-        if (order.OrderStatus === "Completed") {
-            throw new Error(
-                "Payment cannot be made for a completed order"
-            );
-        }
 
         // Payment is only allowed while the order is pending
         if (order.OrderStatus !== "Pending") {
