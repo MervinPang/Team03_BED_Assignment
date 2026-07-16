@@ -56,8 +56,8 @@ app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrde
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
-app.get("/payments/:id", validatePaymentId, verifyJWT, paymentController.getPaymentById);
 app.get("/payments/order/:orderId", validateOrderIdParam, verifyJWT, paymentController.getPaymentByOrderId);
+app.get("/payments/:id", validatePaymentId, verifyJWT, paymentController.getPaymentById);
 app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", validatePaymentId, verifyJWT, validatePaymentStatus, paymentController.updatePaymentStatus);
 app.delete("/payments/:id", validatePaymentId, verifyJWT, paymentController.deletePayment);
