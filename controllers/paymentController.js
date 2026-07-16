@@ -68,6 +68,22 @@ async function createPayment(req, res) {
         console.error("Controller error (createPayment):", error);
 
         if (
+            error.message === "Guest order reference is required for guest checkout"
+        ) {
+            return res.status(400).json({
+                error: error.message,
+            });
+        }
+
+        if (
+            error.message === "Only customers can create payments"
+        ) {
+            return res.status(403).json({
+                error: error.message,
+            });
+        }
+
+        if (
             error.message === "Order does not exist or you do not have access to this order"
         ) {
             return res.status(404).json({
