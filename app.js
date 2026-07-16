@@ -36,6 +36,10 @@ const { validateInspection } = require("./middlewares/inspectionValidation"); //
 
 const { validateComplaint, validateComplaintStatus } = require("./middlewares/complaintValidation");
 
+const feedbackController = require("./controllers/feedbackController");
+
+const { validateFeedback, validateReviewId,} = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
+
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -74,6 +78,11 @@ app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHi
 app.post("/complaints", verifyJWT, validateComplaint, complaintController.submitComplaint);
 app.get("/complaints/:stallId", verifyJWT, complaintController.getComplaintsByStall);
 app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, complaintController.updateComplaintStatus);
+
+// Routes for Submit Feedback for a Food Stall
+app.post("/feedback", verifyJWT, validateFeedback, feedbackController.createFeedback);
+app.put("/feedback/:id", verifyJWT, validateReviewId, validateFeedback, feedbackController.updateFeedback);
+app.delete("/feedback/:id", verifyJWT, validateReviewId, feedbackController.deleteFeedback);
 
 // Start server
 app.listen(port, () => {
