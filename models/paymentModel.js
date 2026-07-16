@@ -339,6 +339,20 @@ async function createPayment(paymentData, user) {
             }
         }
 
+        if (error.number === 2601 || error.number === 2627) {
+            if (
+                error.message.includes("UX_Payment_TransactionReference")
+            ) {
+                throw new Error("Transaction reference has already been used");
+            }
+
+            if (
+                error.message.includes("UQ_Payment_OrderID")
+            ) {
+                throw new Error("Payment has already been made for this order");
+            }
+        }
+        
         console.error("Database error (createPayment):", error);
         throw error;
     } finally {

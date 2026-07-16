@@ -93,7 +93,8 @@ async function createPayment(req, res) {
 
         if (
             error.message === "Payment can only be made for a pending order" ||
-            error.message === "Payment has already been made for this order"
+            error.message === "Payment has already been made for this order" ||
+            error.message === "Transaction reference has already been used"
         ) {
             return res.status(409).json({
                 error: error.message,
