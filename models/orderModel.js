@@ -292,6 +292,19 @@ async function createOrder(orderData, user) {
 
         const newOrderId = Number(orderResult.recordset[0].OrderID);
 
+        // Record the initial order status for the tracking timeline
+        const statusHistoryRequest = new sql.Request(transaction);
+        statusHistoryRequest.input("OrderID", sql.Int, newOrderId);
+        statusHistoryRequest.input("OrderStatus", sql.VarChar(30), "Pending");
+        statusHistoryRequest.input("UpdatedByUserID", sql.Int, userId);
+
+        await statusHistoryRequest.query(`
+            INSERT INTO OrderStatusHistory
+                (OrderID, OrderStatus, UpdatedByUserID)
+            VALUES
+                (@OrderID, @OrderStatus, @UpdatedByUserID);
+        `);
+
         // Insert food items for the order
         for (const item of validatedItems) {
             const itemRequest = new sql.Request(transaction);
