@@ -84,6 +84,7 @@ async function createPayment(req, res) {
         }
 
         if (
+            error.message === "Payment can only be made for a pending order" ||
             error.message === "Payment has already been made for this order"
         ) {
             return res.status(409).json({
@@ -127,7 +128,7 @@ async function updatePaymentStatus(req, res) {
                 error: error.message,
             });
         }
-        
+
         return res.status(500).json({
             error: "Failed to update payment status",
         });

@@ -226,7 +226,6 @@ async function createPayment(paymentData, user) {
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
         orderRequest.input("UserID", sql.Int, user.id);
-        orderRequest.input("Role", sql.VarChar(20), user.role);
 
         const orderResult = await orderRequest.query(`
             SELECT OrderID, UserID, TotalAmount, OrderStatus
@@ -234,7 +233,6 @@ async function createPayment(paymentData, user) {
             WHERE
                 OrderID = @OrderID
                 AND (
-                    @Role IN ('vendor','nea_officer')
                     OR UserID = @UserID
                 );
         `);
@@ -257,6 +255,7 @@ async function createPayment(paymentData, user) {
             );
         }
 
+        // Payment is only allowed while the order is pending
         if (order.OrderStatus !== "Pending") {
             throw new Error(
                 "Payment can only be made for a pending order"
