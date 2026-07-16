@@ -8,7 +8,7 @@ const orderHistoryIdSchema = Joi.object({
             "number.positive": "Order ID must be a positive number",
             "any.required": "Order ID is required",
         }),
-});
+}).unknown(false);
 
 // Validation schema for guest order history
 const guestOrderHistorySchema = Joi.object({

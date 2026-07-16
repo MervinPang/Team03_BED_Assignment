@@ -59,10 +59,10 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
-app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById);
+app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById);
 app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
-app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
-app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
+app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
+app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
 
 // Routes for Order History
 app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);
