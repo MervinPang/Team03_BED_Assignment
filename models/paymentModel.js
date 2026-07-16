@@ -161,8 +161,9 @@ async function createPayment(paymentData, user) {
         // Verify that the order exists and retrieve the actual total amount
         const orderRequest = new sql.Request(transaction);
         orderRequest.input("OrderID", sql.Int, paymentData.OrderID);
-        orderRequest.input("UserID", sql.Int, user.id);
-        orderRequest.input("Role", sql.VarChar(20), user.role);
+        orderRequest.input("UserID", sql.Int, userId);
+        orderRequest.input("Role", sql.VarChar(20), userRole);
+        orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
         const orderResult = await orderRequest.query(`
             SELECT OrderID, UserID, TotalAmount
