@@ -6,10 +6,10 @@ const paymentModel = require("../models/paymentModel");
 async function getAllPayments(req, res) {
     try {
         const payments = await paymentModel.getAllPayments(req.user);
-        res.json(payments);
+        return res.status(200).json(payments);
     } catch (error) {
         console.error("Controller error (getAllPayments):", error);
-        res.status(500).json({ error: "Error retrieving payments" });
+        return res.status(500).json({ error: "Error retrieving payments" });
     }
 }
 
@@ -26,11 +26,11 @@ async function getPaymentById(req, res) {
             });
         }
 
-        res.json(payment);
+        return res.status(200).json(payment);
 
     } catch (error) {
         console.error("Controller error (getPaymentById):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving payment",
         });
     }
@@ -49,11 +49,11 @@ async function getPaymentByOrderId(req, res) {
             });
         }
 
-        res.json(payment);
+        return res.status(200).json(payment);
 
     } catch (error) {
         console.error("Controller error (getPaymentByOrderId):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error retrieving payment by order ID",
         });
     }
@@ -63,16 +63,16 @@ async function getPaymentByOrderId(req, res) {
 async function createPayment(req, res) {
     try {
         const newPayment = await paymentModel.createPayment(req.body, req.user);
-        res.status(201).json(newPayment);
+        return res.status(201).json(newPayment);
     } catch (error) {
         console.error("Controller error (createPayment):", error);
 
         if (
             error.message === "Order does not exist or you do not have access to this order"
         ) {
-             return res.status(404).json({
+            return res.status(404).json({
                 error: error.message,
-             });
+            });
         }
 
         if (
@@ -84,7 +84,7 @@ async function createPayment(req, res) {
             });
         }
 
-        res.status(500).json({
+        return res.status(500).json({
             error: "Error creating payment",
         });
     }
@@ -110,7 +110,7 @@ async function updatePaymentStatus(req, res) {
         return res.status(200).json(updatedPayment);
     } catch (error) {
         console.error("Controller error (updatePaymentStatus):", error);
-        res.status(500).json({
+        return res.status(500).json({
             error: "Failed to update payment status",
         });
     }
@@ -129,10 +129,10 @@ async function deletePayment(req, res) {
             });
         }
 
-        res.status(204).send();
+        return res.status(204).send();
     } catch (error) {
         console.error("Controller error (deletePayment):", error);
-        
+
         if (
             error.message === "Successful or refunded payments cannot be deleted" ||
             error.message === "Payments can only be deleted for pending orders"
@@ -141,8 +141,8 @@ async function deletePayment(req, res) {
                 error: error.message,
             });
         }
-        
-        res.status(500).json({
+
+        return res.status(500).json({
             error: "Failed to delete payment",
         });
     }
