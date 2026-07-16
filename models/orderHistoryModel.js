@@ -241,12 +241,12 @@ async function getOrderHistoryById(orderId, userId) {
 
             Payment: order.PaymentID
                 ? {
-                      PaymentID: order.PaymentID,
-                      PaymentMethod: order.PaymentMethod,
-                      PaymentStatus: order.RecordedPaymentStatus,
-                      Amount: order.PaymentAmount,
-                      PaidAt: order.PaidAt,
-                  }
+                    PaymentID: order.PaymentID,
+                    PaymentMethod: order.PaymentMethod,
+                    PaymentStatus: order.RecordedPaymentStatus,
+                    Amount: order.PaymentAmount,
+                    PaidAt: order.PaidAt,
+                }
                 : null,
 
             Items: itemResult.recordset,
@@ -272,22 +272,36 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
     try {
         connection = await sql.connect(dbConfig);
 
-        const request = connection.request();
-        request.input("OrderID", sql.Int, orderId);
-        request.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
+        // Retrieve the guest order, stall, hawker centre and payment details
+        const orderRequest = connection.request();
 
-        const result = await request.query(`
+        orderRequest.input("OrderID", sql.Int, orderId);
+        orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
+
+        const orderResult = await orderRequest.query(`
             SELECT
                 co.OrderID,
+                co.OrderType,
                 co.OrderStatus,
                 co.TotalAmount,
                 co.SpecialInstructions,
                 co.OrderDateTime,
                 co.UpdatedAt,
+
+                fs.StallID,
                 fs.StallName,
+                fs.StallUnitNo,
                 fs.StallImage,
+
+                hc.HawkerCentreID,
+                hc.HCName,
+                hc.HCAddress,
+
+                p.PaymentID,
                 p.PaymentMethod,
-                p.PaymentStatus
+                p.PaymentStatus,
+                p.Amount AS PaymentAmount,
+                p.PaidAt
             FROM CustomerOrder co
             JOIN OrderItem oi
                 ON co.OrderID = oi.OrderID
@@ -295,21 +309,66 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
                 ON oi.MenuItemID = mi.MenuItemID
             JOIN FoodStall fs
                 ON mi.StallID = fs.StallID
+            JOIN HawkerCentre hc
+                ON fs.HawkerCentreID = hc.HawkerCentreID
             LEFT JOIN Payment p
                 ON co.OrderID = p.OrderID
             WHERE
                 co.OrderID = @OrderID
                 AND co.OrderType = 'Guest'
                 AND co.UserID IS NULL
-                AND co.GuestOrderReference =
-                    @GuestOrderReference;
+                AND co.GuestOrderReference = @GuestOrderReference;
         `);
 
-        if (result.recordset.length === 0) {
+        if (orderResult.recordset.length === 0) {
             return null;
         }
 
-        return result.recordset[0];
+        // Retrieve all items belonging to the guest order
+        const itemRequest = connection.request();
+        itemRequest.input("OrderID", sql.Int, orderId);
+
+        const itemResult = await itemRequest.query(`
+            SELECT
+                oi.OrderItemID,
+                oi.MenuItemID,
+                mi.ItemName,
+                mi.ItemDesc,
+                mi.ItemImage,
+                oi.Quantity,
+                oi.UnitPrice,
+                oi.Subtotal
+            FROM OrderItem oi
+            JOIN MenuItem mi
+                ON oi.MenuItemID = mi.MenuItemID
+            WHERE
+                oi.OrderID = @OrderID
+            ORDER BY
+                oi.OrderItemID;
+        `);
+
+        // Retrieve the guest order's status timeline
+        const timelineRequest = connection.request();
+        timelineRequest.input("OrderID", sql.Int, orderId);
+
+        const timelineResult = await timelineRequest.query(`
+            SELECT
+                OrderStatusHistoryID,
+                OrderStatus,
+                StatusDateTime
+            FROM OrderStatusHistory
+            WHERE
+                OrderID = @OrderID
+            ORDER BY
+                StatusDateTime ASC,
+                OrderStatusHistoryID ASC;
+        `);
+
+        return {
+            order: orderResult.recordset[0],
+            items: itemResult.recordset,
+            timeline: timelineResult.recordset,
+        };
     } catch (error) {
         console.error(
             "Database error (getGuestOrderHistory):",
