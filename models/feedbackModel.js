@@ -27,7 +27,7 @@ async function getStallById(stallId) {
     }
 }
 
-// Get a single review by its ID (used for ownership checks)
+// Get a single review by its ID 
 async function getReviewById(reviewId) {
     let connection;
 
