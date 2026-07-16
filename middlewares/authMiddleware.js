@@ -32,7 +32,13 @@ function verifyJWT(req, res, next) {
             "GET /orders": ["customer", "vendor", "nea_officer"],
             "GET /orders/[0-9]+": ["customer", "vendor", "nea_officer"],
             "POST /orders": ["customer"],
+            "PUT /orders/[0-9]+/status": ["vendor"],
             "DELETE /orders/[0-9]+": ["customer"],
+
+            // Order History
+            "GET /order-history/active": ["customer"],
+            "GET /order-history/previous": ["customer"],
+            "GET /order-history/[0-9]+": ["customer"],
 
             // Payments
             "GET /payments": ["customer", "vendor"],

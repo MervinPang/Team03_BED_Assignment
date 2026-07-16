@@ -7,6 +7,7 @@ const path = require("path");
 dotenv.config();
 
 const orderController = require("./controllers/orderController");
+const orderHistoryController = require("./controllers/orderHistoryController");
 const paymentController = require("./controllers/paymentController");
 const userController = require("./controllers/userController");
 const inspectionController = require("./controllers/inspectionController");
@@ -17,6 +18,11 @@ const {
     validateOrderStatus,
     validateOrderId,
 } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
+
+const {
+    validateOrderHistoryId,
+    validateGuestOrderHistory,
+} = require("./middlewares/orderHistoryValidation"); // Import Order History Validation Middlware
 
 const {
     validatePayment,
@@ -38,7 +44,7 @@ const { validateComplaint, validateComplaintStatus } = require("./middlewares/co
 
 const feedbackController = require("./controllers/feedbackController");
 
-const { validateFeedback, validateReviewId,} = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
+const { validateFeedback, validateReviewId, } = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
 
 const analyticsController = require("./controllers/analyticsController");
 
@@ -57,16 +63,22 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
-app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById);
+app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById);
 app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
-app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
-app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
+app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
+app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
+
+// Routes for Order History
+app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);
+app.get("/order-history/previous",verifyJWT,orderHistoryController.getPreviousOrderHistory);
+app.post("/order-history/guest",validateGuestOrderHistory,orderHistoryController.getGuestOrderHistory);
+app.get("/order-history/:id",verifyJWT,validateOrderHistoryId,orderHistoryController.getOrderHistoryById);
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
 app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
 app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
-app.post("/payments", verifyJWT, validatePayment, paymentController.createPayment);
+app.post("/payments", optionalJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
 app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
 
