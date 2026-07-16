@@ -52,10 +52,6 @@ async function getAllPayments(user) {
                         AND fs.VendorUserID=@UserID
                 )
             )
-            OR
-            (
-                @Role='nea_officer'
-            )
             ORDER BY p.CreatedAt DESC;
         `);
 
@@ -120,10 +116,6 @@ async function getPaymentById(paymentId, user) {
                                 oi.OrderID = co.OrderID
                             AND fs.VendorUserID = @UserID
                     )
-                )
-                OR
-                (
-                    @Role='nea_officer'
                 )
             `);
 
@@ -190,10 +182,6 @@ async function getPaymentByOrderId(orderId, user) {
                                 oi.OrderID = co.OrderID
                             AND fs.VendorUserID = @UserID
                     )
-                )
-                OR
-                (
-                    @Role='nea_officer'
                 )
             `);
 
