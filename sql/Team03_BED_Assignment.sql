@@ -120,6 +120,7 @@ CREATE TABLE CustomerOrder
     UserID               INT                NULL,
     GuestName            VARCHAR(80)        NULL,
     GuestEmail           VARCHAR(100)       NULL,
+    GuestOrderReference  VARCHAR(50)        NULL,
     OrderType            VARCHAR(20)        NOT NULL,
     OrderStatus          VARCHAR(30)        NOT NULL DEFAULT 'Pending',
     TotalAmount          DECIMAL(8,2)       NOT NULL DEFAULT 0,
@@ -143,6 +144,11 @@ CREATE TABLE CustomerOrder
             (OrderType = 'Guest' AND UserID IS NULL AND GuestName IS NOT NULL AND GuestEmail IS NOT NULL)
         )
 );
+
+/* Ensure each guest order reference is unique */
+CREATE UNIQUE INDEX UX_CustomerOrder_GuestOrderReference
+ON CustomerOrder(GuestOrderReference)
+WHERE GuestOrderReference IS NOT NULL;
 
 /* Table: OrderItem */
 CREATE TABLE OrderItem
@@ -172,7 +178,7 @@ CREATE TABLE Payment
     PaymentMethod          VARCHAR(30)                     NOT NULL,
     PaymentStatus          VARCHAR(30)                     NOT NULL DEFAULT 'Pending',
     Amount                 DECIMAL(8,2)                    NOT NULL,
-    TransactionReference   VARCHAR(100)                    NOT NULL,
+    TransactionReference   VARCHAR(100)                    NULL,
     PaidAt                 DATETIME                        NULL,
     CreatedAt              DATETIME                        NOT NULL DEFAULT GETDATE(),
 
@@ -188,6 +194,11 @@ CREATE TABLE Payment
     CONSTRAINT             CHK_Payment_Amount
         CHECK (Amount >= 0)
 );
+
+/* Ensure non-null payment references are unique */
+CREATE UNIQUE INDEX UX_Payment_TransactionReference
+ON Payment(TransactionReference)
+WHERE TransactionReference IS NOT NULL;
 
 /* Table: Review */
 CREATE TABLE Review
