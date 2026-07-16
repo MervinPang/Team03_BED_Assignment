@@ -27,20 +27,19 @@ async function getPreviousOrderHistory(req, res) {
 // Retrieve full details for one registered customer's order
 async function getOrderHistoryById(req, res) {
     try {
-        const orderId = Number(req.params.id);
-        const order =
-            await orderHistoryModel.getOrderHistoryById(orderId, req.user.id);
+        const orderHistory =
+            await orderHistoryModel.getOrderHistoryById(req.body.OrderID, req.body.GuestOrderReference);
 
-        if (!order) {
+        if (!orderHistory) {
             return res.status(404).json({ error:"Order not found or you do not have access to this order" });
         }
 
-        return res.status(200).json(order);
+        return res.status(200).json(orderHistory);
     } catch (error) {
-        console.error("Controller error (getOrderHistoryById):",error);
+        console.error("Controller error (getGuestOrderHistory):", error);
 
         return res.status(500).json({
-            error: "Error retrieving order details",
+            error: "Error retrieving guest order details",
         });
     }
 }
