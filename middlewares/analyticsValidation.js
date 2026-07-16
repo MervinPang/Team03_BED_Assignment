@@ -1,7 +1,7 @@
 const Joi = require("joi"); // Import Joi for validation
 
-//validation schema for stallId
-const stallIDParamSchema = Joi.object({
+// Validation schema for stallId URL parameter
+const stallIdParamSchema = Joi.object({
     stallId: Joi.number().integer().positive().required().messages({
         "number.base": "stallId must be a number",
         "number.integer": "stallId must be an integer",
@@ -10,7 +10,7 @@ const stallIDParamSchema = Joi.object({
     }),
 });
 
-//middleware to validatre all the different stallid from the URL params
+// Middleware to validate stallId from URL parameters
 function validateStallOwnership(req, res, next) {
     const { error, value } = stallIdParamSchema.validate(req.params, { abortEarly: false });
 
