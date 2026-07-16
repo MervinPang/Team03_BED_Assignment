@@ -229,7 +229,7 @@ async function createPayment(paymentData, user) {
         orderRequest.input("Role", sql.VarChar(20), user.role);
 
         const orderResult = await orderRequest.query(`
-            SELECT OrderID, UserID, TotalAmount
+            SELECT OrderID, UserID, TotalAmount, OrderStatus
             FROM CustomerOrder
             WHERE
                 OrderID = @OrderID
@@ -244,6 +244,24 @@ async function createPayment(paymentData, user) {
         }
 
         const order = orderResult.recordset[0];
+
+        if (order.OrderStatus === "Cancelled") {
+            throw new Error(
+                "Payment cannot be made for a cancelled order"
+            );
+        }
+
+        if (order.OrderStatus === "Completed") {
+            throw new Error(
+                "Payment cannot be made for a completed order"
+            );
+        }
+
+        if (order.OrderStatus !== "Pending") {
+            throw new Error(
+                "Payment can only be made for a pending order"
+            );
+        }
 
         // Check for an existing payment
         const existingPaymentRequest = new sql.Request(transaction);
@@ -310,53 +328,142 @@ async function createPayment(paymentData, user) {
 }
 
 // Update payment status
+// Update payment status
 async function updatePaymentStatus(paymentId, paymentStatus, user) {
     let connection;
+    let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const paidAt = paymentStatus === "Successful" ? new Date() : null;
+        await transaction.begin();
+        transactionStarted = true;
 
-        const request = connection.request();
-        request.input("PaymentID", sql.Int, paymentId);
-        request.input("PaymentStatus", sql.VarChar(30), paymentStatus);
-        request.input("PaidAt", sql.DateTime, paidAt);
-        request.input("UserID", sql.Int, user.id);
+        // Retrieve the current payment status and verify vendor ownership
+        const currentPaymentRequest = new sql.Request(transaction);
 
-        const result = await request.query(`
-            UPDATE p
-            SET
-                p.PaymentStatus = @PaymentStatus,
-                p.PaidAt = @PaidAt
-            FROM Payment p
-            JOIN CustomerOrder co
-                ON p.OrderID = co.OrderID
-            WHERE
-                p.PaymentID = @PaymentID
-                AND EXISTS (
-                    SELECT 1
-                    FROM OrderItem oi
-                    JOIN MenuItem mi
-                        ON oi.MenuItemID = mi.MenuItemID
-                    JOIN FoodStall fs
-                        ON mi.StallID = fs.StallID
-                    WHERE
-                        oi.OrderID = co.OrderID
-                        AND fs.VendorUserID = @UserID
-                );
-        `);
+        currentPaymentRequest.input(
+            "PaymentID",
+            sql.Int,
+            paymentId
+        );
 
-        if (result.rowsAffected[0] === 0) {
+        currentPaymentRequest.input(
+            "UserID",
+            sql.Int,
+            user.id
+        );
+
+        const currentPaymentResult =
+            await currentPaymentRequest.query(`
+                SELECT
+                    p.PaymentID,
+                    p.PaymentStatus,
+                    p.PaidAt
+                FROM Payment p
+                JOIN CustomerOrder co
+                    ON p.OrderID = co.OrderID
+                WHERE
+                    p.PaymentID = @PaymentID
+                    AND EXISTS
+                    (
+                        SELECT 1
+                        FROM OrderItem oi
+                        JOIN MenuItem mi
+                            ON oi.MenuItemID = mi.MenuItemID
+                        JOIN FoodStall fs
+                            ON mi.StallID = fs.StallID
+                        WHERE
+                            oi.OrderID = co.OrderID
+                            AND fs.VendorUserID = @UserID
+                    );
+            `);
+
+        if (currentPaymentResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
             return null;
         }
 
+        const currentPayment =
+            currentPaymentResult.recordset[0];
+
+        const currentStatus =
+            currentPayment.PaymentStatus;
+
+        // Define valid status transitions
+        const allowedTransitions = {
+            Pending: ["Successful", "Failed"],
+            Successful: ["Refunded"],
+            Failed: ["Pending"],
+            Refunded: [],
+        };
+
+        const allowedNextStatuses =
+            allowedTransitions[currentStatus] || [];
+
+        if (!allowedNextStatuses.includes(paymentStatus)) {
+            throw new Error(
+                `Payment status cannot be changed from ${currentStatus} to ${paymentStatus}`
+            );
+        }
+
+        const updateRequest = new sql.Request(transaction);
+
+        updateRequest.input(
+            "PaymentID",
+            sql.Int,
+            paymentId
+        );
+
+        updateRequest.input(
+            "PaymentStatus",
+            sql.VarChar(30),
+            paymentStatus
+        );
+
+        await updateRequest.query(`
+            UPDATE Payment
+            SET
+                PaymentStatus = @PaymentStatus,
+                PaidAt =
+                    CASE
+                        WHEN @PaymentStatus = 'Successful'
+                             AND PaidAt IS NULL
+                            THEN GETDATE()
+                        ELSE PaidAt
+                    END
+            WHERE PaymentID = @PaymentID;
+        `);
+
+        await transaction.commit();
+        transactionStarted = false;
+
         return await getPaymentById(paymentId, user);
     } catch (error) {
-        console.error("Database error (updatePaymentStatus):", error);
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Rollback error:",
+                    rollbackError
+                );
+            }
+        }
+
+        console.error(
+            "Database error (updatePaymentStatus):",
+            error
+        );
+
         throw error;
     } finally {
-        if (connection) await connection.close();
+        if (connection) {
+            await connection.close();
+        }
     }
 }
 
