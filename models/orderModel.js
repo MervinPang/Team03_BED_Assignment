@@ -159,7 +159,7 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
         if (!allowInternalAccess) {
             delete order.GuestOrderReference;
         }
-        
+
         return {
             ...order,
             items: itemResult.recordset,
@@ -177,6 +177,7 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
 async function createOrder(orderData, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
         const isMemberOrder = orderData.OrderType === "Member";
@@ -209,6 +210,7 @@ async function createOrder(orderData, user) {
         transaction = new sql.Transaction(connection);
 
         await transaction.begin();
+        transactionStarted = true;
 
         let totalAmount = 0;
         const validatedItems = [];
@@ -329,12 +331,14 @@ async function createOrder(orderData, user) {
         }
 
         await transaction.commit();
+        transactionStarted = false;
 
         return await getOrderById(newOrderId, user, true);
     } catch (error) {
-        if (transaction) {
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
