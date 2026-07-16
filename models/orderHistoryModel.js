@@ -219,38 +219,9 @@ async function getOrderHistoryById(orderId, userId) {
         `);
 
         return {
-            OrderID: order.OrderID,
-            OrderType: order.OrderType,
-            OrderStatus: order.OrderStatus,
-            TotalAmount: order.TotalAmount,
-            SpecialInstructions: order.SpecialInstructions,
-            OrderDateTime: order.OrderDateTime,
-            UpdatedAt: order.UpdatedAt,
-
-            Stall: {
-                StallID: order.StallID,
-                StallName: order.StallName,
-                StallUnitNo: order.StallUnitNo,
-                StallImage: order.StallImage,
-            },
-
-            HawkerCentre: {
-                Name: order.HCName,
-                Address: order.HCAddress,
-            },
-
-            Payment: order.PaymentID
-                ? {
-                    PaymentID: order.PaymentID,
-                    PaymentMethod: order.PaymentMethod,
-                    PaymentStatus: order.RecordedPaymentStatus,
-                    Amount: order.PaymentAmount,
-                    PaidAt: order.PaidAt,
-                }
-                : null,
-
-            Items: itemResult.recordset,
-            Timeline: timelineResult.recordset,
+            order: orderResult.recordset[0],
+            items: itemResult.recordset,
+            timeline: timelineResult.recordset,
         };
     } catch (error) {
         console.error(
