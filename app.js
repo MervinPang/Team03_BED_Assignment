@@ -19,6 +19,11 @@ const {
 } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
 
 const {
+    validateOrderHistoryId,
+    validateGuestOrderHistory,
+} = require("./middlewares/orderHistoryValidation"); // Import Order History Validation Middlware
+
+const {
     validatePayment,
     validatePaymentStatus,
     validatePaymentId,
@@ -38,7 +43,7 @@ const { validateComplaint, validateComplaintStatus } = require("./middlewares/co
 
 const feedbackController = require("./controllers/feedbackController");
 
-const { validateFeedback, validateReviewId,} = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
+const { validateFeedback, validateReviewId, } = require("./middlewares/feedbackValidation"); // Import Feedback Validation Middleware
 
 // Create Express app
 const app = express();
@@ -57,6 +62,12 @@ app.get("/orders/:id", validateOrderId, verifyJWT, orderController.getOrderById)
 app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", validateOrderId, verifyJWT, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", validateOrderId, verifyJWT, orderController.deleteOrder);
+
+// Routes for Order History
+app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);
+app.get("/order-history/previous",verifyJWT,orderHistoryController.getPreviousOrderHistory);
+app.post("/order-history/guest",validateGuestOrderHistory,orderHistoryController.getGuestOrderHistory);
+app.get("/order-history/:id",verifyJWT,validateOrderHistoryId,orderHistoryController.getOrderHistoryById);
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
