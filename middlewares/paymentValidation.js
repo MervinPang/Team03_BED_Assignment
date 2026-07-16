@@ -20,10 +20,7 @@ const paymentSchema = Joi.object({
             "string.base": "Payment method must be a string",
         }),
 
-    PaymentStatus: Joi.string()
-        .valid("Pending", "Successful", "Failed", "Refunded")
-        .optional()
-        .messages({
+    PaymentStatus: Joi.string().valid("Pending", "Successful", "Failed").optional().messages({
             "any.only": "Initial payment status must be Pending, Successful or Failed",
             "string.base": "Payment status must be a string",
         }),
@@ -55,10 +52,7 @@ const paymentSchema = Joi.object({
 
 // Validation schema for updating payment status
 const paymentStatusSchema = Joi.object({
-    PaymentStatus: Joi.string()
-        .valid("Pending", "Successful", "Failed", "Refunded")
-        .required()
-        .messages({
+    PaymentStatus: Joi.string().valid("Pending", "Successful", "Failed", "Refunded").required().messages({
             "any.only": "Payment status must be Pending, Successful, Failed or Refunded",
             "any.required": "Payment status is required",
             "string.base": "Payment status must be a string",
