@@ -18,8 +18,8 @@ function verifyJWT(req, res, next) {
         const authorizedRoles = {
             // Only customers can submit feedback
             "POST /feedback": ["customer"],
-            // Only vendors can update order status
-            "PUT /orders/[0-9]+/status": ["vendor"],
+            "PUT /feedback/[0-9]+": ["customer"],
+            "DELETE /feedback/[0-9]+": ["customer"],
 
             // Orders
             "GET /orders": ["customer", "vendor", "nea_officer"],
