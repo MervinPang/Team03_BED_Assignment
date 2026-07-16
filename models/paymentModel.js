@@ -97,31 +97,32 @@ async function getPaymentById(paymentId, user) {
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-            (
-                @Role='customer'
-                AND co.UserID=@UserID
-            )
-            OR
-            (
-                @Role='vendor'
-                AND EXISTS
-                (
-                    SELECT 1
-                    FROM OrderItem oi
-                    JOIN MenuItem mi
-                        ON oi.MenuItemID=mi.MenuItemID
-                    JOIN FoodStall fs
-                        ON mi.StallID=fs.StallID
-                    WHERE
-                        oi.OrderID=co.OrderID
-                        AND fs.VendorUserID=@UserID
+                p.PaymentID = @PaymentID
+                AND (
+                    (
+                        @Role='customer'
+                        AND co.UserID=@UserID
+                    )
+                    OR
+                    (
+                        @Role='vendor'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE
+                                oi.OrderID = co.OrderID
+                            AND fs.VendorUserID = @UserID
+                    )
                 )
-            )
-            OR
-            (
-                @Role='nea_officer'
-            )
-        `);
+                OR
+                (
+                    @Role='nea_officer'
+                )
+            `);
 
         if (result.recordset.length === 0) {
             return null;
@@ -166,31 +167,32 @@ async function getPaymentByOrderId(orderId, user) {
             JOIN CustomerOrder co ON p.OrderID = co.OrderID
             LEFT JOIN UserAccount ua ON co.UserID = ua.UserID
             WHERE
-            (
-                @Role='customer'
-                AND co.UserID=@UserID
-            )
-            OR
-            (
-                @Role='vendor'
-                AND EXISTS
-                (
-                    SELECT 1
-                    FROM OrderItem oi
-                    JOIN MenuItem mi
-                        ON oi.MenuItemID=mi.MenuItemID
-                    JOIN FoodStall fs
-                        ON mi.StallID=fs.StallID
-                    WHERE
-                        oi.OrderID=co.OrderID
-                        AND fs.VendorUserID=@UserID
+                p.PaymentID = @PaymentID
+                AND (
+                    (
+                        @Role='customer'
+                        AND co.UserID=@UserID
+                    )
+                    OR
+                    (
+                        @Role='vendor'
+                        AND EXISTS (
+                            SELECT 1
+                            FROM OrderItem oi
+                            JOIN MenuItem mi
+                                ON oi.MenuItemID = mi.MenuItemID
+                            JOIN FoodStall fs
+                                ON mi.StallID = fs.StallID
+                            WHERE
+                                oi.OrderID = co.OrderID
+                            AND fs.VendorUserID = @UserID
+                    )
                 )
-            )
-            OR
-            (
-                @Role='nea_officer'
-            )
-        `);
+                OR
+                (
+                    @Role='nea_officer'
+                )
+            `);
 
         if (result.recordset.length === 0) {
             return null;
@@ -426,7 +428,7 @@ async function deletePayment(paymentId, user) {
         await transaction.commit();
 
         return result.rowsAffected[0] > 0;
-        
+
     } catch (error) {
         if (transaction) {
             try {
