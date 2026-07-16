@@ -56,6 +56,7 @@ async function getAllPayments(user) {
             (
                 @Role='nea_officer'
             )
+            ORDER BY p.CreatedAt DESC;
         `);
 
         return result.recordset;
