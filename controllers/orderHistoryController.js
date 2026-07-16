@@ -27,8 +27,9 @@ async function getPreviousOrderHistory(req, res) {
 // Retrieve full details for one registered customer's order
 async function getOrderHistoryById(req, res) {
     try {
+        const orderId = Number(req.params.id);
         const orderHistory =
-            await orderHistoryModel.getOrderHistoryById(req.body.OrderID, req.body.GuestOrderReference);
+            await orderHistoryModel.getOrderHistoryById(orderId, req.user.id);
 
         if (!orderHistory) {
             return res.status(404).json({ error:"Order not found or you do not have access to this order" });
