@@ -7,6 +7,7 @@ const path = require("path");
 dotenv.config();
 
 const orderController = require("./controllers/orderController");
+const orderHistoryController = require("./controllers/orderHistoryController");
 const paymentController = require("./controllers/paymentController");
 const userController = require("./controllers/userController");
 const inspectionController = require("./controllers/inspectionController");
