@@ -152,8 +152,14 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
         if (order.OrderType === "Member") {
             delete order.GuestName;
             delete order.GuestEmail;
+            delete order.guestOrderReference;
         }
 
+        // Only return the reference immediately after internal guest creation
+        if (!allowInternalAccess) {
+            delete order.GuestOrderReference;
+        }
+        
         return {
             ...order,
             items: itemResult.recordset,
@@ -356,7 +362,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
 
         // Retrieve the current status and verify vendor ownership
         const currentOrderRequest = new sql.Request(transaction);
-        
+
         currentOrderRequest.input("OrderID", sql.Int, orderId);
         currentOrderRequest.input("UserID", sql.Int, user.id);
         const currentOrderResult =
@@ -451,7 +457,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
         await transaction.commit();
         transactionStarted = false;
 
-        return await getOrderById(orderId,user);
+        return await getOrderById(orderId, user);
     } catch (error) {
         if (transaction && transactionStarted) {
             try {
