@@ -137,10 +137,63 @@ async function deleteFeedback(reviewId) {
     }
 }
 
+// Sort and View Stall Reviews
+async function getReviewsByStall(stallId, sort) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        // List of allowed sort options
+        const sortOptions = {
+            newest: "r.ReviewDateTime DESC",
+            oldest: "r.ReviewDateTime ASC",
+            highest: "r.Rating DESC",
+            lowest: "r.Rating ASC",
+        };
+
+        // Use the sort option
+        const orderBy = sortOptions[sort] || sortOptions.newest;
+
+        const request = connection.request();
+        request.input("StallID", sql.Int, stallId);
+
+        const result = await request.query(`
+            SELECT r.ReviewID, r.UserID, ua.Username, r.Rating, r.ReviewComment, r.ReviewDateTime
+            FROM Review r
+            JOIN UserAccount ua ON r.UserID = ua.UserID
+            WHERE r.StallID = @StallID
+            ORDER BY ${orderBy};
+        `);
+
+        // Get the average rating and total review count for the stall
+        const statsRequest = connection.request();
+        statsRequest.input("StallID", sql.Int, stallId);
+
+        const statsResult = await statsRequest.query(`
+            SELECT AVG(CAST(Rating AS DECIMAL(3,2))) AS AverageRating, COUNT(*) AS ReviewCount
+            FROM Review
+            WHERE StallID = @StallID;
+        `);
+
+        return {
+            averageRating: statsResult.recordset[0].AverageRating,
+            reviewCount: statsResult.recordset[0].ReviewCount,
+            reviews: result.recordset,
+        };
+    } catch (error) {
+        console.error("Database error (getReviewsByStall):", error);
+        throw error;
+    } finally {
+        if (connection) await connection.close();
+    }
+}
+
 module.exports = {
     getStallById,
     getReviewById,
     createFeedback,
     updateFeedback,
     deleteFeedback,
+    getReviewsByStall,
 };
