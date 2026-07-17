@@ -82,8 +82,47 @@ async function deleteFeedback(req, res) {
     }
 }
 
+// View all reviews for a stall with sorting
+async function getReviewsByStall(req, res) {
+    try {
+        // Validate the stall ID from the URL
+        const stallId = parseInt(req.params.stallId);
+        if (isNaN(stallId) || stallId <= 0) {
+            return res.status(400).json({ error: "Invalid stall ID. ID must be a positive number" });
+        }
+
+        // Validate the sort option 
+        const allowedSorts = ["newest", "oldest", "highest", "lowest"];
+        if (req.query.sort && !allowedSorts.includes(req.query.sort)) {
+            return res.status(400).json({
+                error: "Invalid sort option. Use newest, oldest, highest or lowest",
+            });
+        }
+
+        // Check the stall exists
+        const stall = await feedbackModel.getStallById(stallId);
+        if (!stall) {
+            return res.status(404).json({ error: "Food stall not found" });
+        }
+
+        // Get the sorted reviews with the average rating
+        const data = await feedbackModel.getReviewsByStall(stallId, req.query.sort);
+
+        res.json({
+            stall: stall.StallName,
+            averageRating: data.averageRating,
+            reviewCount: data.reviewCount,
+            reviews: data.reviews,
+        });
+    } catch (error) {
+        console.error("Controller error (getReviewsByStall):", error);
+        res.status(500).json({ error: "Error retrieving reviews" });
+    }
+}
+
 module.exports = {
     createFeedback,
     updateFeedback,
     deleteFeedback,
+    getReviewsByStall,
 };
