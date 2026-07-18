@@ -59,7 +59,8 @@ async function getPaymentByOrderId(req, res) {
     }
 }
 
-// Create new payment
+// Creates a payment request by delegating all payment processing and business rules to the model layer
+// The controller is responsible for translating business exceptions into appropriate HTTP responses
 async function createPayment(req, res) {
     try {
         const newPayment = await paymentModel.createPayment(req.body, req.user);
@@ -107,7 +108,8 @@ async function createPayment(req, res) {
     }
 }
 
-// Update payment status
+// Updates the lifecycle status of a payment
+// Business rules such as valid status transitions and vendor ownership are enforced by the model layer
 async function updatePaymentStatus(req, res) {
     try {
         const paymentId = Number(req.params.id);
@@ -144,7 +146,8 @@ async function updatePaymentStatus(req, res) {
     }
 }
 
-// Delete payment
+// Deletes an eligible payment record.
+// The model validates ownership, payment status and order status before any database changes occur.
 async function deletePayment(req, res) {
     try {
         const paymentId = Number(req.params.id);

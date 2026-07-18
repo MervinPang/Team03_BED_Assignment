@@ -2,7 +2,9 @@ const Joi = require("joi"); // Import Joi for validation
 
 // Payment Validation - Validates Checkout and Payment requests
 
-// Validation schema for creating a payment
+// Validates payment requests before business logic executes
+// Validation protects the application from malformed, incomplete and unexpected client input while ensuring
+// required payment information is supplied
 const paymentSchema = Joi.object({
     OrderID: Joi.number().integer().positive().required().messages({
         "number.base": "OrderID must be a number",
@@ -27,13 +29,14 @@ const paymentSchema = Joi.object({
     TransactionReference: Joi.when("PaymentMethod", {
         is: "Cash",
 
-        // Cash payments do not require an external transaction reference
+        // Cash payments are completed physically at the stall, therefore an external transaction reference is optional
         then: Joi.string().trim().max(100).allow(null, "").optional().messages({
             "string.base": "Transaction reference must be a string",
             "string.max": "Transaction reference cannot exceed 100 characters",
         }),
 
         // Card and PayNow payments require a transaction reference
+        // So each transaction can be uniquely identified
         otherwise: Joi.string().trim().max(100).required().messages({
             "string.base": "Transaction reference must be a string",
             "string.empty": "Transaction reference cannot be empty",
@@ -54,7 +57,8 @@ const paymentStatusSchema = Joi.object({
         }),
 }).unknown(false);
 
-// Middleware to validate payment data for POST
+// Performs request validation before the controller executes,
+// ensuring only well-formed payment requests reach the model layer
 function validatePayment(req, res, next) {
     const { error, value } = paymentSchema.validate(req.body, {
         abortEarly: false,
@@ -90,7 +94,8 @@ function validatePaymentStatus(req, res, next) {
     next();
 }
 
-// Middleware to validate PaymentID from URL parameters
+// Ensures the PaymentID route parameter is a valid
+// positive integer before querying the database
 function validatePaymentId(req, res, next) {
     const id = Number(req.params.id);
 
@@ -103,7 +108,7 @@ function validatePaymentId(req, res, next) {
     next();
 }
 
-// Middleware to validate OrderID from URL parameters
+// Validates OrderID supplied in the request URL, preventing invalid database queries
 function validateOrderIdParam(req, res, next) {
     const orderId = Number(req.params.orderId);
 

@@ -181,10 +181,9 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
     }
 }
 
-// Create a new customer order using a database
-// transaction to guarantee
-// The transaction ensures that the order, initial status history and all order items
-// are either committed together or completely rolled back if an error occurs
+// Create a new customer order using a database transaction
+// This ensures the order, initial status history and all order items are
+// either saved together or rolled back if an error occurs
 async function createOrder(orderData, user) {
     let connection;
     let transaction;

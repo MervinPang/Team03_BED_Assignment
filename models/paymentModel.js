@@ -3,7 +3,9 @@ const dbConfig = require("../dbConfig");
 
 // Payment Model - Handles database operations for Checkout and Payment
 
-// Retrieve all payments
+// Retrieves payment records according to the authenticated user's role
+// Customer : Payments belonging to their own order
+// Vendor : Payments for orders placed with their food stalls
 async function getAllPayments(user) {
     let connection;
 
@@ -64,7 +66,7 @@ async function getAllPayments(user) {
     }
 }
 
-// Retrieve payment by Payment ID
+// Retrieves a single payment while enforcing role-based ownership validation
 async function getPaymentById(paymentId, user) {
     let connection;
 
@@ -135,7 +137,7 @@ async function getPaymentById(paymentId, user) {
     }
 }
 
-// Retrieve payment by Order ID
+// Retrieves payment information for a specific order, ensuring only authorised users can access it
 async function getPaymentByOrderId(orderId, user) {
     let connection;
 
@@ -202,7 +204,10 @@ async function getPaymentByOrderId(orderId, user) {
     }
 }
 
-// Create a new payment
+// Creates a payment using a database transaction to
+// ensure all related database operations succeed together
+// If any step fails, the transaction is rolled back
+// so no partial payment data is saved
 async function createPayment(paymentData, user) {
     let connection;
     let transaction;
@@ -217,21 +222,25 @@ async function createPayment(paymentData, user) {
         await transaction.begin();
         transactionStarted = true;
 
-        // Guests must provide the reference returned during order creation
+        // Guests authenticate ownership using the unique
+        // GuestOrderReference generated during order creation,
+        // allowing secure guest checkout without requiring an account
         if (!user && !paymentData.GuestOrderReference) {
             throw new Error(
                 "Guest order reference is required for guest checkout"
             );
         }
 
-        // Authenticated payment creation is restricted to customers
+        // Only authenticated customers may perform member checkout
+        // Vendors and NEA officers are not allowed to create payments
         if (user && user.role !== "customer") {
             throw new Error(
                 "Only customers can create payments"
             );
         }
 
-        // Verify that the order exists and retrieve the actual total amount
+        // Always retrieve the payable amount from the database instead of trusting values supplied by the client.
+        // This prevents payment amount manipulation
         const orderRequest = new sql.Request(transaction);
         const userId = user?.id || null;
         const userRole = user?.role || null;
@@ -270,14 +279,15 @@ async function createPayment(paymentData, user) {
 
         const order = orderResult.recordset[0];
 
-        // Payment is only allowed while the order is pending
+        // Payment are only accepted while the order is pending
+        // To prevent duplicate or late payment attempts
         if (order.OrderStatus !== "Pending") {
             throw new Error(
                 "Payment can only be made for a pending order"
             );
         }
 
-        // Check for an existing payment
+        // Prevent multiple payments from being created for the same customer order.
         const existingPaymentRequest = new sql.Request(transaction);
         existingPaymentRequest.input("OrderID", sql.Int, paymentData.OrderID);
 
@@ -291,9 +301,9 @@ async function createPayment(paymentData, user) {
             throw new Error("Payment has already been made for this order");
         }
 
-        // The backend controls the initial payment status
-        // Cash requires vendor confirmation, while simulated digital payments
-        // are treated as successful
+        // The server determines the initial payment status
+        // Cash payments remain pending until confirmed,
+        // while simulated electronic payments are marked successful immediately
         const paymentStatus =
             paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful";
 
@@ -322,14 +332,15 @@ async function createPayment(paymentData, user) {
 
         const newPaymentId = Number(paymentResult.recordset[0].PaymentID);
 
-        // Commit the transaction after successful insertion
+        // Commit the transaction only after every validation
+        // and database operation has completed successfully.
         await transaction.commit();
         transactionStarted = false;
 
         // Retrieve the created payment for both member and guest checkout
         return await getCreatedPaymentById(newPaymentId);
     } catch (error) {
-        // Roll back only when the transaction is still active
+        // Roll back the entire transaction whenever an error occurs to maintain database consistency
         if (transaction && transactionStarted) {
             try {
                 await transaction.rollback(); // Roll back all changes if an error occurs
@@ -360,8 +371,8 @@ async function createPayment(paymentData, user) {
     }
 }
 
-// Retrieve a newly created payment by Payment ID
-// This internal function is used after a successful payment insertion
+// Internal helper used immediately after payment creation
+// to return the newly inserted payment details
 async function getCreatedPaymentById(paymentId) {
     let connection;
 
@@ -398,7 +409,9 @@ async function getCreatedPaymentById(paymentId) {
     }
 }
 
-// Update payment status
+// Updates the lifecycle status of a payment
+// Vendor ownership is verified and payment status
+// transitions follow predefined business rules
 async function updatePaymentStatus(paymentId, paymentStatus, user) {
     let connection;
     let transaction;
@@ -463,7 +476,8 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
         const currentStatus =
             currentPayment.PaymentStatus;
 
-        // Define valid status transitions
+        // State transition rules ensure payment statuses
+        // progress through valid business workflows only
         const allowedTransitions = {
             Pending: ["Successful", "Failed"],
             Successful: ["Refunded"],
@@ -529,7 +543,8 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
     }
 }
 
-// Delete payment by Payment ID
+// Deletes an eligible payment using a transaction
+// Completed records are preserved to maintain payment integrity and auditability.
 async function deletePayment(paymentId, user) {
     let connection;
     let transaction;
@@ -569,7 +584,8 @@ async function deletePayment(paymentId, user) {
 
         const payment = paymentResult.recordset[0];
 
-        // Successful or refunded payments should remain for transaction records
+        // Completed financial transactions are retained
+        // to preserve accounting records and audit history
         if (
             payment.PaymentStatus === "Successful" ||
             payment.PaymentStatus === "Refunded"
@@ -579,7 +595,9 @@ async function deletePayment(paymentId, user) {
             );
         }
 
-        // Payment deletion is only allowed while the order is pending
+        // Payments may only be removed while the associated
+        // order remains pending, preventing inconsistencies
+        // once order processing has begun
         if (payment.OrderStatus !== "Pending") {
             throw new Error(
                 "Payments can only be deleted for pending orders"
