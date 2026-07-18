@@ -38,7 +38,7 @@ function verifyJWT(req, res, next) {
             // Order History
             "GET /order-history/active": ["customer"],
             "GET /order-history/previous": ["customer"],
-            "GET /order-history/[0-9]+": ["customer"],
+            "GET /order-history/[^/]+": ["customer"],
 
             // Payments
             "GET /payments": ["customer", "vendor"],
