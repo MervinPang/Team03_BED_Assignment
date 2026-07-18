@@ -318,6 +318,14 @@ CREATE TABLE RentalAgreement
 ------------------------------------------------------------
 -- Insert Sample Data (HawkerManagementDB)
 ------------------------------------------------------------
+------------------------------------------------------------
+-- Sample User Accounts
+-- All seeded user accounts use the same password:
+-- Password: Password123!
+--
+-- Passwords are stored as bcrypt hashes for security
+------------------------------------------------------------
+
 INSERT INTO UserAccount (Username, Email, PasswordHash, Role)
 VALUES
 ('mervin_customer', 'mervin.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
