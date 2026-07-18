@@ -1,6 +1,9 @@
 const Joi = require("joi"); // Import Joi for validation
 
-// Validation schema for creating an order
+// Validates incoming order requests before any
+// business logic executes
+// This protects the application from malformed,
+// unexpected or incomplete client input
 const orderSchema = Joi.object({
     OrderType: Joi.string().valid("Guest", "Member").required().messages({
         "any.only": "Order type must be either Guest or Member",
@@ -89,7 +92,9 @@ function validateOrder(req, res, next) {
         return res.status(400).json({ error: errorMessage });
     }
 
-    // Check for duplicate menu items
+    // Prevent duplicate menu items from being submitted
+    // Customers should increase the quantity of an existing
+    // item instead of creating multiple identical entries
     const menuItemIds = value.items.map((item) => item.MenuItemID);
     const hasDuplicates = new Set(menuItemIds).size !== menuItemIds.length;
 
@@ -121,7 +126,9 @@ function validateOrderStatus(req, res, next) {
     next();
 }
 
-// Middleware to validate order ID from URL parameters
+// Ensures route parameters contain a valid
+// positive integer before database access,
+// preventing invalid queries
 function validateOrderId(req, res, next) {
     const id = Number(req.params.id);
 

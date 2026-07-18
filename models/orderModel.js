@@ -3,7 +3,10 @@ const dbConfig = require("../dbConfig");
 
 // Order Model - Handles database operations for Place Food Order
 
-// Generate a reference used by guests to access their order securely
+// Generates a unique guest reference that acts
+// as a secure lookup token for guest orders
+// This avoids exposing customer information while
+// allowing guests to retrieve their own orders
 function generateGuestOrderReference() {
     const timestamp = Date.now().toString(36).toUpperCase();
 
@@ -12,7 +15,10 @@ function generateGuestOrderReference() {
     return `GUEST-${timestamp}-${randomPart}`;
 }
 
-// Retrieve all customer orders
+// Retrieve all orders based on authenticated user's role
+// Customer : Own orders only
+// Vendor : Orders containing menu items from stalls they own
+// NEA : All orders
 async function getAllOrders(user) {
     let connection;
 
@@ -69,7 +75,9 @@ async function getAllOrders(user) {
     }
 }
 
-// Get full order details by ID
+// Retrieves complete order information while enforcing role-based access control
+// Guest-specific information is removed from member orders and guest order references
+// are only returned during internal creation
 async function getOrderById(orderId, user, allowInternalAccess = false) {
     let connection;
 
@@ -173,7 +181,10 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
     }
 }
 
-// Create a new order
+// Create a new customer order using a database
+// transaction to guarantee
+// The transaction ensures that the order, initial status history and all order items
+// are either committed together or completely rolled back if an error occurs
 async function createOrder(orderData, user) {
     let connection;
     let transaction;
@@ -216,7 +227,8 @@ async function createOrder(orderData, user) {
         const validatedItems = [];
         let selectedStallId = null;
 
-        // Fetch prices from database instead of trusting frontend price
+        // Always retrieve the latest menu price from the database rather than client-supplied values
+        // Preventing price manipulation attacks
         for (const item of orderData.items) {
             const menuRequest = new sql.Request(transaction);
             menuRequest.input("MenuItemID", sql.Int, item.MenuItemID);
@@ -300,7 +312,7 @@ async function createOrder(orderData, user) {
 
         const newOrderId = Number(orderResult.recordset[0].OrderID);
 
-        // Record the initial order status for the tracking timeline
+        // Record the initial order status to establish a complete audit trail for the order lifecycle
         const statusHistoryRequest = new sql.Request(transaction);
         statusHistoryRequest.input("OrderID", sql.Int, newOrderId);
         statusHistoryRequest.input("OrderStatus", sql.VarChar(30), "Pending");
@@ -351,7 +363,9 @@ async function createOrder(orderData, user) {
     }
 }
 
-// Update order status
+// Updates an order's lifecycle status
+// Vendor ownership is verified and only valid status transitions are permitted before the
+// change is committed to the database
 async function updateOrderStatus(orderId, orderStatus, user) {
     let connection;
     let transaction;
@@ -402,6 +416,8 @@ async function updateOrderStatus(orderId, orderStatus, user) {
         }
 
         const currentStatus = currentOrderResult.recordset[0].OrderStatus;
+
+        // State transition rules ensure orders progress through the workflow in a controlled sequence
         const allowedTransitions = {
             Pending: ["Preparing", "Cancelled",],
             Preparing: ["Ready", "Cancelled",],
@@ -480,7 +496,8 @@ async function updateOrderStatus(orderId, orderStatus, user) {
     }
 }
 
-// Delete order by ID
+// Deletes a customer order using a transaction
+// Related payment records and order items are removed together to preserve referential integrity
 async function deleteOrder(orderId, user) {
     let connection;
     let transaction;
@@ -519,6 +536,7 @@ async function deleteOrder(orderId, user) {
         const paymentRequest = new sql.Request(transaction);
         paymentRequest.input("OrderID", sql.Int, orderId);
 
+        // Successful payments prevent deletion to preserve completed financial transactions
         const paymentResult = await paymentRequest.query(`
             SELECT PaymentStatus
             FROM Payment

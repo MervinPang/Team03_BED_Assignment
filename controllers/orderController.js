@@ -36,7 +36,9 @@ async function getOrderById(req, res) {
     }
 }
 
-// Create a new customer order
+// Creates a new member or guest order by delegating
+// business logic to the model layer and translating
+// business exceptions into appropriate HTTP responses
 async function createOrder(req, res) {
     try {
         const newOrder = await orderModel.createOrder(req.body, req.user);
@@ -79,7 +81,10 @@ async function createOrder(req, res) {
     }
 }
 
-// Update an existing order status
+// Update the lifecycle status of an order
+// Business rules such as valid status transitions,
+// vendor ownership and timeline recording are
+// enforced by the model layer
 async function updateOrderStatus(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -114,7 +119,10 @@ async function updateOrderStatus(req, res) {
     }
 }
 
-// Delete a customer order
+// Delete a pending customer order
+// The model validates ownership,
+// payment status and transactional integrity
+// before permanently removing related records
 async function deleteOrder(req, res) {
     try {
         const id = parseInt(req.params.id);
