@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>My orders · HawkerHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="shell nav nav-premium">
+      <a class="brand brand-premium" href="/index.html" aria-label="HawkerHub home">
+        <span class="brand-mark">H</span>
+        <span class="brand-copy">
+          <strong>HawkerHub</strong>
+          <small>Discover · Order · Collect</small>
+        </span>
+      </a>
+
+      <button class="mobile-toggle" type="button" data-mobile-toggle aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="nav-links" aria-label="Main navigation">
+        <a class="nav-link" href="/index.html">Home</a>
+        <a class="nav-link" href="/stalls.html">Place Order</a>
+        <a class="nav-link" href="/history.html" data-customer-only>Your Orders</a>
+        <a class="nav-link" href="/profile.html" data-auth-only>Profile</a>
+        <a class="nav-link" href="/guest-order.html" data-guest-only>Track Order</a>
+        <a class="nav-link" href="/reviews.html">Reviews</a>
+        <a class="nav-link" href="/vendor.html" data-vendor-only>Vendor dashboard</a>
+        <a class="nav-link" href="/inspection.html" data-nea-only>Inspections</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="cart-pill cart-pill-premium" href="/checkout.html" aria-label="View cart">
+          <span class="cart-icon" aria-hidden="true">🛒</span>
+          <span>Cart</span>
+          <strong data-cart-count>0</strong>
+        </a>
+
+
+        </span>
+
+        <a class="button secondary nav-sign-in" href="/login.html" data-guest-only>Sign In</a>
+        <button class="button primary nav-logout" type="button" data-auth-only data-logout>Log Out</button>
+      </div>
+    </div>
+  </header>
+  <main>
+    <section class="shell">
+      <div class="page-head compact"><span class="eyebrow">Member history</span>
+        <h1>Your Orders</h1>
+        <p class="lead">Track active orders and revisit your previous purchases.</p>
+      </div>
+      <div class="form-message" id="historyMessage"></div>
+      <div class="tabs"><button class="tab active" data-tab="active">Active</button><button class="tab"
+          data-tab="previous">Previous</button></div>
+      <section id="activePanel">
+        <div class="grid grid-2" id="activeOrders">Loading…</div>
+      </section>
+      <section id="previousPanel" hidden>
+        <div class="grid grid-2" id="previousOrders">Loading…</div>
+      </section>
+    </section>
+    <div class="modal-backdrop" id="detailsBackdrop" hidden>
+      <div class="modal order-detail-modal"><button class="modal-close" id="closeDetails"
+          aria-label="Close order details">×</button>
+        <div id="detailsBody"></div>
+      </div>
+    </div>
+    <div class="modal-backdrop" id="paymentBackdrop" hidden>
+      <form class="modal payment-change-modal" id="paymentChangeForm">
+        <div class="modal-header">
+          <div><span class="eyebrow">Pending payment</span>
+            <h2>Choose another payment method</h2>
+          </div><button class="modal-close modal-close-inline" id="closePaymentModal" type="button"
+            aria-label="Close payment window">×</button>
+        </div>
+        <div class="modal-body-scroll">
+          <p class="muted">You can change the payment method while both the order and payment remain pending. The
+            existing pending payment is removed first, followed by creation of the replacement payment.</p><input
+            type="hidden" id="paymentOrderId"><input type="hidden" id="existingPaymentId">
+          <div class="payment-options">
+            <div class="payment-option"><input type="radio" id="changeCash" name="changedPaymentMethod"
+                value="Cash"><label for="changeCash"><strong>Cash</strong><span class="small muted">Pay at the
+                  stall</span></label></div>
+            <div class="payment-option"><input type="radio" id="changeCard" name="changedPaymentMethod"
+                value="Card"><label for="changeCard"><strong>Card</strong><span class="small muted">Secure simulated
+                  payment</span></label></div>
+            <div class="payment-option"><input type="radio" id="changePayNow" name="changedPaymentMethod"
+                value="PayNow"><label for="changePayNow"><strong>PayNow</strong><span class="small muted">Secure
+                  simulated payment</span></label></div>
+          </div>
+          <div class="field" id="changeReferenceField" hidden><label for="changeReference">Transaction
+              reference</label><input class="input" id="changeReference" maxlength="100"
+              placeholder="Enter a unique transaction reference"></div>
+          <div class="form-message" id="paymentChangeMessage"></div>
+        </div>
+        <div class="modal-footer"><button class="button secondary" id="cancelPaymentChange" type="button">Keep current
+            payment</button><button class="button primary" id="confirmPaymentChange" type="submit">Confirm payment
+            change</button></div>
+      </form>
+    </div>
+  </main>
+  <footer class="site-footer">
+    <div class="footer-social-band">
+      <div class="shell footer-social-row">
+        <p>Stay connected with HawkerHub</p>
+        <div class="social-links" aria-label="Social media links">
+          <a href="/index.html" aria-label="LinkedIn" title="LinkedIn">in</a>
+          <a href="/index.html" aria-label="Instagram" title="Instagram">◎</a>
+          <a href="/index.html" aria-label="X" title="X">𝕏</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-main">
+      <div class="shell footer-grid">
+        <section class="footer-brand-column">
+          <a class="footer-logo" href="/index.html">
+            <span class="brand-mark">H</span>
+            <span>
+              <strong>HawkerHub</strong>
+              <small>Singapore hawker ordering</small>
+            </span>
+          </a>
+          <p>
+            A clear, convenient ordering experience for customers, vendors and
+            regulatory officers across Singapore's hawker community.
+          </p>
+          <span class="footer-team">Team 03 · BED Assignment</span>
+        </section>
+
+        <section class="footer-column">
+          <h3>Explore</h3>
+          <a href="/index.html">Home</a>
+          <a href="/stalls.html">Place Order</a>
+          <a href="/reviews.html">Stall reviews</a>
+        </section>
+
+        <section class="footer-column">
+          <h3>Account & orders</h3>
+          <a href="/login.html" data-guest-only>Sign In</a>
+          <a href="/register.html" data-guest-only>Create account</a>
+          <a href="/history.html" data-customer-only>Your Orders</a>
+          <a href="/profile.html" data-auth-only>Profile</a>
+          <a href="/guest-order.html" data-guest-only>Track guest order</a>
+          <a href="/vendor.html" data-vendor-only>Vendor dashboard</a>
+          <a href="/inspection.html" data-nea-only>Inspection portal</a>
+        </section>
+
+        <section class="footer-column footer-contact">
+          <h3>Contact</h3>
+          <p><span aria-hidden="true">📍</span> Singapore</p>
+          <p><span aria-hidden="true">✉</span> HawkerHubSG@gmail.com</p>
+          <p><span aria-hidden="true">☎</span> +65 9120 0844</p>
+          <p><span aria-hidden="true">◷</span> Daily, 8:00 AM–10:00 PM</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="shell footer-bottom-row">
+        <span>© 2026 Copyright: Team 03 HawkerHubSG</span>
+      </div>
+    </div>
+  </footer>
+  <div class="toast-region"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/history.js"></script>
+</body>
+
+</html>

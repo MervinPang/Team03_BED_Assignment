@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Reviews · HawkerHub</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+
+<body>
+  <header class="site-header">
+    <div class="shell nav nav-premium">
+      <a class="brand brand-premium" href="/index.html" aria-label="HawkerHub home">
+        <span class="brand-mark">H</span>
+        <span class="brand-copy">
+          <strong>HawkerHub</strong>
+          <small>Discover · Order · Collect</small>
+        </span>
+      </a>
+
+      <button class="mobile-toggle" type="button" data-mobile-toggle aria-label="Open navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <nav class="nav-links" aria-label="Main navigation">
+        <a class="nav-link" href="/index.html">Home</a>
+        <a class="nav-link" href="/stalls.html">Place Order</a>
+        <a class="nav-link" href="/history.html" data-customer-only>Your Orders</a>
+        <a class="nav-link" href="/profile.html" data-auth-only>Profile</a>
+        <a class="nav-link" href="/guest-order.html" data-guest-only>Track Order</a>
+        <a class="nav-link" href="/reviews.html">Reviews</a>
+        <a class="nav-link" href="/vendor.html" data-vendor-only>Vendor dashboard</a>
+        <a class="nav-link" href="/inspection.html" data-nea-only>Inspections</a>
+      </nav>
+
+      <div class="nav-actions">
+        <a class="cart-pill cart-pill-premium" href="/checkout.html" aria-label="View cart">
+          <span class="cart-icon" aria-hidden="true">🛒</span>
+          <span>Cart</span>
+          <strong data-cart-count>0</strong>
+        </a>
+
+
+        </span>
+
+        <a class="button secondary nav-sign-in" href="/login.html" data-guest-only>Sign In</a>
+        <button class="button primary nav-logout" type="button" data-auth-only data-logout>Log Out</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="shell">
+      <div class="page-head">
+        <div>
+          <span class="eyebrow">Community feedback</span>
+          <h1>Stall reviews</h1>
+          <p class="lead">Read and manage feedback through the RESTful Review API.</p>
+        </div>
+      </div>
+
+      <div class="review-toolbar">
+        <div class="field">
+          <label for="reviewStallId">Food stall</label>
+          <select class="select" id="reviewStallId"></select>
+        </div>
+        <div class="field">
+          <label for="reviewSort">Sort by</label>
+          <select class="select" id="reviewSort">
+            <option value="newest">Newest</option>
+            <option value="oldest">Oldest</option>
+            <option value="highest">Highest rating</option>
+            <option value="lowest">Lowest rating</option>
+          </select>
+        </div>
+        <button class="button secondary" id="loadReviewsButton" type="button">Load reviews</button>
+        <button class="button primary" id="writeReviewButton" type="button" data-customer-only>Write review</button>
+      </div>
+
+      <section class="card card-pad review-summary" id="reviewSummary" hidden></section>
+      <section class="review-grid" id="reviewList"></section>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" id="reviewBackdrop" hidden>
+    <form class="modal review-editor" id="reviewForm">
+      <header class="modal-head row-between">
+        <div>
+          <span class="small muted">Customer feedback</span>
+          <h2 id="reviewFormTitle">Write a review</h2>
+        </div>
+        <button class="button ghost" id="closeReviewButton" type="button">Close</button>
+      </header>
+      <div class="modal-body stack">
+        <input id="reviewId" type="hidden">
+
+        <div class="field">
+          <label>Rating</label>
+          <div class="review-stars" id="reviewStars">
+            <button type="button" data-rating="1">★</button>
+            <button type="button" data-rating="2">★</button>
+            <button type="button" data-rating="3">★</button>
+            <button type="button" data-rating="4">★</button>
+            <button type="button" data-rating="5">★</button>
+          </div>
+        </div>
+
+        <div class="field">
+          <div class="row-between">
+            <label for="reviewComment">Comment</label>
+            <span class="small muted" id="reviewCounter">0 / 500</span>
+          </div>
+          <textarea class="textarea" id="reviewComment" maxlength="500"></textarea>
+        </div>
+
+        <div class="form-message" id="reviewMessage"></div>
+        <button class="button primary" type="submit">Save review</button>
+      </div>
+    </form>
+  </div>
+
+  <footer class="site-footer">
+    <div class="footer-social-band">
+      <div class="shell footer-social-row">
+        <p>Stay connected with HawkerHub</p>
+        <div class="social-links" aria-label="Social media links">
+          <a href="/index.html" aria-label="LinkedIn" title="LinkedIn">in</a>
+          <a href="/index.html" aria-label="Instagram" title="Instagram">◎</a>
+          <a href="/index.html" aria-label="X" title="X">𝕏</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-main">
+      <div class="shell footer-grid">
+        <section class="footer-brand-column">
+          <a class="footer-logo" href="/index.html">
+            <span class="brand-mark">H</span>
+            <span>
+              <strong>HawkerHub</strong>
+              <small>Singapore hawker ordering</small>
+            </span>
+          </a>
+          <p>
+            A clear, convenient ordering experience for customers, vendors and
+            regulatory officers across Singapore's hawker community.
+          </p>
+          <span class="footer-team">Team 03 · BED Assignment</span>
+        </section>
+
+        <section class="footer-column">
+          <h3>Explore</h3>
+          <a href="/index.html">Home</a>
+          <a href="/stalls.html">Place Order</a>
+          <a href="/reviews.html">Stall reviews</a>
+        </section>
+
+        <section class="footer-column">
+          <h3>Account & orders</h3>
+          <a href="/login.html" data-guest-only>Sign In</a>
+          <a href="/register.html" data-guest-only>Create account</a>
+          <a href="/history.html" data-customer-only>Your Orders</a>
+          <a href="/profile.html" data-auth-only>Profile</a>
+          <a href="/guest-order.html" data-guest-only>Track guest order</a>
+          <a href="/vendor.html" data-vendor-only>Vendor dashboard</a>
+          <a href="/inspection.html" data-nea-only>Inspection portal</a>
+        </section>
+
+        <section class="footer-column footer-contact">
+          <h3>Contact</h3>
+          <p><span aria-hidden="true">📍</span> Singapore</p>
+          <p><span aria-hidden="true">✉</span> HawkerHubSG@gmail.com</p>
+          <p><span aria-hidden="true">☎</span> +65 9120 0844</p>
+          <p><span aria-hidden="true">◷</span> Daily, 8:00 AM–10:00 PM</p>
+        </section>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <div class="shell footer-bottom-row">
+        <span>© 2026 Copyright: Team 03 HawkerHubSG</span>
+      </div>
+    </div>
+  </footer>
+  <div class="toast-region"></div>
+  <script src="/js/common.js"></script>
+  <script src="/js/data.js"></script>
+  <script src="/js/reviews.js"></script>
+</body>
+
+</html>
