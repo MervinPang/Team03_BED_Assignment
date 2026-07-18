@@ -99,6 +99,7 @@ app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, c
 app.post("/feedback", verifyJWT, validateFeedback, feedbackController.createFeedback);
 app.put("/feedback/:id", verifyJWT, validateReviewId, validateFeedback, feedbackController.updateFeedback);
 app.delete("/feedback/:id", verifyJWT, validateReviewId, feedbackController.deleteFeedback);
+app.get("/feedback/stall/:stallId", feedbackController.getReviewsByStall);
 
 // Routes for Vendor Sales Analytics 
 app.get("/analytics/revenue/:stallId", verifyJWT, validateStallOwnership, analyticsController.getRevenueAnalytics);
