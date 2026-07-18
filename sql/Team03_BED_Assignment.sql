@@ -320,15 +320,15 @@ CREATE TABLE RentalAgreement
 ------------------------------------------------------------
 INSERT INTO UserAccount (Username, Email, PasswordHash, Role)
 VALUES
-('mervin_customer', 'mervin.customer@example.com', 'hashedpassword123', 'customer'),
-('leris_customer', 'leris.customer@example.com', 'hashedpassword123', 'customer'),
-('louis_vendor', 'louis.vendor@example.com', 'hashedpassword123', 'vendor'),
-('rayne_nea', 'rayne.nea@example.com', 'hashedpassword123', 'nea_officer'),
-('uat_customer_a', 'uat.customer.a@example.com', 'hashedpassword123', 'customer'),
-('uat_customer_b', 'uat.customer.b@example.com', 'hashedpassword123', 'customer'),
-('uat_vendor_a', 'uat.vendor.a@example.com', 'hashedpassword123', 'vendor'),
-('uat_vendor_b', 'uat.vendor.b@example.com', 'hashedpassword123', 'vendor'),
-('uat_nea_a', 'uat.nea.a@example.com', 'hashedpassword123', 'nea_officer');
+('mervin_customer', 'mervin.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('leris_customer', 'leris.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('louis_vendor', 'louis.vendor@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
+('rayne_nea', 'rayne.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
+('uat_customer_a', 'uat.customer.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('uat_customer_b', 'uat.customer.b@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('uat_vendor_a', 'uat.vendor.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
+('uat_vendor_b', 'uat.vendor.b@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
+('uat_nea_a', 'uat.nea.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer');
 
 INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
 VALUES
