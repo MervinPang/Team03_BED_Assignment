@@ -152,6 +152,12 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
         if (order.OrderType === "Member") {
             delete order.GuestName;
             delete order.GuestEmail;
+            delete order.guestOrderReference;
+        }
+
+        // Only return the reference immediately after internal guest creation
+        if (!allowInternalAccess) {
+            delete order.GuestOrderReference;
         }
 
         return {
@@ -171,6 +177,7 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
 async function createOrder(orderData, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
         const isMemberOrder = orderData.OrderType === "Member";
@@ -203,6 +210,7 @@ async function createOrder(orderData, user) {
         transaction = new sql.Transaction(connection);
 
         await transaction.begin();
+        transactionStarted = true;
 
         let totalAmount = 0;
         const validatedItems = [];
@@ -323,12 +331,14 @@ async function createOrder(orderData, user) {
         }
 
         await transaction.commit();
+        transactionStarted = false;
 
         return await getOrderById(newOrderId, user, true);
     } catch (error) {
-        if (transaction) {
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
@@ -356,7 +366,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
 
         // Retrieve the current status and verify vendor ownership
         const currentOrderRequest = new sql.Request(transaction);
-        
+
         currentOrderRequest.input("OrderID", sql.Int, orderId);
         currentOrderRequest.input("UserID", sql.Int, user.id);
         const currentOrderResult =
@@ -451,7 +461,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
         await transaction.commit();
         transactionStarted = false;
 
-        return await getOrderById(orderId,user);
+        return await getOrderById(orderId, user);
     } catch (error) {
         if (transaction && transactionStarted) {
             try {
@@ -474,6 +484,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
 async function deleteOrder(orderId, user) {
     let connection;
     let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
@@ -481,6 +492,7 @@ async function deleteOrder(orderId, user) {
 
         // Transaction ensures payment, order items and order are deleted together
         await transaction.begin();
+        transactionStarted = true;
 
         const ownershipRequest = new sql.Request(transaction);
         ownershipRequest.input("OrderID", sql.Int, orderId);
@@ -543,12 +555,14 @@ async function deleteOrder(orderId, user) {
         `);
 
         await transaction.commit();
+        transactionStarted = false;
 
         return result.rowsAffected[0] > 0;
     } catch (error) {
-        if (transaction) {
+        if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }

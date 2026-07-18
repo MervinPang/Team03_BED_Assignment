@@ -219,7 +219,7 @@ async function getOrderHistoryById(orderId, userId) {
         `);
 
         return {
-            order: orderResult.recordset[0],
+            order,
             items: itemResult.recordset,
             timeline: timelineResult.recordset,
         };

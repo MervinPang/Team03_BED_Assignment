@@ -205,7 +205,6 @@ CREATE TABLE Payment
 
     CONSTRAINT             PK_Payment                      PRIMARY KEY (PaymentID),
     CONSTRAINT             UQ_Payment_OrderID              UNIQUE (OrderID),
-    CONSTRAINT             UQ_Payment_TransactionReference UNIQUE (TransactionReference),
     CONSTRAINT             FK_Payment_CustomerOrder
         FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID),
     CONSTRAINT             CHK_Payment_Method
@@ -322,9 +321,14 @@ CREATE TABLE RentalAgreement
 INSERT INTO UserAccount (Username, Email, PasswordHash, Role)
 VALUES
 ('mervin_customer', 'mervin.customer@example.com', 'hashedpassword123', 'customer'),
-('leris_customer', 'customer.two@example.com', 'hashedpassword123', 'customer'),
-('louis_vendor', 'rayne.vendor@example.com', 'hashedpassword123', 'vendor'),
-('rayne_nea', 'louis.nea@example.com', 'hashedpassword123', 'nea_officer');
+('leris_customer', 'leris.customer@example.com', 'hashedpassword123', 'customer'),
+('louis_vendor', 'louis.vendor@example.com', 'hashedpassword123', 'vendor'),
+('rayne_nea', 'rayne.nea@example.com', 'hashedpassword123', 'nea_officer'),
+('uat_customer_a', 'uat.customer.a@example.com', 'hashedpassword123', 'customer'),
+('uat_customer_b', 'uat.customer.b@example.com', 'hashedpassword123', 'customer'),
+('uat_vendor_a', 'uat.vendor.a@example.com', 'hashedpassword123', 'vendor'),
+('uat_vendor_b', 'uat.vendor.b@example.com', 'hashedpassword123', 'vendor'),
+('uat_nea_a', 'uat.nea.a@example.com', 'hashedpassword123', 'nea_officer');
 
 INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
 VALUES
@@ -340,7 +344,9 @@ INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallIma
 VALUES
 (3, '#01-01', 'Ah Tan Chicken Rice', 'Popular chicken rice stall serving steamed and roasted chicken rice.', 'chickenrice.jpg', 1, 1),
 (3, '#01-02', 'Muthu Prata House', 'Prata stall selling crispy prata and curry dishes.', 'prata.jpg', 1, 1),
-(3, '#02-01', 'Selera Nasi Lemak', 'Traditional nasi lemak with chicken wing and sambal.', 'nasilemak.jpg', 1, 2);
+(3, '#02-01', 'Selera Nasi Lemak', 'Traditional nasi lemak with chicken wing and sambal.', 'nasilemak.jpg', 1, 2),
+(7, '#03-01', 'UAT Vendor A Stall', 'Test stall used for Vendor A order ownership testing.', 'uatvendora.jpg', 1, 1),
+(8, '#03-02', 'UAT Vendor B Stall', 'Test stall used for Vendor B order ownership testing.', 'uatvendorb.jpg', 1, 1);
 
 INSERT INTO Cuisine (CuisineName, CuisineDesc)
 VALUES
@@ -357,7 +363,10 @@ VALUES
 (2, 'Plain Prata', 'Crispy plain prata with curry.', 1.50, 'Main Dish', 'plainprata.jpg', 1),
 (2, 'Egg Prata', 'Prata with egg served with curry.', 2.20, 'Main Dish', 'eggprata.jpg', 1),
 (3, 'Nasi Lemak Chicken Wing', 'Nasi lemak with fried chicken wing, egg and sambal.', 4.80, 'Main Dish', 'nasilemak.jpg', 1),
-(3, 'Iced Milo', 'Cold Milo drink.', 1.80, 'Drink', 'icedmilo.jpg', 1);
+(3, 'Iced Milo', 'Cold Milo drink.', 1.80, 'Drink', 'icedmilo.jpg', 1),
+(4, 'Vendor A Test Chicken Rice', 'Chicken rice used for Vendor A ownership testing.', 5.50, 'Main Dish', 'vendora_chickenrice.jpg', 1),
+(4, 'Vendor A Test Drink', 'Drink used for Vendor A same-stall order testing.', 2.00, 'Drink', 'vendora_drink.jpg', 1),
+(5, 'Vendor B Test Noodles', 'Noodles used for Vendor B ownership testing.', 6.00, 'Main Dish', 'vendorb_noodles.jpg', 1);
 
 INSERT INTO MenuItemCuisine (MenuItemID, CuisineID)
 VALUES
@@ -367,7 +376,10 @@ VALUES
 (4, 2),
 (5, 2),
 (6, 3),
-(7, 4);
+(7, 4),
+(8, 1),
+(9, 4),
+(10, 1);
 
 INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, GuestOrderReference, OrderType, OrderStatus, TotalAmount, SpecialInstructions)
 VALUES
