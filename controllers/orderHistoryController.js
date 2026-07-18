@@ -37,10 +37,10 @@ async function getOrderHistoryById(req, res) {
 
         return res.status(200).json(orderHistory);
     } catch (error) {
-        console.error("Controller error (getGuestOrderHistory):", error);
+        console.error("Controller error (getOrderHistoryById):", error);
 
         return res.status(500).json({
-            error: "Error retrieving guest order details",
+            error: "Error retrieving order history details",
         });
     }
 }
@@ -57,7 +57,7 @@ async function getGuestOrderHistory(req, res) {
 
         return res.status(200).json(order);
     } catch (error) {
-        console.error("Controller error (getOrderHistoryById):", error);
+        console.error("Controller error (getGuestOrderHistory):", error);
 
         return res.status(500).json({ error: "Error retrieving guest order history" });
     }
