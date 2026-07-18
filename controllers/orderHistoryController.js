@@ -1,6 +1,6 @@
 const orderHistoryModel = require("../models/orderHistoryModel");
 
-// Retrieve active orders for a registered customer
+// Retrieve all active orders belonging to the authenticated customer
 async function getActiveOrderHistory(req, res) {
     try {
         const orders =
@@ -12,7 +12,7 @@ async function getActiveOrderHistory(req, res) {
     }
 }
 
-// Retrieve previous orders for a registered customer
+// Retrieves completed and cancelled orders for the authenticated customer
 async function getPreviousOrderHistory(req, res) {
     try {
         const orders =
@@ -24,7 +24,7 @@ async function getPreviousOrderHistory(req, res) {
     }
 }
 
-// Retrieve full details for one registered customer's order
+// Retrieves the complete details of a customer's order, including ordered items and status history
 async function getOrderHistoryById(req, res) {
     try {
         const orderId = Number(req.params.id);
@@ -45,7 +45,8 @@ async function getOrderHistoryById(req, res) {
     }
 }
 
-// Retrieve one guest order using its saved reference
+// Retrieves a guest order using the Order ID and
+// Guest Order Reference generated during checkout
 async function getGuestOrderHistory(req, res) {
     try {
         const order =

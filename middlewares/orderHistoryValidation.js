@@ -1,6 +1,6 @@
 const Joi = require("joi");
 
-// Validation schema for registered customer order ID
+// Validates the Order ID supplied in the URL before any database query is performed
 const orderHistoryIdSchema = Joi.object({
     id: Joi.number().integer().positive().required().messages({
             "number.base": "Order ID must be a number",
@@ -10,7 +10,9 @@ const orderHistoryIdSchema = Joi.object({
         }),
 }).unknown(false);
 
-// Validation schema for guest order history
+// Validates guest order lookup requests
+// Guests must provide both the Order ID and
+// the Guest Order Reference to access their order
 const guestOrderHistorySchema = Joi.object({
     OrderID: Joi.number().integer().positive().required().messages({
             "number.base": "Order ID must be a number",
@@ -28,7 +30,7 @@ const guestOrderHistorySchema = Joi.object({
         }),
 }).unknown(false);
 
-// Validate order ID from URL parameter
+// Validates guest order lookup requests before retrieving any order information
 function validateOrderHistoryId(req, res, next) {
     const { error, value } = orderHistoryIdSchema.validate(
         req.params,

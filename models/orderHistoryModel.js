@@ -1,7 +1,8 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-// Retrieve active orders for a registered customer
+// Retrieve active orders for the authenticated customer
+// Active orders include Pending, Preparing and Ready orders
 async function getActiveOrderHistory(userId) {
     let connection;
 
@@ -68,7 +69,7 @@ async function getActiveOrderHistory(userId) {
     }
 }
 
-// Retrieve completed and cancelled orders for a registered customer
+// Retrieve completed and cancelled orders so customers can view their order history
 async function getPreviousOrderHistory(userId) {
     let connection;
 
@@ -134,7 +135,8 @@ async function getPreviousOrderHistory(userId) {
     }
 }
 
-// Retrieve full details for one registered customer's order
+// Retrieve complete order details for the authenticated customer
+// The response includes order information, ordered items and the order status timeline
 async function getOrderHistoryById(orderId, userId) {
     let connection;
 
@@ -187,6 +189,7 @@ async function getOrderHistoryById(orderId, userId) {
 
         const order = orderResult.recordset[0];
 
+        // Retrieve every menu item that belongs to the selected order
         const itemRequest = connection.request();
         itemRequest.input("OrderID", sql.Int, orderId);
 
@@ -206,6 +209,8 @@ async function getOrderHistoryById(orderId, userId) {
             ORDER BY oi.OrderItemID;
         `);
 
+        // Retrieve the complete order status history
+        // Customer can track the order's progress
         const timelineRequest = connection.request();
         timelineRequest.input("OrderID", sql.Int, orderId);
 
@@ -236,14 +241,16 @@ async function getOrderHistoryById(orderId, userId) {
     }
 }
 
-// Retrieve one guest order using values stored in localStorage
+// Retrieves a guest order using the Order ID and
+// Guest Order Reference stored after checkout
+// This allows guests to access their order history without creating an account
 async function getGuestOrderHistory(orderId, guestOrderReference) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        // Retrieve the guest order, stall, hawker centre and payment details
+        // Retrieve the guest order together with its stall, hawker centre and payment information
         const orderRequest = connection.request();
 
         orderRequest.input("OrderID", sql.Int, orderId);
@@ -295,7 +302,7 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
             return null;
         }
 
-        // Retrieve all items belonging to the guest order
+        // Retrieve every menu item included in the guest's order
         const itemRequest = connection.request();
         itemRequest.input("OrderID", sql.Int, orderId);
 
@@ -318,7 +325,7 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
                 oi.OrderItemID;
         `);
 
-        // Retrieve the guest order's status timeline
+        // Retrieve the complete order status history for the guest's order
         const timelineRequest = connection.request();
         timelineRequest.input("OrderID", sql.Int, orderId);
 
