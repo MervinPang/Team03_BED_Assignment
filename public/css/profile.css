@@ -107,3 +107,46 @@
     flex-direction: column;
   }
 }
+
+/* Profile picture inside the avatar */
+.profile-avatar img,
+.profile-avatar-large img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: inherit;
+}
+
+/* Avatar picker */
+.avatar-picker {
+  display: grid;
+  gap: 10px;
+  justify-items: center;
+  margin-top: 14px;
+}
+
+.avatar-options {
+  display: flex;
+  gap: 8px;
+}
+
+.avatar-options button {
+  width: 44px;
+  height: 44px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: border-color .18s ease, transform .18s ease;
+}
+
+.avatar-options button:hover {
+  border-color: var(--brand);
+  transform: translateY(-2px);
+}
+
+.avatar-options img {
+  width: 100%;
+  height: 100%;
+}
