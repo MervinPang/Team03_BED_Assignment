@@ -63,6 +63,7 @@ async function loginUser(req, res) {
         // If the credentials are valid it will generate a JWT that expires in 1 hour
         const payload = {
             id: user.UserID,
+            username: user.Username,
             email: user.Email,
             role: user.Role,
         };

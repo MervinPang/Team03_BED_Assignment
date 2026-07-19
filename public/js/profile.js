@@ -68,6 +68,31 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("profileAvatar").textContent =
     String(displayName).trim().charAt(0).toUpperCase() || "U";
 
+  // Profile picture, use the saved avatar
+  const AVATAR_KEY = `hawker_avatar_${userId}`;
+  const avatarBox = document.getElementById("profileAvatar");
+
+  function applyAvatar() {
+    const saved = localStorage.getItem(AVATAR_KEY);
+
+    if (saved) {
+      avatarBox.innerHTML = `<img src="${esc(saved)}" alt="Profile picture">`;
+    } else {
+      avatarBox.textContent =
+        String(displayName).trim().charAt(0).toUpperCase() || "U";
+    }
+  }
+
+  document.querySelectorAll("[data-avatar]").forEach(button => {
+    button.addEventListener("click", () => {
+      localStorage.setItem(AVATAR_KEY, button.dataset.avatar);
+      applyAvatar();
+      showToast("Profile picture updated.");
+    });
+  });
+
+  applyAvatar();
+
   const actionsByRole = {
     customer: [
       {
