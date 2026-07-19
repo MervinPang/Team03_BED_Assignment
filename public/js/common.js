@@ -75,6 +75,7 @@ function getCurrentUser() {
   return {
     id: payload.id ?? payload.UserID ?? payload.userId,
     username: payload.username ?? payload.Username ?? payload.name ?? "User",
+    email: payload.email ?? payload.Email ?? "",
     role: payload.role ?? payload.Role
   };
 }
