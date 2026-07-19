@@ -17,8 +17,8 @@
   display: grid;
   place-items: center;
   border-radius: 12px;
-  background: var(--soft-green, #e8f1ec);
-  color: var(--green, #126b43);
+  background: var(--bg2);
+  color: var(--brand);
   font-weight: 800;
 }
 
@@ -40,27 +40,82 @@
   margin-bottom: 0;
 }
 
-@media (max-width: 560px) {
-  .analytics-item-row {
-    grid-template-columns: 34px minmax(0, 1fr);
-  }
-
-  .analytics-item-row>strong:last-child {
-    display: none;
-  }
+/* vendor.html uses "dashboard-tabs" — alias it to the global .tabs treatment */
+.dashboard-tabs {
+  display: flex;
+  gap: 8px;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
 }
 
-[hidden] {
-  display: none !important;
+/* --- Payment method + status strip on each order card --- */
+.payment-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg2);
+  border-radius: 0; /* full-bleed banner, clipped by the card's overflow: hidden */
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--ink);
 }
 
-.form-message.warning {
-  color: #7a5200;
-  background: #fff7df;
-  border: 1px solid #efd38a;
+/* --- Inline warning banner (cash awaiting / payment unsuccessful) --- */
+.cash-warning {
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  background: #fff7e0;
+  border: 1px solid #efd79f;
+  display: grid;
+  gap: 3px;
 }
 
-.nav-link[hidden],
-.cart-pill[hidden] {
-  display: none !important;
+.cash-warning strong {
+  color: var(--warn);
+  font-size: 0.9rem;
+}
+
+.cash-warning p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+/* --- Order card body rhythm --- */
+.vendor-order-card {
+  display: grid;
+  gap: 15px;
+  padding: 21px;
+  overflow: hidden;
+}
+
+.vendor-order-card .payment-strip {
+  margin-right: -21px;
+  margin-left: -21px;
+  width: calc(100% + 42px);
+}
+
+.vendor-order-card .row-between > div > .small {
+  display: block;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  margin-bottom: 2px;
+}
+
+.vendor-order-card h3 {
+  margin: 6px 0 0;
+  font-size: 1.05rem;
+}
+
+.vendor-order-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+}
+
+#vendorOrdersList {
+  gap: 18px;
 }
