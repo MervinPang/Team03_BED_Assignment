@@ -21,6 +21,9 @@ document.addEventListener("DOMContentLoaded", () => {
   document.getElementById("confirmationOrderId").textContent =
     `#${confirmation.orderId}`;
 
+  document.getElementById("confirmationTransactionReference").textContent =
+    confirmation.transactionReference || "Not applicable";
+
   document.getElementById("confirmationEyebrow").textContent =
     isCash ? "Order submitted" : "Payment completed";
 

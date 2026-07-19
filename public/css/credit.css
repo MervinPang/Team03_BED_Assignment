@@ -1,0 +1,50 @@
+.credit-page-header {
+  margin-bottom: 28px;
+}
+
+.credit-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22px;
+}
+
+.credit-card {
+  display: grid;
+  gap: 14px;
+  height: 100%;
+  padding: 24px;
+}
+
+.credit-card h3,
+.credit-card p {
+  margin: 0;
+}
+
+.credit-card p {
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.credit-source-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.credit-source-list a {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .credit-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .credit-grid {
+    grid-template-columns: 1fr;
+  }
+}

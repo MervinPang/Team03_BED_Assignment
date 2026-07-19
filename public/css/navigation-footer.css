@@ -1,0 +1,77 @@
+html {
+  scroll-behavior: auto;
+}
+
+body {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+body>main,
+.page-shell {
+  flex: 1 0 auto;
+}
+
+#siteFooter,
+.site-footer {
+  position: static !important;
+  inset: auto !important;
+  width: 100%;
+  margin-top: auto;
+  flex: 0 0 auto;
+  z-index: 1;
+}
+
+.site-footer a,
+#siteFooter a {
+  scroll-margin-top: 0;
+}
+
+.user-status-dot,
+.status-dot {
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  background: #29b36b;
+  box-shadow: 0 0 0 4px rgba(41, 179, 107, .12);
+}
+
+.user-status-dot+.user-status-dot,
+.status-dot+.status-dot {
+  display: none !important;
+}
+
+.nav-profile-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  font-weight: 800;
+  color: var(--ink);
+  background: #fff;
+  text-decoration: none;
+}
+
+.nav-profile-link:hover,
+.nav-profile-link.active {
+  color: var(--primary);
+  border-color: rgba(21, 122, 74, .25);
+  background: #edf8f1;
+}
+
+.footer-clock-icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 18px;
+  object-fit: contain;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
+  filter: none;
+  opacity: 1;
+}

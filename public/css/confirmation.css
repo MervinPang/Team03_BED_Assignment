@@ -1,0 +1,73 @@
+.confirmation-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 220px);
+  padding: 48px 0;
+}
+
+.confirmation-card {
+  width: min(100%, 680px);
+  padding: 36px;
+  text-align: center;
+}
+
+.confirmation-icon {
+  width: 72px;
+  height: 72px;
+  display: grid;
+  place-items: center;
+  margin: 0 auto 22px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+}
+
+.confirmation-icon img {
+  width: 34px;
+  height: 34px;
+}
+
+.confirmation-title {
+  margin: 0 0 10px;
+}
+
+.confirmation-message {
+  max-width: 520px;
+  margin: 0 auto 28px;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.confirmation-summary {
+  display: grid;
+  gap: 14px;
+  margin: 28px 0;
+  padding: 22px;
+  border-radius: 18px;
+  background: var(--surface-soft);
+  text-align: left;
+}
+
+.confirmation-summary-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.confirmation-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+}
+
+@media (max-width: 560px) {
+  .confirmation-card {
+    padding: 26px 20px;
+  }
+
+  .confirmation-summary-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 4px;
+  }
+}

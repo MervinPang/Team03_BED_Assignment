@@ -1,0 +1,46 @@
+.guest-order-page {
+  display: grid;
+  place-items: center;
+  min-height: calc(100vh - 220px);
+  padding: 48px 0;
+}
+
+.guest-order-card {
+  width: min(100%, 620px);
+  padding: 32px;
+}
+
+.guest-order-header {
+  margin-bottom: 24px;
+}
+
+.guest-order-header p {
+  margin-bottom: 0;
+  color: var(--muted);
+  line-height: 1.65;
+}
+
+.guest-order-form {
+  display: grid;
+  gap: 18px;
+}
+
+.guest-order-result {
+  display: grid;
+  gap: 18px;
+  margin-top: 26px;
+}
+
+.guest-order-reference {
+  padding: 16px 18px;
+  border-radius: 14px;
+  background: var(--surface-soft);
+  font-family: monospace;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 560px) {
+  .guest-order-card {
+    padding: 24px 18px;
+  }
+}

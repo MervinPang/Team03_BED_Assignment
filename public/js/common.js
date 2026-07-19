@@ -657,3 +657,29 @@ function redirectNonCustomerFromOrdering() {
 
   return false;
 }
+
+
+function hideHomeForStaffRoles() {
+  const user = getCurrentUser();
+  const currentRole = role(user?.role || user?.Role);
+
+  if (!["vendor", "nea_officer"].includes(currentRole)) {
+    return;
+  }
+
+  document.querySelectorAll(".nav-links a, .nav-link").forEach(link => {
+    const label = (link.textContent || "").trim().toLowerCase();
+    const href = (link.getAttribute("href") || "").toLowerCase();
+
+    if (
+      label === "home" ||
+      href === "/" ||
+      href.endsWith("/index.html") ||
+      href === "index.html"
+    ) {
+      link.remove();
+    }
+  });
+}
+
+document.addEventListener("DOMContentLoaded", hideHomeForStaffRoles);

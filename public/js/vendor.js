@@ -151,11 +151,20 @@ document.addEventListener("DOMContentLoaded", () => {
         const paymentStatus =
           payment?.PaymentStatus || "Not recorded";
 
+        const isCancelled =
+          order.OrderStatus === "Cancelled";
+
+        const isCompleted =
+          order.OrderStatus === "Completed";
+
         const cashAwaitingPayment =
+          !isCancelled &&
+          !isCompleted &&
           payment?.PaymentMethod === "Cash" &&
           paymentStatus === "Pending";
 
         const canPrepare =
+          !isCancelled &&
           paymentStatus === "Successful" &&
           order.OrderStatus === "Pending";
 
@@ -214,7 +223,7 @@ document.addEventListener("DOMContentLoaded", () => {
             : ""
           }
 
-            ${!cashAwaitingPayment && paymentStatus !== "Successful"
+            ${!isCancelled && !isCompleted && !cashAwaitingPayment && paymentStatus !== "Successful"
             ? `
                   <div class="cash-warning">
                     <strong>Payment not successful</strong>

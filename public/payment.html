@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width,initial-scale=1" name="viewport" />
+    <title>
+        Payment · HawkerHub
+    </title>
+    <link href="/css/payment.css" rel="stylesheet" />
+    <link href="css/global.css" rel="stylesheet" />
+    <link href="css/navigation-footer.css" rel="stylesheet" />
+</head>
+
+<body>
+    <header class="site-header">
+        <div class="shell nav nav-premium">
+            <a aria-label="HawkerHub home" class="brand brand-premium" href="/index.html">
+                <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                <span class="brand-copy">
+                    <strong>
+                        HawkerHub
+                    </strong>
+                    <small>
+                        Discover · Order · Collect
+                    </small>
+                </span>
+            </a>
+            <button aria-expanded="false" aria-label="Open navigation" class="mobile-toggle" data-mobile-toggle=""
+                type="button">
+                <span>
+                </span>
+                <span>
+                </span>
+                <span>
+                </span>
+            </button>
+            <nav aria-label="Main navigation" class="nav-links">
+                <a class="nav-link" href="/index.html">
+                    Home
+                </a>
+                <a class="nav-link" href="/stalls.html">
+                    Place Order
+                </a>
+                <a class="nav-link" data-customer-only="" href="/history.html">
+                    Your Orders
+                </a>
+                <a class="nav-link" data-auth-only="" href="/profile.html">
+                    Profile
+                </a>
+                <a class="nav-link" data-guest-only="" href="/guest-order.html">
+                    Track Order
+                </a>
+                <a class="nav-link" href="/reviews.html">
+                    Reviews
+                </a>
+            </nav>
+            <div class="nav-actions">
+                <a class="cart-pill cart-pill-premium" href="/checkout.html">
+                    <img alt="" class="nav-icon" src="/images/takeaway-black.svg" />
+                    <span>
+                        Cart
+                    </span>
+                    <strong data-cart-count="">
+                        0
+                    </strong>
+                </a>
+            </div>
+        </div>
+    </header>
+    <main class="payment-main">
+        <section class="shell payment-page">
+            <div class="payment-page-header">
+                <div>
+                    <span class="eyebrow">
+                        Secure checkout
+                    </span>
+                    <h1>
+                        Complete your payment
+                    </h1>
+                    <p>
+                        Review the order, confirm your payment details, and submit it securely to the HawkerHub backend.
+                    </p>
+                </div>
+                <div class="secure-checkout-badge">
+                    <img alt="" src="/images/tick.svg" />
+                    <span>
+                        Backend-validated checkout
+                    </span>
+                </div>
+            </div>
+            <div class="payment-layout-bed">
+                <section aria-labelledby="paymentMethodTitle" class="payment-card-bed">
+                    <div class="payment-heading">
+                        <span class="payment-heading-icon">
+                            <img alt="" id="paymentHeadingIcon" src="/images/credit-card.svg" />
+                        </span>
+                        <div>
+                            <span class="payment-kicker">
+                                Selected payment method
+                            </span>
+                            <h2 id="paymentMethodTitle">
+                                Payment
+                            </h2>
+                        </div>
+                    </div>
+                    <div class="transaction-reference-card">
+                        <div>
+                            <span>
+                                Transaction reference
+                            </span>
+                            <strong id="displayTransactionReference">
+                                Generating…
+                            </strong>
+                        </div>
+                        <button class="copy-reference-button" id="copyReferenceButton" type="button">
+                            Copy
+                        </button>
+                    </div>
+                    <div class="method-panel" hidden="" id="cashPanel">
+                        <div class="method-panel-top">
+                            <span class="method-illustration">
+                                <img alt="" src="/images/takeaway-black.svg" />
+                            </span>
+                            <div>
+                                <h3>
+                                    Pay cash at the stall
+                                </h3>
+                                <p>
+                                    Your payment will remain pending until the vendor receives the cash and confirms it.
+                                </p>
+                            </div>
+                        </div>
+                        <div class="cash-instructions">
+                            <div>
+                                <span>
+                                    1
+                                </span>
+                                <p>
+                                    Place the order using the button below.
+                                </p>
+                            </div>
+                            <div>
+                                <span>
+                                    2
+                                </span>
+                                <p>
+                                    Proceed to the selected stall and quote your order number.
+                                </p>
+                            </div>
+                            <div>
+                                <span>
+                                    3
+                                </span>
+                                <p>
+                                    The vendor confirms the cash payment before preparation begins.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="method-panel" hidden="" id="payNowPanel">
+                        <div class="paynow-content">
+                            <div class="paynow-copy">
+                                <span class="method-label">
+                                    <img alt="" src="/images/qr-code.svg" />
+                                    PayNow
+                                </span>
+                                <h3>
+                                    Scan to pay
+                                </h3>
+                                <p>
+                                    Open your banking application, scan the QR code, and complete the transfer before
+                                    confirming below.
+                                </p>
+                                <div class="paynow-reminder">
+                                    <img alt="" src="/images/tick.svg" />
+                                    <span>
+                                        Use the transaction reference shown above in your transfer description.
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="qr-frame">
+                                <img alt="PayNow QR code" src="/images/paynow-qr.png" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="method-panel" hidden="" id="cardPanel">
+                        <div class="card-demo-notice">
+                            <img alt="" src="/images/tick.svg" />
+                            <div>
+                                <strong>
+                                    Secure assignment demonstration
+                                </strong>
+                                <span>
+                                    Card details are validated only in the browser and are never sent to SQL Server.
+                                </span>
+                            </div>
+                        </div>
+                        <div class="card-form-grid">
+                            <div class="field field-full">
+                                <label for="cardholderName">
+                                    Cardholder name
+                                </label>
+                                <input autocomplete="cc-name" class="input" id="cardholderName" maxlength="80"
+                                    placeholder="Name shown on card" />
+                            </div>
+                            <div class="field field-full">
+                                <label for="cardNumber">
+                                    Card number
+                                </label>
+                                <div class="input-with-icon">
+                                    <img alt="" src="/images/credit-card.svg" />
+                                    <input autocomplete="cc-number" class="input" id="cardNumber" inputmode="numeric"
+                                        maxlength="19" placeholder="4111 1111 1111 1111" />
+                                </div>
+                            </div>
+                            <div class="field">
+                                <label for="cardExpiry">
+                                    Expiry date
+                                </label>
+                                <input autocomplete="cc-exp" class="input" id="cardExpiry" maxlength="5"
+                                    placeholder="MM/YY" />
+                            </div>
+                            <div class="field">
+                                <label for="cardCvv">
+                                    CVV
+                                </label>
+                                <input autocomplete="cc-csc" class="input" id="cardCvv" inputmode="numeric"
+                                    maxlength="4" placeholder="123" type="password" />
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-message" id="paymentMessage" role="status">
+                    </div>
+                    <div class="payment-actions">
+                        <a class="button secondary" href="/checkout.html">
+                            Back to checkout
+                        </a>
+                        <button class="button primary" id="confirmPaymentButton" type="button">
+                            Confirm and place order
+                        </button>
+                    </div>
+                </section>
+                <aside aria-label="Order summary" class="payment-summary-card" id="paymentSummary">
+                </aside>
+            </div>
+        </section>
+    </main>
+    <footer class="site-footer">
+        <div class="footer-bottom">
+            <div class="shell footer-bottom-row">
+                <span>
+                    © 2026 Team 03 HawkerHubSG · Back-End Development Assignment
+                </span>
+            </div>
+        </div>
+    </footer>
+    <div class="toast-region">
+    </div>
+    <script src="/js/data.js">
+    </script>
+    <script src="/js/common.js">
+    </script>
+    <script src="/js/payment.js">
+    </script>
+</body>
+
+</html>

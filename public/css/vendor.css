@@ -1,0 +1,66 @@
+.analytics-item-row {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 14px;
+  padding: 15px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.analytics-item-row:last-child {
+  border-bottom: 0;
+}
+
+.analytics-rank {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  background: var(--soft-green, #e8f1ec);
+  color: var(--green, #126b43);
+  font-weight: 800;
+}
+
+.analytics-item-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.analytics-item-copy strong {
+  overflow-wrap: anywhere;
+}
+
+.analytics-empty {
+  padding: 18px 0 4px;
+}
+
+.analytics-empty p {
+  margin-bottom: 0;
+}
+
+@media (max-width: 560px) {
+  .analytics-item-row {
+    grid-template-columns: 34px minmax(0, 1fr);
+  }
+
+  .analytics-item-row>strong:last-child {
+    display: none;
+  }
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.form-message.warning {
+  color: #7a5200;
+  background: #fff7df;
+  border: 1px solid #efd38a;
+}
+
+.nav-link[hidden],
+.cart-pill[hidden] {
+  display: none !important;
+}

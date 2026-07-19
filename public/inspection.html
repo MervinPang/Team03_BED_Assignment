@@ -1,228 +1,356 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>Inspection Management · HawkerHub</title>
-  <link rel="stylesheet" href="/css/styles.css">
+      <meta charset="utf-8" />
+      <meta content="width=device-width,initial-scale=1" name="viewport" />
+      <title>
+            Inspection Management · HawkerHub
+      </title>
+      <link href="/css/inspection.css" rel="stylesheet" />
+      <link href="css/global.css" rel="stylesheet" />
+      <link href="css/navigation-footer.css" rel="stylesheet" />
 </head>
 
 <body>
-  <header class="site-header">
-    <div class="shell nav nav-premium">
-      <a class="brand brand-premium" href="/index.html" aria-label="HawkerHub home">
-        <span class="brand-mark">H</span>
-        <span class="brand-copy">
-          <strong>HawkerHub</strong>
-          <small>Discover · Order · Collect</small>
-        </span>
-      </a>
-
-      <button class="mobile-toggle" type="button" data-mobile-toggle aria-label="Open navigation" aria-expanded="false">
-        <span></span><span></span><span></span>
-      </button>
-
-      <nav class="nav-links" aria-label="Main navigation">
-        <a class="nav-link" href="/index.html">Home</a>
-        <a class="nav-link" href="/stalls.html">Place Order</a>
-        <a class="nav-link" href="/history.html" data-customer-only>Your Orders</a>
-        <a class="nav-link" href="/profile.html" data-auth-only>Profile</a>
-        <a class="nav-link" href="/guest-order.html" data-guest-only>Track Order</a>
-        <a class="nav-link" href="/reviews.html">Reviews</a>
-        <a class="nav-link" href="/vendor.html" data-vendor-only>Vendor dashboard</a>
-        <a class="nav-link" href="/inspection.html" data-nea-only>Inspections</a>
-      </nav>
-
-      <div class="nav-actions">
-        <a class="cart-pill cart-pill-premium" href="/checkout.html" aria-label="View cart">
-          <span class="cart-icon" aria-hidden="true">🛒</span>
-          <span>Cart</span>
-          <strong data-cart-count>0</strong>
-        </a>
-
-
-        </span>
-
-        <a class="button secondary nav-sign-in" href="/login.html" data-guest-only>Sign In</a>
-        <button class="button primary nav-logout" type="button" data-auth-only data-logout>Log Out</button>
-      </div>
-    </div>
-  </header>
-
-  <main>
-    <section class="shell">
-      <div class="page-head">
-        <div>
-          <span class="eyebrow">Regulatory and compliance</span>
-          <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">Inspection management</h1>
-          <p class="lead">Submit inspection findings and review a stall’s hygiene-grade history.</p>
-        </div>
-      </div>
-
-      <div class="inspection-dashboard">
-        <section class="card inspection-form-card">
-          <div class="inspection-card-heading">
-            <div class="inspection-icon">✓</div>
-            <div>
-              <span class="small muted">New inspection</span>
-              <h2>Record findings</h2>
+      <header class="site-header">
+            <div class="shell nav nav-premium">
+                  <a aria-label="HawkerHub home" class="brand brand-premium" href="/index.html">
+                        <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                        <span class="brand-copy">
+                              <strong>
+                                    HawkerHub
+                              </strong>
+                              <small>
+                                    Discover · Order · Collect
+                              </small>
+                        </span>
+                  </a>
+                  <button aria-expanded="false" aria-label="Open navigation" class="mobile-toggle" data-mobile-toggle=""
+                        type="button">
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                  </button>
+                  <nav aria-label="Main navigation" class="nav-links">
+                        <a class="nav-link" href="/index.html">
+                              Home
+                        </a>
+                        <a class="nav-link" href="/stalls.html">
+                              Place Order
+                        </a>
+                        <a class="nav-link" data-customer-only="" href="/history.html">
+                              Your Orders
+                        </a>
+                        <a class="nav-link" data-auth-only="" href="/profile.html">
+                              Profile
+                        </a>
+                        <a class="nav-link" data-guest-only="" href="/guest-order.html">
+                              Track Order
+                        </a>
+                        <a class="nav-link" href="/reviews.html">
+                              Reviews
+                        </a>
+                        <a class="nav-link" data-vendor-only="" href="/vendor.html">
+                              Vendor dashboard
+                        </a>
+                        <a class="nav-link" data-nea-only="" href="/inspection.html">
+                              Inspections
+                        </a>
+                  </nav>
+                  <div class="nav-actions">
+                        <a aria-label="View cart" class="cart-pill cart-pill-premium" href="/checkout.html">
+                              <img alt="" class="nav-icon" src="/images/takeaway-black.svg" />
+                              <span>
+                                    Cart
+                              </span>
+                              <strong data-cart-count="">
+                                    0
+                              </strong>
+                        </a>
+                        <a class="button secondary nav-sign-in" data-guest-only="" href="/login.html">
+                              Sign In
+                        </a>
+                        <button class="button primary nav-logout" data-auth-only="" data-logout="" type="button">
+                              Log Out
+                        </button>
+                  </div>
             </div>
-          </div>
-
-          <form id="inspectionForm" class="stack">
-            <div class="grid grid-2">
-              <div class="field">
-                <label for="stallId">Stall ID</label>
-                <input class="input" id="stallId" type="number" min="1" required>
-              </div>
-
-              <div class="field">
-                <label for="score">Inspection score</label>
-                <div class="score-input-wrap">
-                  <input class="input" id="score" type="number" min="0" max="100" step="1" required>
-                  <span>/ 100</span>
-                </div>
-              </div>
+      </header>
+      <main>
+            <section class="shell">
+                  <div class="page-head">
+                        <div>
+                              <span class="eyebrow">
+                                    Regulatory and compliance
+                              </span>
+                              <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">
+                                    Inspection management
+                              </h1>
+                              <p class="lead">
+                                    Submit inspection findings and review a stall’s hygiene-grade history.
+                              </p>
+                        </div>
+                  </div>
+                  <div class="inspection-dashboard">
+                        <section class="card inspection-form-card">
+                              <div class="inspection-card-heading">
+                                    <div class="inspection-icon">
+                                          ✓
+                                    </div>
+                                    <div>
+                                          <span class="small muted">
+                                                New inspection
+                                          </span>
+                                          <h2>
+                                                Record findings
+                                          </h2>
+                                    </div>
+                              </div>
+                              <form class="stack" id="inspectionForm">
+                                    <div class="grid grid-2">
+                                          <div class="field">
+                                                <label for="stallId">
+                                                      Stall ID
+                                                </label>
+                                                <input class="input" id="stallId" min="1" required="" type="number" />
+                                          </div>
+                                          <div class="field">
+                                                <label for="score">
+                                                      Inspection score
+                                                </label>
+                                                <div class="score-input-wrap">
+                                                      <input class="input" id="score" max="100" min="0" required=""
+                                                            step="1" type="number" />
+                                                      <span>
+                                                            / 100
+                                                      </span>
+                                                </div>
+                                          </div>
+                                    </div>
+                                    <div class="grade-preview" id="gradePreview">
+                                          <div>
+                                                <span class="small muted">
+                                                      Expected hygiene grade
+                                                </span>
+                                                <strong id="gradeValue">
+                                                      —
+                                                </strong>
+                                          </div>
+                                          <div class="grade-scale">
+                                                <span>
+                                                      A · 85–100
+                                                </span>
+                                                <span>
+                                                      B · 70–84
+                                                </span>
+                                                <span>
+                                                      C · 50–69
+                                                </span>
+                                                <span>
+                                                      D · 0–49
+                                                </span>
+                                          </div>
+                                    </div>
+                                    <div class="field">
+                                          <div class="row-between">
+                                                <label for="remarks">
+                                                      Remarks
+                                                </label>
+                                                <span class="small muted" id="remarksCounter">
+                                                      0 / 500
+                                                </span>
+                                          </div>
+                                          <textarea class="textarea" id="remarks" maxlength="500"
+                                                placeholder="Record cleanliness, food handling and compliance observations."></textarea>
+                                    </div>
+                                    <div aria-live="polite" class="form-message" id="inspectionMessage">
+                                    </div>
+                                    <button class="button primary button-block" id="submitInspectionButton"
+                                          type="submit">
+                                          Submit inspection report
+                                    </button>
+                              </form>
+                        </section>
+                        <aside class="inspection-side stack">
+                              <article class="card metric inspection-metric">
+                                    <span class="muted">
+                                          Selected score
+                                    </span>
+                                    <div class="metric-value" id="selectedScore">
+                                          —
+                                    </div>
+                                    <span class="small muted">
+                                          out of 100
+                                    </span>
+                              </article>
+                              <article class="card card-pad">
+                                    <span class="small muted">
+                                          Grade assessment
+                                    </span>
+                                    <h3 id="gradeDescription">
+                                          Enter a score to preview the hygiene grade.
+                                    </h3>
+                              </article>
+                        </aside>
+                  </div>
+                  <section class="card history-panel">
+                        <div class="history-panel-head">
+                              <div>
+                                    <span class="small muted">
+                                          Inspection records
+                                    </span>
+                                    <h2>
+                                          Hygiene history
+                                    </h2>
+                              </div>
+                              <form class="history-search" id="historyForm">
+                                    <input class="input" id="historyStallId" min="1" placeholder="Enter Stall ID"
+                                          required="" type="number" />
+                                    <button class="button secondary" type="submit">
+                                          Load history
+                                    </button>
+                              </form>
+                        </div>
+                        <div class="form-message" id="historyMessage">
+                        </div>
+                        <div class="inspection-history" id="inspectionHistory">
+                              <div class="empty">
+                                    <div class="empty-state-icon">
+                                          📋
+                                    </div>
+                                    <h3>
+                                          No stall selected
+                                    </h3>
+                                    <p class="muted">
+                                          Enter a Stall ID to view its inspection records.
+                                    </p>
+                              </div>
+                        </div>
+                  </section>
+            </section>
+      </main>
+      <footer class="site-footer">
+            <div class="footer-social-band">
+                  <div class="shell footer-social-row">
+                        <p>
+                              Stay connected with HawkerHub
+                        </p>
+                        <div aria-label="Social media links" class="social-links">
+                              <a aria-label="LinkedIn" href="#" title="LinkedIn">
+                                    <img alt="" src="/images/linkedin.svg" />
+                              </a>
+                              <a aria-label="Instagram" href="#" title="Instagram">
+                                    <img alt="" src="/images/instagram.svg" />
+                              </a>
+                              <a aria-label="X" href="#" title="X">
+                                    <img alt="" src="/images/twitter.svg" />
+                              </a>
+                        </div>
+                  </div>
             </div>
-
-            <div class="grade-preview" id="gradePreview">
-              <div>
-                <span class="small muted">Expected hygiene grade</span>
-                <strong id="gradeValue">—</strong>
-              </div>
-              <div class="grade-scale">
-                <span>A · 85–100</span>
-                <span>B · 70–84</span>
-                <span>C · 50–69</span>
-                <span>D · 0–49</span>
-              </div>
+            <div class="footer-main">
+                  <div class="shell footer-grid">
+                        <section class="footer-brand-column">
+                              <a class="footer-logo" href="/index.html">
+                                    <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                                    <span>
+                                          <strong>
+                                                HawkerHub
+                                          </strong>
+                                          <small>
+                                                Singapore hawker ordering
+                                          </small>
+                                    </span>
+                              </a>
+                              <p>
+                                    A clear, convenient ordering experience for customers, vendors and
+                                    regulatory officers across Singapore's hawker community.
+                              </p>
+                              <span class="footer-team">
+                                    Team 03 · BED Assignment
+                              </span>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Explore
+                              </h3>
+                              <a href="/index.html">
+                                    Home
+                              </a>
+                              <a href="/stalls.html">
+                                    Place Order
+                              </a>
+                              <a href="/reviews.html">
+                                    Stall reviews
+                              </a>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Account &amp; orders
+                              </h3>
+                              <a data-guest-only="" href="/login.html">
+                                    Sign In
+                              </a>
+                              <a data-guest-only="" href="/register.html">
+                                    Create account
+                              </a>
+                              <a data-customer-only="" href="/history.html">
+                                    Your Orders
+                              </a>
+                              <a data-auth-only="" href="/profile.html">
+                                    Profile
+                              </a>
+                              <a data-guest-only="" href="/guest-order.html">
+                                    Track guest order
+                              </a>
+                              <a data-vendor-only="" href="/vendor.html">
+                                    Vendor dashboard
+                              </a>
+                              <a data-nea-only="" href="/inspection.html">
+                                    Inspection portal
+                              </a>
+                        </section>
+                        <section class="footer-column footer-contact">
+                              <h3>
+                                    Contact
+                              </h3>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/location.svg" />
+                                    Singapore
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/mail.svg" />
+                                    HawkerHubSG@gmail.com
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/phone.svg" />
+                                    +65 9120 0844
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon footer-clock-icon" src="/images/clock.svg" />
+                                    Daily, 8:00 AM–10:00 PM
+                              </p>
+                        </section>
+                  </div>
             </div>
-
-            <div class="field">
-              <div class="row-between">
-                <label for="remarks">Remarks</label>
-                <span class="small muted" id="remarksCounter">0 / 500</span>
-              </div>
-              <textarea class="textarea" id="remarks" maxlength="500"
-                placeholder="Record cleanliness, food handling and compliance observations."></textarea>
+            <div class="footer-bottom">
+                  <div class="shell footer-bottom-row">
+                        <span>
+                              © 2026 Copyright: Team 03 HawkerHubSG
+                        </span>
+                  </div>
             </div>
-
-            <div class="form-message" id="inspectionMessage" aria-live="polite"></div>
-
-            <button class="button primary button-block" id="submitInspectionButton" type="submit">
-              Submit inspection report
-            </button>
-          </form>
-        </section>
-
-        <aside class="inspection-side stack">
-          <article class="card metric inspection-metric">
-            <span class="muted">Selected score</span>
-            <div class="metric-value" id="selectedScore">—</div>
-            <span class="small muted">out of 100</span>
-          </article>
-
-          <article class="card card-pad">
-            <span class="small muted">Grade assessment</span>
-            <h3 id="gradeDescription">Enter a score to preview the hygiene grade.</h3>
-          </article>
-        </aside>
+      </footer>
+      <div aria-live="polite" class="toast-region">
       </div>
-
-      <section class="card history-panel">
-        <div class="history-panel-head">
-          <div>
-            <span class="small muted">Inspection records</span>
-            <h2>Hygiene history</h2>
-          </div>
-
-          <form id="historyForm" class="history-search">
-            <input class="input" id="historyStallId" type="number" min="1" placeholder="Enter Stall ID" required>
-            <button class="button secondary" type="submit">Load history</button>
-          </form>
-        </div>
-
-        <div class="form-message" id="historyMessage"></div>
-        <div id="inspectionHistory" class="inspection-history">
-          <div class="empty">
-            <div class="empty-state-icon">📋</div>
-            <h3>No stall selected</h3>
-            <p class="muted">Enter a Stall ID to view its inspection records.</p>
-          </div>
-        </div>
-      </section>
-    </section>
-  </main>
-
-  <footer class="site-footer">
-    <div class="footer-social-band">
-      <div class="shell footer-social-row">
-        <p>Stay connected with HawkerHub</p>
-        <div class="social-links" aria-label="Social media links">
-          <a href="/index.html" aria-label="LinkedIn" title="LinkedIn">in</a>
-          <a href="/index.html" aria-label="Instagram" title="Instagram">◎</a>
-          <a href="/index.html" aria-label="X" title="X">𝕏</a>
-        </div>
-      </div>
-    </div>
-
-    <div class="footer-main">
-      <div class="shell footer-grid">
-        <section class="footer-brand-column">
-          <a class="footer-logo" href="/index.html">
-            <span class="brand-mark">H</span>
-            <span>
-              <strong>HawkerHub</strong>
-              <small>Singapore hawker ordering</small>
-            </span>
-          </a>
-          <p>
-            A clear, convenient ordering experience for customers, vendors and
-            regulatory officers across Singapore's hawker community.
-          </p>
-          <span class="footer-team">Team 03 · BED Assignment</span>
-        </section>
-
-        <section class="footer-column">
-          <h3>Explore</h3>
-          <a href="/index.html">Home</a>
-          <a href="/stalls.html">Place Order</a>
-          <a href="/reviews.html">Stall reviews</a>
-        </section>
-
-        <section class="footer-column">
-          <h3>Account & orders</h3>
-          <a href="/login.html" data-guest-only>Sign In</a>
-          <a href="/register.html" data-guest-only>Create account</a>
-          <a href="/history.html" data-customer-only>Your Orders</a>
-          <a href="/profile.html" data-auth-only>Profile</a>
-          <a href="/guest-order.html" data-guest-only>Track guest order</a>
-          <a href="/vendor.html" data-vendor-only>Vendor dashboard</a>
-          <a href="/inspection.html" data-nea-only>Inspection portal</a>
-        </section>
-
-        <section class="footer-column footer-contact">
-          <h3>Contact</h3>
-          <p><span aria-hidden="true">📍</span> Singapore</p>
-          <p><span aria-hidden="true">✉</span> HawkerHubSG@gmail.com</p>
-          <p><span aria-hidden="true">☎</span> +65 9120 0844</p>
-          <p><span aria-hidden="true">◷</span> Daily, 8:00 AM–10:00 PM</p>
-        </section>
-      </div>
-    </div>
-
-    <div class="footer-bottom">
-      <div class="shell footer-bottom-row">
-        <span>© 2026 Copyright: Team 03 HawkerHubSG</span>
-      </div>
-    </div>
-  </footer>
-
-  <div class="toast-region" aria-live="polite"></div>
-
-  <script src="/js/common.js"></script>
-  <script src="/js/inspection.js"></script>
+      <script src="/js/common.js">
+      </script>
+      <script src="/js/inspection.js">
+      </script>
 </body>
 
 </html>
