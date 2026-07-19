@@ -1,7 +1,7 @@
 window.HAWKER_DATA = {
     stalls: [{
         StallID: 1,
-        StallName: 'Ah Seng Chicken Rice',
+        StallName: 'Ah Tan Chicken Rice',
         Cuisine: 'Chinese',
         Description: 'Tender chicken with fragrant rice and house-made chilli.',
         StallImage: '/images/stall-01-banner.jpg',
