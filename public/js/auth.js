@@ -112,7 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
         showToast(error.message, "error");
       } finally {
         submitButton.disabled = false;
-        submitButton.textContent = "Create account";
+        submitButton.textContent = "Create Account";
       }
     });
   }
