@@ -56,7 +56,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="order-card-bottom">
           <div><span class="small muted">Items</span><strong>${order.TotalQuantity || 0}</strong></div>
           <div><span class="small muted">Total</span><strong>${money(order.TotalAmount)}</strong></div>
-          <button class="button secondary" type="button" data-order-id="${order.OrderID}">View details</button>
+          <button class="button secondary" type="button" data-order-id="${order.OrderID}">View Details</button>
         </div>
       </article>`;
   }
