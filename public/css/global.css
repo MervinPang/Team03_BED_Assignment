@@ -2922,3 +2922,19 @@ body>main {
     padding: 48px 0;
   }
 }
+
+.payment-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  background: #f6f8f5;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-strip .badge {
+  flex-shrink: 0;
+}

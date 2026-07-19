@@ -641,17 +641,6 @@
   background: #b87913;
 }
 
-.payment-strip {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: #f6f8f5;
-  border: 1px solid var(--line);
-}
-
 .detail-actions,
 .vendor-order-actions {
   display: flex;
