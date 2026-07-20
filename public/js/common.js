@@ -512,7 +512,7 @@ function requireVendor() {
 
   if (!user || role(user.role) !== "vendor") {
     window.location.href =
-      "/login.html?next=/vendor.html";
+      "/login.html?next=/vendor-dashboard.html";
     return null;
   }
 
@@ -524,7 +524,7 @@ function requireNeaOfficer() {
 
   if (!user || role(user.role) !== "nea_officer") {
     window.location.href =
-      "/login.html?next=/inspection.html";
+      "/login.html?next=/inspection-reports.html";
     return null;
   }
 
@@ -632,11 +632,11 @@ function getRoleHomePath(user = getCurrentUser()) {
   const userRole = role(user.role || user.Role);
 
   if (userRole === "vendor") {
-    return "/vendor.html";
+    return "/vendor-dashboard.html";
   }
 
   if (userRole === "nea_officer") {
-    return "/inspection.html";
+    return "/inspection-reports.html";
   }
 
   return "/index.html";

@@ -40,7 +40,6 @@
   margin-bottom: 0;
 }
 
-/* vendor.html uses "dashboard-tabs" — alias it to the global .tabs treatment */
 .dashboard-tabs {
   display: flex;
   gap: 8px;

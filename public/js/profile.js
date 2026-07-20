@@ -102,7 +102,7 @@ document.addEventListener("DOMContentLoaded", () => {
         description: "Browse available stalls and order your next meal."
       },
       {
-        href: "/history.html",
+        href: "/order-history.html",
         icon: "🧾",
         title: "Your Orders",
         description: "Track active orders and review your order history."
@@ -116,7 +116,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ],
     vendor: [
       {
-        href: "/vendor.html",
+        href: "/vendor-dashboard.html",
         icon: "▦",
         title: "Vendor Dashboard",
         description: "Manage incoming orders and monitor stall performance."
@@ -124,7 +124,7 @@ document.addEventListener("DOMContentLoaded", () => {
     ],
     nea_officer: [
       {
-        href: "/inspection.html",
+        href: "/inspection-reports.html",
         icon: "✓",
         title: "Inspection Workspace",
         description: "Submit inspections and review regulatory information."

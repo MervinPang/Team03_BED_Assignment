@@ -5,9 +5,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const currentRole = role(existingUser.role);
     const destination =
       currentRole === "vendor"
-        ? "/vendor.html"
+        ? "/vendor-dashboard.html"
         : currentRole === "nea_officer"
-          ? "/inspection.html"
+          ? "/inspection-reports.html"
           : "/stalls.html";
 
     window.location.replace(destination);
@@ -60,9 +60,9 @@ document.addEventListener("DOMContentLoaded", () => {
         const destination =
           next ||
           (currentRole === "vendor"
-            ? "/vendor.html"
+            ? "/vendor-dashboard.html"
             : currentRole === "nea_officer"
-              ? "/inspection.html"
+              ? "/inspection-reports.html"
               : "/stalls.html");
 
         window.location.replace(destination);

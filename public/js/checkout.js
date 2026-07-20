@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", () => {
     currentRole = role(currentUser?.role),
     isMember = currentRole === "customer";
   if (currentUser && !isMember) {
-    window.location.replace(currentRole === "vendor" ? "/vendor.html" : "/inspection.html");
+    window.location.replace(currentRole === "vendor" ? "/vendor-dashboard.html" : "/inspection-reports.html");
     return;
   }
   guestFields.hidden = isMember;

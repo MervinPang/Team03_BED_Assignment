@@ -40,22 +40,22 @@
         <a class="nav-link" href="/stalls.html">
           Place Order
         </a>
-        <a class="nav-link" data-customer-only="" href="/history.html">
+        <a class="nav-link" data-customer-only="" href="/order-history.html">
           Your Orders
         </a>
         <a class="nav-link" data-auth-only="" href="/profile.html">
           Profile
         </a>
-        <a class="nav-link" data-guest-only="" href="/guest-order.html">
+        <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">
           Track Order
         </a>
         <a class="nav-link" href="/reviews.html">
           Reviews
         </a>
-        <a class="nav-link" data-vendor-only="" href="/vendor.html">
+        <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
           Vendor dashboard
         </a>
-        <a class="nav-link" data-nea-only="" href="/inspection.html">
+        <a class="nav-link" data-nea-only="" href="/inspection-reports.html">
           Inspections
         </a>
       </nav>
@@ -100,7 +100,7 @@
             <a class="button primary" href="/stalls.html">
               Explore Food Stalls →
             </a>
-            <a class="button secondary" data-guest-only="" href="/guest-order.html">
+            <a class="button secondary" data-guest-only="" href="/guest-order-tracking.html">
               Track Guest Order
             </a>
           </div>
@@ -250,7 +250,7 @@
             Monitor revenue, track order trends, and identify your best-selling menu items through
             a secure vendor analytics dashboard.
           </p>
-          <a class="button secondary" href="/vendor.html">
+          <a class="button secondary" href="/vendor-dashboard.html">
             Open Dashboard
           </a>
         </article>
@@ -322,19 +322,19 @@
           <a data-guest-only="" href="/register.html">
             Create Account
           </a>
-          <a data-customer-only="" href="/history.html">
+          <a data-customer-only="" href="/order-history.html">
             Your Orders
           </a>
           <a data-auth-only="" href="/profile.html">
             Profile
           </a>
-          <a data-guest-only="" href="/guest-order.html">
+          <a data-guest-only="" href="/guest-order-tracking.html">
             Track Guest Order
           </a>
-          <a data-vendor-only="" href="/vendor.html">
+          <a data-vendor-only="" href="/vendor-dashboard.html">
             Vendor Dashboard
           </a>
-          <a data-nea-only="" href="/inspection.html">
+          <a data-nea-only="" href="/inspection-reports.html">
             Inspection Portal
           </a>
         </section>
@@ -386,11 +386,11 @@
         : String(user.role || user.Role || "").toLowerCase();
 
       if (userRole === "vendor") {
-        window.location.replace("/vendor.html");
+        window.location.replace("/vendor-dashboard.html");
       }
 
       if (userRole === "nea_officer") {
-        window.location.replace("/inspection.html");
+        window.location.replace("/inspection-reports.html");
       }
     });
   </script>

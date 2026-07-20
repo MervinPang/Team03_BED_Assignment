@@ -4,8 +4,8 @@
 <head>
       <meta charset="utf-8" />
       <meta content="width=device-width,initial-scale=1" name="viewport" />
-      <title>Vendor Dashboard | Singapore Hawker Centre Management System</title>
-      <link href="/css/vendor.css" rel="stylesheet" />
+      <title>Order History | Singapore Hawker Centre Management System</title>
+      <link href="/css/history.css" rel="stylesheet" />
       <link href="css/global.css" rel="stylesheet" />
       <link href="css/navigation-footer.css" rel="stylesheet" />
 </head>
@@ -40,22 +40,22 @@
                         <a class="nav-link" href="/stalls.html">
                               Place Order
                         </a>
-                        <a class="nav-link" data-customer-only="" href="/history.html">
+                        <a class="nav-link" data-customer-only="" href="/order-history.html">
                               Your Orders
                         </a>
                         <a class="nav-link" data-auth-only="" href="/profile.html">
                               Profile
                         </a>
-                        <a class="nav-link" data-guest-only="" href="/guest-order.html">
+                        <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">
                               Track Order
                         </a>
                         <a class="nav-link" href="/reviews.html">
                               Reviews
                         </a>
-                        <a class="nav-link" data-vendor-only="" href="/vendor.html">
-                              Vendor Dashboard
+                        <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
+                              Vendor dashboard
                         </a>
-                        <a class="nav-link" data-nea-only="" href="/inspection.html">
+                        <a class="nav-link" data-nea-only="" href="/inspection-reports.html">
                               Inspections
                         </a>
                   </nav>
@@ -82,98 +82,134 @@
             <section class="shell">
                   <div class="page-head compact">
                         <span class="eyebrow">
-                              Vendor analytics
+                              Member history
                         </span>
                         <h1>
-                              Know your stall
+                              Your Orders
                         </h1>
                         <p class="lead">
-                              View sales performance and top-selling items for your assigned stall.
+                              Track active orders and revisit your previous purchases.
                         </p>
                   </div>
-                  <div class="grid grid-2">
-                        <form class="card card-pad stack" id="vendorForm">
-                              <div class="field">
-                                    <label for="stallId">
-                                          Select stall for analytics
-                                    </label>
-                                    <select class="input" id="stallId" required="">
-                                          <option value="">
-                                                Choose a stall
-                                          </option>
-                                    </select>
-                                    <small class="muted">
-                                          Choose the stall assigned to your signed-in vendor account.
-                                    </small>
-                              </div>
-                              <button class="button primary">
-                                    View Performance
-                              </button>
-                              <div class="form-message" id="vendorMessage">
-                              </div>
-                        </form>
-                        <aside class="card card-pad stack">
-                              <span class="eyebrow">
-                                    Performance overview
-                              </span>
-                              <h3>
-                                    Stall analytics
-                              </h3>
-                              <p class="muted">
-                                    Revenue, order volume and best-selling items are displayed after your assigned stall
-                                    is
-                                    loaded.
-                              </p>
-                        </aside>
+                  <div class="form-message" id="historyMessage">
                   </div>
-                  <section id="metrics" style="margin-top:24px">
-                        <div class="dashboard-tabs">
-                              <button class="tab active" data-vendor-tab="analytics" type="button">
-                                    Analytics
-                              </button>
-                              <button class="tab" data-vendor-tab="orders" type="button">
-                                    Your Orders
-                              </button>
-                        </div>
-                        <div class="metrics">
-                              <article class="card metric">
-                                    <span class="muted">
-                                          Revenue
-                                    </span>
-                                    <strong id="revenue">
-                                          $0.00
-                                    </strong>
-                              </article>
-                              <article class="card metric">
-                                    <span class="muted">
-                                          Your Orders
-                                    </span>
-                                    <strong id="orders">
-                                          0
-                                    </strong>
-                              </article>
-                              <article class="card metric">
-                                    <span class="muted">
-                                          Stall name
-                                    </span>
-                                    <strong id="stall">
-                                          —
-                                    </strong>
-                              </article>
-                        </div>
-                        <div class="card card-pad" style="margin-top:18px">
-                              <h3>
-                                    Top items
-                              </h3>
-                              <div class="stack" id="topItems">
-                              </div>
+                  <div class="tabs">
+                        <button class="tab active" data-tab="active">
+                              Active
+                        </button>
+                        <button class="tab" data-tab="previous">
+                              Previous
+                        </button>
+                  </div>
+                  <section id="activePanel">
+                        <div class="grid grid-2" id="activeOrders">
+                              Loading…
                         </div>
                   </section>
-                  <section hidden="" id="vendorOrdersPanel" style="margin-top:20px">
-                        <div class="grid grid-2" id="vendorOrdersList">
+                  <section hidden="" id="previousPanel">
+                        <div class="grid grid-2" id="previousOrders">
+                              Loading…
                         </div>
                   </section>
             </section>
+            <div class="modal-backdrop" hidden="" id="detailsBackdrop">
+                  <div class="modal order-detail-modal">
+                        <button aria-label="Close order details" class="modal-close" id="closeDetails">
+                              ×
+                        </button>
+                        <div id="detailsBody">
+                        </div>
+                  </div>
+            </div>
+            <div class="modal-backdrop" hidden="" id="paymentBackdrop">
+                  <form class="modal payment-change-modal" id="paymentChangeForm">
+                        <div class="modal-header">
+                              <div>
+                                    <span class="eyebrow">
+                                          Pending payment
+                                    </span>
+                                    <h2>
+                                          Choose another payment method
+                                    </h2>
+                              </div>
+                              <button aria-label="Close payment window" class="modal-close modal-close-inline"
+                                    id="closePaymentModal" type="button">
+                                    ×
+                              </button>
+                        </div>
+                        <div class="modal-body-scroll">
+                              <p class="muted">
+                                    You can change the payment method while both the order and payment remain pending.
+                                    The
+                                    existing pending payment is removed first, followed by creation of the replacement
+                                    payment.
+                              </p>
+                              <input id="paymentOrderId" type="hidden" />
+                              <input id="existingPaymentId" type="hidden" />
+                              <div class="payment-options">
+                                    <div class="payment-option">
+                                          <input id="changeCash" name="changedPaymentMethod" type="radio"
+                                                value="Cash" />
+                                          <label for="changeCash">
+                                                <strong>
+                                                      Cash
+                                                </strong>
+                                                <span class="small muted">
+                                                      Pay at the
+                                                      stall
+                                                </span>
+                                          </label>
+                                    </div>
+                                    <div class="payment-option">
+                                          <input id="changeCard" name="changedPaymentMethod" type="radio"
+                                                value="Card" />
+                                          <label for="changeCard">
+                                                <strong>
+                                                      Card
+                                                </strong>
+                                                <span class="small muted">
+                                                      Secure simulated
+                                                      payment
+                                                </span>
+                                          </label>
+                                    </div>
+                                    <div class="payment-option">
+                                          <input id="changePayNow" name="changedPaymentMethod" type="radio"
+                                                value="PayNow" />
+                                          <label for="changePayNow">
+                                                <strong>
+                                                      PayNow
+                                                </strong>
+                                                <span class="small muted">
+                                                      Secure
+                                                      simulated payment
+                                                </span>
+                                          </label>
+                                    </div>
+                              </div>
+                              <div class="field" hidden="" id="changeReferenceField">
+                                    <label for="changeReference">
+                                          Transaction
+                                          reference
+                                    </label>
+                                    <input class="input" id="changeReference" maxlength="100"
+                                          placeholder="Enter a unique transaction reference" />
+                              </div>
+                              <div class="form-message" id="paymentChangeMessage">
+                              </div>
+                        </div>
+                        <div class="modal-footer">
+                              <button class="button secondary" id="cancelPaymentChange" type="button">
+                                    Keep current
+                                    payment
+                              </button>
+                              <button class="button primary" id="confirmPaymentChange" type="submit">
+                                    Confirm payment
+                                    change
+                              </button>
+                        </div>
+                  </form>
+            </div>
       </main>
       <footer class="site-footer">
             <div class="footer-social-band">
@@ -240,19 +276,19 @@
                               <a data-guest-only="" href="/register.html">
                                     Create Account
                               </a>
-                              <a data-customer-only="" href="/history.html">
+                              <a data-customer-only="" href="/order-history.html">
                                     Your Orders
                               </a>
                               <a data-auth-only="" href="/profile.html">
                                     Profile
                               </a>
-                              <a data-guest-only="" href="/guest-order.html">
+                              <a data-guest-only="" href="/guest-order-tracking.html">
                                     Track Guest Order
                               </a>
-                              <a data-vendor-only="" href="/vendor.html">
+                              <a data-vendor-only="" href="/vendor-dashboard.html">
                                     Vendor Dashboard
                               </a>
-                              <a data-nea-only="" href="/inspection.html">
+                              <a data-nea-only="" href="/inspection-reports.html">
                                     Inspection Portal
                               </a>
                         </section>
@@ -291,9 +327,7 @@
       </div>
       <script src="/js/common.js">
       </script>
-      <script src="/js/data.js">
-      </script>
-      <script src="/js/vendor.js">
+      <script src="/js/history.js">
       </script>
 </body>
 

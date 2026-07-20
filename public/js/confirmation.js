@@ -91,7 +91,7 @@ document.addEventListener("DOMContentLoaded", () => {
       isCash ? "Track this order" : "Track this order";
 
     primaryLink.href =
-      `/guest-order.html?orderId=${encodeURIComponent(
+      `/guest-order-tracking.html?orderId=${encodeURIComponent(
         confirmation.orderId
       )}&reference=${encodeURIComponent(
         confirmation.guestReference
@@ -100,6 +100,6 @@ document.addEventListener("DOMContentLoaded", () => {
     primaryLink.textContent =
       "View my orders";
 
-    primaryLink.href = "/history.html";
+    primaryLink.href = "/order-history.html";
   }
 });

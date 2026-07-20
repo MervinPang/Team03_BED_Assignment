@@ -4,8 +4,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (currentUser) {
     const destination =
       role(currentUser.role) === "vendor"
-        ? "/vendor.html"
-        : "/history.html";
+        ? "/vendor-dashboard.html"
+        : "/order-history.html";
 
     window.location.replace(destination);
     return;
