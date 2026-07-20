@@ -80,10 +80,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <strong>${money(draft.estimatedTotal)}</strong>
       </div>
     </div>
-    <div class="summary-note">
-      <img src="/images/tick.svg" alt="">
-      <span>The final amount is verified by your Express and SQL Server backend when the order is created.</span>
-    </div>
   `;
 
   copyButton.addEventListener("click", async () => {
