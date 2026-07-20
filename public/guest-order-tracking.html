@@ -5,7 +5,7 @@
      <meta charset="utf-8" />
      <meta content="width=device-width,initial-scale=1" name="viewport" />
      <title>Guest Order Tracking | Singapore Hawker Centre Management System</title>
-     <link href="/css/guest-order.css" rel="stylesheet" />
+     <link href="/css/guest-order-tracking.css" rel="stylesheet" />
      <link href="css/global.css" rel="stylesheet" />
      <link href="css/navigation-footer.css" rel="stylesheet" />
 </head>
@@ -82,14 +82,15 @@
           <section class="shell">
                <div class="page-head compact">
                     <span class="eyebrow">
-                         No login required
+                         Guest Order Tracking
                     </span>
                     <h1>
-                         Track a guest order
+                         Track Your Guest Order
                     </h1>
                     <p class="lead">
-                         Enter the Order ID and GuestOrderReference shown after checkout. This page works for cash, card
-                         and PayNow guest orders.
+                         Track your guest order by entering the Order ID and Guest Order Reference
+                         received after checkout. Stay updated on your order status without
+                         creating an account.
                     </p>
                </div>
                <div class="grid grid-2">
@@ -98,23 +99,23 @@
                               <label>
                                    Order ID
                               </label>
-                              <input class="input" id="orderId" min="1" required="" type="number" />
+                              <input class="input" id="orderId" min="1" required="" type="number" placeholder="Enter your Order ID"/>
                          </div>
                          <div class="field">
                               <label>
-                                   Guest order reference
+                                   Reference Number
                               </label>
-                              <input class="input" id="guestReference" maxlength="50" minlength="10" required="" />
+                              <input class="input" id="guestReference" maxlength="50" minlength="10" required="" placeholder="Enter your Reference Number"/>
                          </div>
                          <div class="form-message" id="lookupMessage">
                          </div>
                          <button class="button primary">
-                              Find my order
+                              Track Order Status
                          </button>
                     </form>
                     <aside class="card card-pad">
                          <h3>
-                              Recent orders saved in this browser
+                              Previously Tracked Orders
                          </h3>
                          <div class="stack" id="savedOrders">
                          </div>
