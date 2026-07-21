@@ -53,7 +53,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("paymentSummary").innerHTML = `
     <div class="summary-header">
-      <h3>Order summary</h3>
+      <h3>Order Summary</h3>
       <span class="payment-method-badge">
         <img src="${methodIcons[method]}" alt="">
         ${esc(method)}
@@ -76,7 +76,7 @@ document.addEventListener("DOMContentLoaded", () => {
     </div>
     <div class="summary-totals">
       <div class="summary-line total">
-        <span>Amount payable</span>
+        <span>Amount Payable</span>
         <strong>${money(draft.estimatedTotal)}</strong>
       </div>
     </div>
@@ -126,22 +126,22 @@ document.addEventListener("DOMContentLoaded", () => {
     const cvv = cardCvv.value;
 
     if (!cardholderName) {
-      setMessage(message, "Enter the cardholder name.", "error");
+      setMessage(message, "Please enter the cardholder's name.", "error");
       return false;
     }
 
     if (!/^\d{16}$/.test(cardDigits)) {
-      setMessage(message, "Enter a valid 16-digit demonstration card number.", "error");
+      setMessage(message, "Please enter a valid 16-digit card number.", "error");
       return false;
     }
 
     if (!isValidExpiry(expiry)) {
-      setMessage(message, "Enter a valid future expiry date in MM/YY format.", "error");
+      setMessage(message, "Please enter a valid expiry date in MM/YY format.", "error");
       return false;
     }
 
     if (!/^\d{3,4}$/.test(cvv)) {
-      setMessage(message, "Enter a valid 3 or 4-digit CVV.", "error");
+      setMessage(message, "Please enter a valid 3-digit CVV.", "error");
       return false;
     }
 
@@ -153,7 +153,7 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!validatePaymentDetails()) return;
 
     button.disabled = true;
-    button.innerHTML = '<span class="button-spinner"></span> Submitting to backend…';
+    button.innerHTML = '<span class="button-spinner"></span> Processing payment...';
 
     try {
       const order = await apiRequest("/orders", {
