@@ -161,8 +161,78 @@ async function getMenuItemsByStallId(stallId) {
     }
 }
 
+// Retrieve food stalls assigned to the authenticated vendor
+async function getStallsByVendorId(vendorUserId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+
+        request.input(
+            "VendorUserID",
+            sql.Int,
+            vendorUserId
+        );
+
+        const result = await request.query(`
+            SELECT
+                fs.StallID,
+                fs.StallName,
+                fs.StallDesc AS Description,
+                fs.StallImage,
+                fs.IsActive AS IsAvailable,
+                fs.StallUnitNo,
+                fs.VendorUserID,
+                fs.HawkerCentreID,
+                hc.HCName,
+                hc.HCAddress,
+                cuisineData.Cuisine
+            FROM FoodStall fs
+            JOIN HawkerCentre hc
+                ON fs.HawkerCentreID = hc.HawkerCentreID
+            OUTER APPLY (
+                SELECT
+                    STRING_AGG(
+                        distinctCuisines.CuisineName,
+                        ', '
+                    ) AS Cuisine
+                FROM (
+                    SELECT DISTINCT
+                        c.CuisineName
+                    FROM MenuItem mi
+                    JOIN MenuItemCuisine mic
+                        ON mi.MenuItemID =
+                            mic.MenuItemID
+                    JOIN Cuisine c
+                        ON mic.CuisineID =
+                            c.CuisineID
+                    WHERE mi.StallID = fs.StallID
+                ) distinctCuisines
+            ) cuisineData
+            WHERE fs.VendorUserID = @VendorUserID
+            ORDER BY fs.StallName;
+        `);
+
+        return result.recordset;
+    } catch (error) {
+        console.error(
+            "Database error (getStallsByVendorId):",
+            error
+        );
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
 module.exports = {
     getAllStalls,
     getStallById,
     getMenuItemsByStallId,
+    getStallsByVendorId,
 };

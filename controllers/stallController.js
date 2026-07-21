@@ -76,8 +76,41 @@ async function getMenuItemsByStallId(req, res) {
     }
 }
 
+// Retrieve stalls assigned to the authenticated vendor
+async function getMyVendorStalls(req, res) {
+    try {
+        const vendorUserId = Number(req.user.id);
+
+        if (
+            !Number.isInteger(vendorUserId) ||
+            vendorUserId <= 0
+        ) {
+            return res.status(401).json({
+                error: "Invalid authenticated user",
+            });
+        }
+
+        const stalls =
+            await stallModel.getStallsByVendorId(
+                vendorUserId
+            );
+
+        return res.status(200).json(stalls);
+    } catch (error) {
+        console.error(
+            "Controller error (getMyVendorStalls):",
+            error
+        );
+
+        return res.status(500).json({
+            error: "Unable to retrieve vendor stalls",
+        });
+    }
+}
+
 module.exports = {
     getAllStalls,
     getStallById,
     getMenuItemsByStallId,
+    getMyVendorStalls,
 };

@@ -66,6 +66,7 @@ app.use(express.static(path.join(__dirname, "public")));
 app.get("/stalls", stallController.getAllStalls);
 app.get("/stalls/:id", stallController.getStallById);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
+app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);

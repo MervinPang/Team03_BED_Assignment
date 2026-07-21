@@ -28,6 +28,9 @@ function verifyJWT(req, res, next) {
             "PUT /feedback/[0-9]+": ["customer"],
             "DELETE /feedback/[0-9]+": ["customer"],
 
+            // Vendor
+            "GET /vendors/me/stalls": ["vendor"],
+
             // Orders
             "GET /orders": ["customer", "vendor", "nea_officer"],
             "GET /orders/[0-9]+": ["customer", "vendor", "nea_officer"],

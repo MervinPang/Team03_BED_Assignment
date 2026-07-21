@@ -20,7 +20,7 @@ async function registerUser(req, res) {
             return res.status(400).json({ error: "Username is already taken" });
         }
 
-        // Hash the password before storing it using bcryptjs
+        // Hash the password before storing it using bcrypt
         const salt = await bcrypt.genSalt(10);
         const passwordHash = await bcrypt.hash(Password, salt);
 
