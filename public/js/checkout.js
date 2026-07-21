@@ -70,7 +70,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="receipt-stall">
           <div>
             <span class="small muted">
-              Your Order
+              Order Summary
             </span>
 
             <h3>${esc(cart.StallName)}</h3>
@@ -127,10 +127,13 @@ document.addEventListener("DOMContentLoaded", () => {
       'input[name="paymentMethod"]:checked'
     )?.value;
 
-    submitButton.textContent =
-      paymentMethod === "Cash"
-        ? "Continue to Cash Confirmation"
-        : "Continue to Payment";
+    if (paymentMethod === "Cash") {
+      submitButton.textContent = "Confirm Cash Payment";
+    } else if (paymentMethod === "Card") {
+      submitButton.textContent = "Continue to Card Payment";
+    } else if (paymentMethod === "PayNow") {
+      submitButton.textContent = "Continue to PayNow";
+    }
   }
 
   function updateCounter() {
