@@ -48,7 +48,7 @@ document.addEventListener("DOMContentLoaded", () => {
   icon.src = methodIcons[method] || methodIcons.Cash;
   referenceDisplay.textContent = transactionReference;
   button.textContent = method === "Cash"
-    ? "Place order with cash"
+    ? "Place Order with Cash"
     : `Pay ${money(draft.estimatedTotal)}`;
 
   document.getElementById("paymentSummary").innerHTML = `
