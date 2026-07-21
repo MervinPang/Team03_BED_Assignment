@@ -415,7 +415,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                         ${order.SpecialInstructions
           ? `
                   <div class="detail-note">
-                    <span>Special instructions</span>
+                    <span>Special Instructions</span>
                     <p>${esc(order.SpecialInstructions)}</p>
                   </div>
                 `
@@ -432,7 +432,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                             id="changePaymentButton"
                             type="button"
                           >
-                            Pay using another method
+                            Change Payment Method
                           </button>
                         `
             : ""
@@ -445,7 +445,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                             id="cancelOrderButton"
                             type="button"
                           >
-                            Cancel order
+                            Cancel Order
                           </button>
                         `
             : ""
