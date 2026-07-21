@@ -6,6 +6,7 @@ const path = require("path");
 // Load environment variables
 dotenv.config();
 
+const stallController = require("./controllers/stallController");
 const orderController = require("./controllers/orderController");
 const orderHistoryController = require("./controllers/orderHistoryController");
 const paymentController = require("./controllers/paymentController");
@@ -61,6 +62,11 @@ app.use(express.urlencoded({ extended: true }));
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, "public")));
 
+// Routes for Food Stalls and Menu Items
+app.get("/stalls", stallController.getAllStalls);
+app.get("/stalls/:id", stallController.getStallById);
+app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
+
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
 app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById);
@@ -90,7 +96,7 @@ app.post("/login", validateLogin, userController.loginUser);
 app.post("/inspections", verifyJWT, validateInspection, inspectionController.submitInspection);
 app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHistory);
 
-//Routes for complaints 
+//Routes for Complaints 
 app.post("/complaints", verifyJWT, validateComplaint, complaintController.submitComplaint);
 app.get("/complaints/:stallId", verifyJWT, complaintController.getComplaintsByStall);
 app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, complaintController.updateComplaintStatus);
