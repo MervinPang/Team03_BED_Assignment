@@ -64,7 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   function renderOrders(element, orders, emptyTitle) {
     element.innerHTML = Array.isArray(orders) && orders.length
       ? orders.map(orderCard).join("")
-      : `<div class="card empty premium-empty"><div class="empty-state-icon">📦</div><h3>${emptyTitle}</h3><p class="muted">Orders will appear here when available.</p></div>`;
+      : `<div class="card empty premium-empty"><div class="empty-state-icon">📦</div><h3>${emptyTitle}</h3><p class="muted">Browse our hawker stalls and place your first order.</p></div>`;
 
     element.querySelectorAll("[data-order-id]").forEach(button => {
       button.addEventListener("click", () => openDetails(button.dataset.orderId));
@@ -271,8 +271,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         apiRequest("/order-history/previous")
       ]);
 
-      renderOrders(activeOrdersElement, activeOrders, "No active orders");
-      renderOrders(previousOrdersElement, previousOrders, "No previous orders");
+      renderOrders(activeOrdersElement, activeOrders, "No Active Orders");
+      renderOrders(previousOrdersElement, previousOrders, "No Previous Orders");
     } catch (error) {
       setMessage(messageElement, error.message, "error");
       showToast(error.message, "error");
