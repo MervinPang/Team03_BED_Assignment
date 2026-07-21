@@ -350,9 +350,9 @@ VALUES
 
 INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallImage, IsActive, HawkerCentreID)
 VALUES
-(3, '#01-01', 'Ah Tan Chicken Rice', 'Popular chicken rice stall serving steamed and roasted chicken rice.', '/images/Stall 01 Banner.jpg', 1, 1),
-(3, '#01-02', 'Muthu Prata House', 'Prata stall selling crispy prata and curry dishes.', '/images/Stall 02 Banner.jpg', 1, 1),
-(3, '#02-01', 'Selera Nasi Lemak', 'Traditional nasi lemak with chicken wing and sambal.', '/images/Stall 03 Banner.jpg', 1, 2),
+(3, '#01-01', 'Ah Tan Chicken Rice', 'Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.', '/images/Stall 01 Banner.jpg', 1, 1),
+(3, '#01-02', 'Muthu Prata House', 'Discover freshly prepared prata served with flavourful curries and popular local favourites.', '/images/Stall 02 Banner.jpg', 1, 1),
+(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy traditional nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2),
 (7, '#03-01', 'UAT Vendor A Stall', 'Test stall used for Vendor A order ownership testing.', '/images/uatvendora.jpg', 1, 1),
 (8, '#03-02', 'UAT Vendor B Stall', 'Test stall used for Vendor B order ownership testing.', '/images/uatvendorb.jpg', 1, 1);
 

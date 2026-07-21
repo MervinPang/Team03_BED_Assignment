@@ -5,7 +5,7 @@ window.HAWKER_DATA = {
             StallName: "Ah Tan Chicken Rice",
             Cuisine: "Chinese",
             Description:
-                "Popular chicken rice stall serving steamed and roasted chicken rice.",
+                "Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.",
             StallImage: "/images/Stall 01 Banner.jpg",
             IsAvailable: true
         },
@@ -14,7 +14,7 @@ window.HAWKER_DATA = {
             StallName: "Muthu Prata House",
             Cuisine: "Indian",
             Description:
-                "Prata stall selling crispy prata and curry dishes.",
+                "Discover freshly prepared prata served with flavourful curries and popular local favourites.",
             StallImage: "/images/Stall 02 Banner.jpg",
             IsAvailable: true
         },
@@ -23,7 +23,7 @@ window.HAWKER_DATA = {
             StallName: "Selera Nasi Lemak",
             Cuisine: "Malay",
             Description:
-                "Traditional nasi lemak with chicken wing and sambal.",
+                "Enjoy nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.",
             StallImage: "/images/Stall 03 Banner.jpg",
             IsAvailable: true
         }

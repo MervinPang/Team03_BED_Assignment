@@ -1,12 +1,77 @@
-document.addEventListener('DOMContentLoaded', () => {
-    const grid = document.getElementById('stallGrid'),
-        search = document.getElementById('stallSearch');
+document.addEventListener("DOMContentLoaded", () => {
+    const grid = document.getElementById("stallGrid");
+    const search = document.getElementById("stallSearch");
 
     function render() {
-        const q = search.value.trim().toLowerCase(),
-            list = HAWKER_DATA.stalls.filter(s => `${s.StallName} ${s.Cuisine}`.toLowerCase().includes(q));
-        grid.innerHTML = list.map(s => `<article class="card stall-card"><img src="${s.StallImage}" alt="${esc(s.StallName)}"><div class="stall-body stack"><div class="row-between"><span class="badge ${s.IsAvailable ? 'success' : 'unavailable'}">${s.IsAvailable ? 'Open' : 'Unavailable'}</span><span class="small muted">${esc(s.Cuisine)}</span></div><div><h3>${esc(s.StallName)}</h3><p class="muted">${esc(s.Description)}</p></div><a class="button primary" href="${s.IsAvailable ? `/menu.html?stall=${s.StallID}` : '#'}">${s.IsAvailable ? 'View Menu' : 'Currently unavailable'}</a></div></article>`).join('') || '<div class="card empty">No stalls found.</div>'
+        const query = search.value.trim().toLowerCase();
+
+        const stalls = HAWKER_DATA.stalls.filter((stall) => {
+            const searchableText = `${stall.StallName} ${stall.Cuisine}`.toLowerCase();
+
+            return searchableText.includes(query);
+        });
+
+        grid.innerHTML =
+            stalls
+                .map((stall) => {
+                    const availabilityClass = stall.IsAvailable
+                        ? "success"
+                        : "unavailable";
+
+                    const availabilityText = stall.IsAvailable
+                        ? "Open"
+                        : "Unavailable";
+
+                    const menuLink = stall.IsAvailable
+                        ? `/menu.html?stall=${stall.StallID}`
+                        : "#";
+
+                    const buttonText = stall.IsAvailable
+                        ? "View Menu"
+                        : "Currently Unavailable";
+
+                    return `
+            <article class="card stall-card">
+              <img
+                src="${stall.StallImage}"
+                alt="${esc(stall.StallName)}"
+              >
+
+              <div class="stall-body stack">
+                <div class="row-between">
+                  <span class="badge ${availabilityClass}">
+                    ${availabilityText}
+                  </span>
+
+                  <span class="small muted">
+                    ${esc(stall.Cuisine)}
+                  </span>
+                </div>
+
+                <div>
+                  <h3>${esc(stall.StallName)}</h3>
+
+                  <p class="muted">
+                    ${esc(stall.Description)}
+                  </p>
+                </div>
+
+                <a class="button primary" href="${menuLink}">
+                  ${buttonText}
+                </a>
+              </div>
+            </article>
+          `;
+                })
+                .join("") ||
+            `
+        <div class="card empty">
+          No stalls found.
+        </div>
+      `;
     }
-    search.oninput = render;
-    render()
+
+    search.addEventListener("input", render);
+
+    render();
 });
