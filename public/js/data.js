@@ -33,8 +33,8 @@ window.HAWKER_DATA = {
         {
             MenuItemID: 1,
             StallID: 1,
-            ItemName: "Chicken Rice",
-            ItemDesc: "Steamed chicken rice with chilli sauce.",
+            ItemName: "Steamed Chicken Rice",
+            ItemDesc: "Tender steamed chicken served with fragrant rice and house-made chilli sauce.",
             Price: 4.5,
             ItemImage: "/images/Steamed Chicken Rice.jpg",
             IsAvailable: true
@@ -43,7 +43,7 @@ window.HAWKER_DATA = {
             MenuItemID: 2,
             StallID: 1,
             ItemName: "Roasted Chicken Rice",
-            ItemDesc: "Roasted chicken served with fragrant rice.",
+            ItemDesc: "Juicy roasted chicken served with fragrant rice and traditional dipping sauces.",
             Price: 5.0,
             ItemImage: "/images/Roasted Chicken Rice.jpg",
             IsAvailable: true
@@ -52,7 +52,7 @@ window.HAWKER_DATA = {
             MenuItemID: 3,
             StallID: 1,
             ItemName: "Chicken Soup",
-            ItemDesc: "Warm chicken soup served as a side.",
+            ItemDesc: "A comforting chicken soup prepared with tender chicken and a flavourful broth.",
             Price: 1.2,
             ItemImage: "/images/Chicken Soup.png",
             IsAvailable: true

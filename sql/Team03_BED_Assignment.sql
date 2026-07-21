@@ -365,8 +365,8 @@ VALUES
 
 INSERT INTO MenuItem (StallID, ItemName, ItemDesc, ItemPrice, ItemCategory, ItemImage, IsAvailable)
 VALUES
-(1, 'Chicken Rice', 'Steamed chicken rice with chilli sauce.', 4.50, 'Main Dish', '/images/Steamed Chicken Rice.jpg', 1),
-(1, 'Roasted Chicken Rice', 'Roasted chicken served with fragrant rice.', 5.00, 'Main Dish', '/images/Roasted Chicken Rice.jpg', 1),
+(1, ' Steamed Chicken Rice', 'Tender steamed chicken served with fragrant rice and house-made chilli sauce.', 4.50, 'Main Dish', '/images/Steamed Chicken Rice.jpg', 1),
+(1, 'Roasted Chicken Rice', 'Juicy roasted chicken served with fragrant rice and traditional dipping sauces.', 5.00, 'Main Dish', '/images/Roasted Chicken Rice.jpg', 1),
 (1, 'Chicken Soup', 'Warm chicken soup served as a side.', 1.20, 'Side', '/images/Chicken Soup.png', 1),
 (2, 'Plain Prata', 'Crispy plain prata with curry.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
 (2, 'Egg Prata', 'Prata with egg served with curry.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
