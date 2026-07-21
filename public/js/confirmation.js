@@ -25,18 +25,18 @@ document.addEventListener("DOMContentLoaded", () => {
     confirmation.transactionReference || "Not applicable";
 
   document.getElementById("confirmationEyebrow").textContent =
-    isCash ? "Order submitted" : "Payment completed";
+    isCash ? "Order Submitted" : "Payment Completed";
 
   document.getElementById("confirmationTitle").textContent =
     isCash
-      ? "Please pay at the stall."
-      : "Your payment was successful.";
+      ? "Please Pay at the Stall."
+      : "Payment Successful.";
 
   document.getElementById("confirmationMessage").textContent =
     isCash
-      ? `Your order from ${confirmation.stallName} is awaiting cash payment. `
+      ? `Your order from ${confirmation.stallName} has been placed successfully. Please proceed to the stall to make your cash payment. `
       + "Food preparation should begin only after the vendor confirms payment."
-      : `Your order from ${confirmation.stallName} has been paid and confirmed.`;
+      : `Your payment has been confirmed, and your order from ${confirmation.stallName} is now being processed.`;
 
   document.getElementById("confirmationPayment").textContent =
     isCash
@@ -44,21 +44,6 @@ document.addEventListener("DOMContentLoaded", () => {
       : `${confirmation.paymentMethod} · ${paymentLabel(
         confirmation.paymentStatus
       )}`;
-
-  document.getElementById("confirmationStatusPanel").innerHTML = `
-    <div class="payment-state ${isPaid ? "paid" : "pending"}">
-      <span>${isPaid ? "✓" : "!"}</span>
-      <div>
-        <strong>${isPaid ? "Payment successful" : "Payment required"}</strong>
-        <p>
-          ${isPaid
-      ? "The stall can begin processing your order."
-      : "Proceed to the stall and pay before preparation begins."
-    }
-        </p>
-      </div>
-    </div>
-  `;
 
   document.getElementById("confirmationItems").innerHTML =
     confirmation.items.map(item => `
@@ -98,7 +83,7 @@ document.addEventListener("DOMContentLoaded", () => {
       )}`;
   } else {
     primaryLink.textContent =
-      "View my orders";
+      "View My Orders";
 
     primaryLink.href = "/order-history.html";
   }
