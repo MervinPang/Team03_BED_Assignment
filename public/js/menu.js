@@ -1,45 +1,48 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const sid = Number(
+document.addEventListener("DOMContentLoaded", async () => {
+    const stallId = Number(
         new URLSearchParams(location.search).get("stall")
-    ),
-        stall = HAWKER_DATA.stalls.find(
-            (s) => s.StallID === sid
-        ),
-        items = HAWKER_DATA.menuItems.filter(
-            (i) => i.StallID === sid
-        ),
-        grid = document.getElementById("menuGrid"),
-        cartList = document.getElementById("cartList"),
-        summary = document.getElementById("cartSummary"),
-        checkout = document.getElementById("checkoutButton"),
-        modal = document.getElementById("switchModal");
+    );
 
+    const grid = document.getElementById("menuGrid");
+    const cartList = document.getElementById("cartList");
+    const summary = document.getElementById("cartSummary");
+    const checkout = document.getElementById("checkoutButton");
+    const modal = document.getElementById("switchModal");
+    const stallTitle = document.getElementById("stallTitle");
+    const stallSubtitle =
+        document.getElementById("stallSubtitle");
+
+    let stall = null;
+    let items = [];
     let pending = null;
 
-    if (!stall) {
-        document.getElementById("stallTitle").textContent =
-            "Stall not found";
+    function showMenuError(title, message) {
+        stallTitle.textContent = title;
+        stallSubtitle.textContent = message;
 
-        return;
+        grid.innerHTML = `
+            <div class="card empty">
+                <h3>${esc(title)}</h3>
+                <p class="muted">${esc(message)}</p>
+            </div>
+        `;
     }
 
-    document.getElementById("stallTitle").textContent =
-        stall.StallName;
-
-    document.getElementById("stallSubtitle").textContent =
-        stall.Description;
-
     function add(item) {
-        const c = getCart();
+        if (!item || !item.IsAvailable) {
+            return;
+        }
+
+        const cart = getCart();
 
         if (
-            c.items.length &&
-            Number(c.StallID) !== Number(item.StallID)
+            cart.items.length &&
+            Number(cart.StallID) !== Number(item.StallID)
         ) {
             pending = item;
 
             document.getElementById("oldStall").textContent =
-                c.StallName;
+                cart.StallName;
 
             document.getElementById("newStall").textContent =
                 stall.StallName;
@@ -49,283 +52,390 @@ document.addEventListener("DOMContentLoaded", () => {
             return;
         }
 
-        const x = c.items.find(
-            (i) => i.MenuItemID === item.MenuItemID
+        const cartItem = cart.items.find(
+            (existingItem) =>
+                existingItem.MenuItemID === item.MenuItemID
         );
 
-        if (x) {
-            if (x.Quantity >= 50) {
+        if (cartItem) {
+            if (cartItem.Quantity >= 50) {
                 return showToast(
                     "Maximum quantity is 50.",
                     "error"
                 );
             }
 
-            x.Quantity++;
+            cartItem.Quantity++;
         } else {
-            c.StallID = stall.StallID;
-            c.StallName = stall.StallName;
+            cart.StallID = stall.StallID;
+            cart.StallName = stall.StallName;
 
-            c.items.push({
+            cart.items.push({
                 ...item,
                 Quantity: 1,
             });
         }
 
-        saveCart(c);
+        saveCart(cart);
         renderCart();
         showToast(`${item.ItemName} added.`);
     }
 
-    function change(id, n) {
-        const c = getCart(),
-            x = c.items.find(
-                (i) => i.MenuItemID === id
-            );
+    function change(menuItemId, amount) {
+        const cart = getCart();
 
-        if (!x) return;
+        const cartItem = cart.items.find(
+            (item) => item.MenuItemID === menuItemId
+        );
 
-        x.Quantity += n;
+        if (!cartItem) {
+            return;
+        }
 
-        if (x.Quantity <= 0) {
-            c.items = c.items.filter(
-                (i) => i.MenuItemID !== id
+        cartItem.Quantity += amount;
+
+        if (cartItem.Quantity <= 0) {
+            cart.items = cart.items.filter(
+                (item) => item.MenuItemID !== menuItemId
             );
         }
 
-        if (!c.items.length) {
-            c.StallID = null;
-            c.StallName = "";
+        if (!cart.items.length) {
+            cart.StallID = null;
+            cart.StallName = "";
         }
 
-        saveCart(c);
+        saveCart(cart);
         renderCart();
     }
 
     function renderMenu() {
+        if (!items.length) {
+            grid.innerHTML = `
+                <div class="card empty">
+                    <h3>No Menu Items Available</h3>
+                    <p class="muted">
+                        This stall does not currently have any menu
+                        items available.
+                    </p>
+                </div>
+            `;
+
+            return;
+        }
+
         grid.innerHTML = items
-            .map(
-                (i) => `
-          <article class="card menu-card ${i.IsAvailable ? "" : "disabled"
-                    }">
-            <img
-              src="${i.ItemImage}"
-              alt="${esc(i.ItemName)}"
-            >
+            .map((item) => {
+                const isAvailable = Boolean(item.IsAvailable);
 
-            <div class="stack">
-              <div class="row-between">
-                <h3>${esc(i.ItemName)}</h3>
+                return `
+                    <article
+                        class="card menu-card ${isAvailable ? "" : "disabled"
+                    }"
+                    >
+                        <img
+                            src="${esc(item.ItemImage)}"
+                            alt="${esc(item.ItemName)}"
+                        >
 
-                ${i.IsAvailable
+                        <div class="stack">
+                            <div class="row-between">
+                                <h3>${esc(item.ItemName)}</h3>
+
+                                ${isAvailable
                         ? ""
-                        : '<span class="badge unavailable">Unavailable</span>'
+                        : `
+                                            <span
+                                                class="badge unavailable"
+                                            >
+                                                Unavailable
+                                            </span>
+                                        `
                     }
-              </div>
+                            </div>
 
-              <p class="muted small">
-                ${esc(i.ItemDesc)}
-              </p>
+                            <p class="muted small">
+                                ${esc(
+                        item.ItemDesc ||
+                        "No description available."
+                    )}
+                            </p>
 
-              <div class="row-between">
-                <span class="price">
-                  ${money(i.Price)}
-                </span>
+                            <div class="row-between">
+                                <span class="price">
+                                    ${money(item.Price)}
+                                </span>
 
-                <button
-                  class="button primary"
-                  data-add="${i.MenuItemID}"
-                  ${i.IsAvailable
-                        ? ""
-                        : "disabled"
-                    }
-                >
-                  ${i.IsAvailable
+                                <button
+                                    class="button primary"
+                                    data-add="${item.MenuItemID}"
+                                    ${isAvailable ? "" : "disabled"}
+                                >
+                                    ${isAvailable
                         ? "Add"
                         : "Unavailable"
                     }
-                </button>
-              </div>
-            </div>
-          </article>
-        `
-            )
+                                </button>
+                            </div>
+                        </div>
+                    </article>
+                `;
+            })
             .join("");
 
         grid
             .querySelectorAll("[data-add]")
-            .forEach(
-                (b) =>
-                (b.onclick = () =>
-                    add(
-                        items.find(
-                            (i) =>
-                                i.MenuItemID ===
-                                Number(b.dataset.add)
-                        )
-                    ))
-            );
+            .forEach((button) => {
+                button.onclick = () => {
+                    const menuItemId = Number(
+                        button.dataset.add
+                    );
+
+                    const selectedItem = items.find(
+                        (item) =>
+                            item.MenuItemID === menuItemId
+                    );
+
+                    add(selectedItem);
+                };
+            });
     }
 
     function renderCart() {
-        const c = getCart();
+        const cart = getCart();
 
-        if (!c.items.length) {
+        if (!cart.items.length) {
             cartList.innerHTML = `
-        <div class="empty">
-          <h3>
-            Browse the menu and add your first item
-            to begin your order.
-          </h3>
+                <div class="empty">
+                    <h3>
+                        Browse the menu and add your first item
+                        to begin your order.
+                    </h3>
 
-          <p>
-            Add an available item to begin.
-          </p>
-        </div>
-      `;
+                    <p>
+                        Add an available item to begin.
+                    </p>
+                </div>
+            `;
 
             summary.innerHTML = `
-        <div class="summary-line">
-          <span>Subtotal</span>
-          <strong>${money(0)}</strong>
-        </div>
+                <div class="summary-line">
+                    <span>Subtotal</span>
+                    <strong>${money(0)}</strong>
+                </div>
 
-        <div class="summary-line total">
-          <span>Total</span>
-          <strong>${money(0)}</strong>
-        </div>
-      `;
+                <div class="summary-line total">
+                    <span>Total</span>
+                    <strong>${money(0)}</strong>
+                </div>
+            `;
 
             checkout.disabled = true;
 
             return;
         }
 
-        cartList.innerHTML = c.items
+        cartList.innerHTML = cart.items
             .map(
-                (i) => `
-          <div class="cart-item">
-            <div class="row-between">
-              <strong>${esc(i.ItemName)}</strong>
+                (item) => `
+                    <div class="cart-item">
+                        <div class="row-between">
+                            <strong>
+                                ${esc(item.ItemName)}
+                            </strong>
 
-              <strong>
-                ${money(i.Price * i.Quantity)}
-              </strong>
-            </div>
+                            <strong>
+                                ${money(
+                    item.Price * item.Quantity
+                )}
+                            </strong>
+                        </div>
 
-            <div
-              class="row-between"
-              style="margin-top:8px"
-            >
-              <div class="qty">
-                <button data-minus="${i.MenuItemID}">
-                  −
-                </button>
+                        <div
+                            class="row-between"
+                            style="margin-top: 8px"
+                        >
+                            <div class="qty">
+                                <button
+                                    data-minus="${item.MenuItemID}"
+                                    aria-label="Decrease quantity"
+                                >
+                                    −
+                                </button>
 
-                <span>${i.Quantity}</span>
+                                <span>${item.Quantity}</span>
 
-                <button data-plus="${i.MenuItemID}">
-                  +
-                </button>
-              </div>
+                                <button
+                                    data-plus="${item.MenuItemID}"
+                                    aria-label="Increase quantity"
+                                >
+                                    +
+                                </button>
+                            </div>
 
-              <button
-                class="button secondary"
-                data-remove="${i.MenuItemID}"
-              >
-                Remove
-              </button>
-            </div>
-          </div>
-        `
+                            <button
+                                class="button secondary"
+                                data-remove="${item.MenuItemID}"
+                            >
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                `
             )
             .join("");
 
         summary.innerHTML = `
-      <div class="summary-line">
-        <span>Items (${cartQty(c)})</span>
-        <span>${money(subtotal(c))}</span>
-      </div>
+            <div class="summary-line">
+                <span>Items (${cartQty(cart)})</span>
+                <span>${money(subtotal(cart))}</span>
+            </div>
 
-      <div class="summary-line">
-        <span>Subtotal</span>
-        <strong>${money(subtotal(c))}</strong>
-      </div>
+            <div class="summary-line">
+                <span>Subtotal</span>
+                <strong>${money(subtotal(cart))}</strong>
+            </div>
 
-      <div class="summary-line total">
-        <span>Total</span>
-        <strong>${money(subtotal(c))}</strong>
-      </div>
-    `;
+            <div class="summary-line total">
+                <span>Total</span>
+                <strong>${money(subtotal(cart))}</strong>
+            </div>
+        `;
 
         checkout.disabled = false;
 
         cartList
             .querySelectorAll("[data-minus]")
-            .forEach(
-                (b) =>
-                (b.onclick = () =>
+            .forEach((button) => {
+                button.onclick = () => {
                     change(
-                        Number(b.dataset.minus),
+                        Number(button.dataset.minus),
                         -1
-                    ))
-            );
+                    );
+                };
+            });
 
         cartList
             .querySelectorAll("[data-plus]")
-            .forEach(
-                (b) =>
-                (b.onclick = () =>
+            .forEach((button) => {
+                button.onclick = () => {
                     change(
-                        Number(b.dataset.plus),
+                        Number(button.dataset.plus),
                         1
-                    ))
-            );
+                    );
+                };
+            });
 
         cartList
             .querySelectorAll("[data-remove]")
-            .forEach((b) => {
-                b.onclick = () => {
-                    const c = getCart(),
-                        x = c.items.find(
-                            (i) =>
-                                i.MenuItemID ===
-                                Number(b.dataset.remove)
-                        );
+            .forEach((button) => {
+                button.onclick = () => {
+                    const currentCart = getCart();
+
+                    const cartItem = currentCart.items.find(
+                        (item) =>
+                            item.MenuItemID ===
+                            Number(button.dataset.remove)
+                    );
 
                     change(
-                        Number(b.dataset.remove),
-                        -Number(x?.Quantity || 1)
+                        Number(button.dataset.remove),
+                        -Number(cartItem?.Quantity || 1)
                     );
                 };
             });
     }
 
-    checkout.onclick = () =>
-        (location.href = "/checkout.html");
-
-    document.getElementById("keepCart").onclick =
-        () => {
-            modal.hidden = true;
-
-            showToast(
-                `Your ${getCart().StallName} cart was kept.`,
-                "error"
+    async function loadMenu() {
+        if (!Number.isInteger(stallId) || stallId <= 0) {
+            showMenuError(
+                "Invalid Stall",
+                "Please return to the stalls page and select a valid stall."
             );
-        };
 
-    document.getElementById("replaceCart").onclick =
-        () => {
-            clearCart();
-            modal.hidden = true;
+            return;
+        }
 
-            if (pending) {
-                add(pending);
+        stallTitle.textContent = "Loading stall...";
+        stallSubtitle.textContent =
+            "Please wait while the menu is being loaded.";
+
+        grid.innerHTML = `
+            <div class="card empty">
+                Loading menu...
+            </div>
+        `;
+
+        try {
+            const [stallResponse, menuResponse] =
+                await Promise.all([
+                    apiRequest(`/stalls/${stallId}`),
+                    apiRequest(
+                        `/stalls/${stallId}/menu-items`
+                    ),
+                ]);
+
+            if (
+                !stallResponse ||
+                typeof stallResponse !== "object"
+            ) {
+                throw new Error(
+                    "Invalid stall data received from the server."
+                );
             }
 
-            pending = null;
-        };
+            if (!Array.isArray(menuResponse)) {
+                throw new Error(
+                    "Invalid menu data received from the server."
+                );
+            }
 
-    renderMenu();
+            stall = stallResponse;
+            items = menuResponse;
+
+            stallTitle.textContent = stall.StallName;
+            stallSubtitle.textContent =
+                stall.Description ||
+                "Browse the available menu items below.";
+
+            renderMenu();
+        } catch (error) {
+            console.error("Unable to load menu:", error);
+
+            showMenuError(
+                "Unable to Load Menu",
+                error.message ||
+                "Please refresh the page or try again later."
+            );
+        }
+    }
+
+    checkout.onclick = () => {
+        location.href = "/checkout.html";
+    };
+
+    document.getElementById("keepCart").onclick = () => {
+        modal.hidden = true;
+
+        showToast(
+            `Your ${getCart().StallName} cart was kept.`,
+            "error"
+        );
+
+        pending = null;
+    };
+
+    document.getElementById("replaceCart").onclick = () => {
+        clearCart();
+        modal.hidden = true;
+
+        if (pending) {
+            add(pending);
+        }
+
+        pending = null;
+    };
+
     renderCart();
+    await loadMenu();
 });
