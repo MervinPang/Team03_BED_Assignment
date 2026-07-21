@@ -1,37 +1,129 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const stallIdInput = document.getElementById("reviewStallId");
     const sortInput = document.getElementById("reviewSort");
-    const loadButton = document.getElementById("loadReviewsButton");
-    const writeButton = document.getElementById("writeReviewButton");
+    const loadButton = document.getElementById(
+        "loadReviewsButton"
+    );
+    const writeButton = document.getElementById(
+        "writeReviewButton"
+    );
     const summary = document.getElementById("reviewSummary");
     const list = document.getElementById("reviewList");
-    const backdrop = document.getElementById("reviewBackdrop");
+    const backdrop = document.getElementById(
+        "reviewBackdrop"
+    );
     const form = document.getElementById("reviewForm");
-    const formTitle = document.getElementById("reviewFormTitle");
+    const formTitle = document.getElementById(
+        "reviewFormTitle"
+    );
     const reviewId = document.getElementById("reviewId");
-    const comment = document.getElementById("reviewComment");
-    const counter = document.getElementById("reviewCounter");
-    const message = document.getElementById("reviewMessage");
+    const comment = document.getElementById(
+        "reviewComment"
+    );
+    const counter = document.getElementById(
+        "reviewCounter"
+    );
+    const message = document.getElementById(
+        "reviewMessage"
+    );
 
     let selectedRating = 0;
+    let stalls = [];
 
-    if (window.HAWKER_DATA?.stalls) {
-        stallIdInput.innerHTML = window.HAWKER_DATA.stalls
-            .map(stall => `
-                <option value="${stall.StallID}">
-                    ${esc(stall.StallName)}
+    async function loadStalls() {
+        stallIdInput.disabled = true;
+        loadButton.disabled = true;
+        writeButton.disabled = true;
+
+        stallIdInput.innerHTML = `
+            <option value="">
+                Loading stalls...
+            </option>
+        `;
+
+        try {
+            const response = await apiRequest("/stalls");
+
+            if (!Array.isArray(response)) {
+                throw new Error(
+                    "Invalid stall data received from the server."
+                );
+            }
+
+            stalls = response;
+
+            if (!stalls.length) {
+                stallIdInput.innerHTML = `
+                    <option value="">
+                        No stalls available
+                    </option>
+                `;
+
+                list.innerHTML = `
+                    <div class="card empty">
+                        <h3>No Stalls Available</h3>
+
+                        <p class="muted">
+                            Reviews cannot be loaded because there
+                            are currently no available stalls.
+                        </p>
+                    </div>
+                `;
+
+                return false;
+            }
+
+            stallIdInput.innerHTML = stalls
+                .map(
+                    (stall) => `
+                        <option value="${stall.StallID}">
+                            ${esc(stall.StallName)}
+                        </option>
+                    `
+                )
+                .join("");
+
+            stallIdInput.disabled = false;
+            loadButton.disabled = false;
+            writeButton.disabled = false;
+
+            return true;
+        } catch (error) {
+            console.error("Unable to load stalls:", error);
+
+            stallIdInput.innerHTML = `
+                <option value="">
+                    Unable to load stalls
                 </option>
-            `)
-            .join("");
+            `;
+
+            list.innerHTML = `
+                <div class="card empty">
+                    <h3>Unable to Load Stalls</h3>
+
+                    <p class="muted">
+                        Please refresh the page or try again later.
+                    </p>
+                </div>
+            `;
+
+            showToast(
+                error.message || "Unable to load stalls.",
+                "error"
+            );
+
+            return false;
+        }
     }
 
     function paintStars() {
         document
             .querySelectorAll("#reviewStars button")
-            .forEach(button => {
+            .forEach((button) => {
                 button.classList.toggle(
                     "selected",
-                    Number(button.dataset.rating) <= selectedRating
+                    Number(button.dataset.rating) <=
+                    selectedRating
                 );
             });
     }
@@ -39,18 +131,29 @@ document.addEventListener("DOMContentLoaded", () => {
     function openEditor(review = null) {
         const currentUser = getCurrentUser();
 
-        if (!currentUser || role(currentUser.role) !== "customer") {
+        if (
+            !currentUser ||
+            role(currentUser.role) !== "customer"
+        ) {
             window.location.href =
-                `/login.html?next=${encodeURIComponent("/reviews.html")}`;
+                `/login.html?next=${encodeURIComponent(
+                    "/reviews.html"
+                )}`;
+
             return;
         }
 
         reviewId.value = review?.ReviewID || "";
         selectedRating = Number(review?.Rating || 0);
         comment.value = review?.ReviewComment || "";
-        formTitle.textContent =
-            review ? "Edit review" : "Write a review";
-        counter.textContent = `${comment.value.length} / 500`;
+
+        formTitle.textContent = review
+            ? "Edit Review"
+            : "Write a Review";
+
+        counter.textContent =
+            `${comment.value.length} / 500`;
+
         setMessage(message);
         paintStars();
 
@@ -66,17 +169,33 @@ document.addEventListener("DOMContentLoaded", () => {
     async function loadReviews() {
         const stallId = Number(stallIdInput.value);
 
-        if (!Number.isInteger(stallId) || stallId <= 0) {
-            showToast("Enter a valid Stall ID.", "error");
+        if (
+            !Number.isInteger(stallId) ||
+            stallId <= 0
+        ) {
+            showToast(
+                "Please select a valid stall.",
+                "error"
+            );
+
             return;
         }
 
-        list.innerHTML =
-            '<div class="card empty"><p class="muted">Loading reviews…</p></div>';
+        list.innerHTML = `
+            <div class="card empty">
+                <p class="muted">
+                    Loading reviews...
+                </p>
+            </div>
+        `;
+
+        loadButton.disabled = true;
 
         try {
             const data = await apiRequest(
-                `/feedback/stall/${stallId}?sort=${encodeURIComponent(sortInput.value)}`
+                `/feedback/stall/${stallId}?sort=${encodeURIComponent(
+                    sortInput.value
+                )}`
             );
 
             const reviews = Array.isArray(data?.reviews)
@@ -89,7 +208,14 @@ document.addEventListener("DOMContentLoaded", () => {
                 data?.averageRating ??
                 data?.AverageRating ??
                 (reviews.length
-                    ? reviews.reduce((sum, review) => sum + Number(review.Rating || 0), 0) / reviews.length
+                    ? reviews.reduce(
+                        (sum, review) =>
+                            sum +
+                            Number(
+                                review.Rating || 0
+                            ),
+                        0
+                    ) / reviews.length
                     : 0)
             );
 
@@ -100,130 +226,280 @@ document.addEventListener("DOMContentLoaded", () => {
             );
 
             summary.hidden = false;
+
             summary.innerHTML = `
                 <div class="row-between wrap">
                     <div>
-                        <span class="small muted">Average rating</span>
+                        <span class="small muted">
+                            Average Rating
+                        </span>
+
                         <div class="rating-value">
                             ${averageRating.toFixed(1)}
                             <span>★</span>
                         </div>
                     </div>
-                    <strong>${reviewCount} review(s)</strong>
+
+                    <strong>
+                        ${reviewCount}
+                        ${reviewCount === 1
+                    ? "review"
+                    : "reviews"
+                }
+                    </strong>
                 </div>
             `;
 
             if (!reviews.length) {
                 list.innerHTML = `
                     <div class="card empty">
-                        <div class="empty-state-icon">★</div>
-                        <h3>No reviews yet</h3>
-                        <p class="muted">Be the first customer to leave feedback.</p>
+                        <div class="empty-state-icon">
+                            ★
+                        </div>
+
+                        <h3>No Reviews Yet</h3>
+
+                        <p class="muted">
+                            Be the first customer to leave
+                            feedback.
+                        </p>
                     </div>
                 `;
+
                 return;
             }
 
             const currentUser = getCurrentUser();
 
-            list.innerHTML = reviews.map(review => `
-                <article class="card review-card">
-                    <div class="row-between wrap">
-                        <div>
-                            <strong>${esc(review.Username)}</strong>
-                            <p class="small muted">${formatDate(review.ReviewDateTime)}</p>
-                        </div>
-                        <span class="review-rating">
-                            ${"★".repeat(review.Rating)}
-                        </span>
-                    </div>
-                    <p>${esc(review.ReviewComment || "")}</p>
-                    ${currentUser?.id === review.UserID
-                    ? `<div class="row">
-                                <button
-                                  class="button secondary"
-                                  type="button"
-                                  data-edit="${review.ReviewID}"
-                                >Edit</button>
-                                <button
-                                  class="button danger"
-                                  type="button"
-                                  data-delete="${review.ReviewID}"
-                                >Delete</button>
-                              </div>`
-                    : ""
-                }
-                </article>
-            `).join("");
+            list.innerHTML = reviews
+                .map(
+                    (review) => `
+                        <article class="card review-card">
+                            <div class="row-between wrap">
+                                <div>
+                                    <strong>
+                                        ${esc(
+                        review.Username ||
+                        "Customer"
+                    )}
+                                    </strong>
 
-            list.querySelectorAll("[data-edit]").forEach(button => {
-                button.addEventListener("click", () => {
-                    const review = reviews.find(
-                        item => item.ReviewID === Number(button.dataset.edit)
+                                    <p class="small muted">
+                                        ${formatDate(
+                        review.ReviewDateTime
+                    )}
+                                    </p>
+                                </div>
+
+                                <span class="review-rating">
+                                    ${"★".repeat(
+                        Number(
+                            review.Rating || 0
+                        )
+                    )}
+                                </span>
+                            </div>
+
+                            <p>
+                                ${esc(
+                        review.ReviewComment || ""
+                    )}
+                            </p>
+
+                            ${Number(currentUser?.id) ===
+                            Number(review.UserID)
+                            ? `
+                                        <div class="row">
+                                            <button
+                                                class="button secondary"
+                                                type="button"
+                                                data-edit="${review.ReviewID}"
+                                            >
+                                                Edit
+                                            </button>
+
+                                            <button
+                                                class="button danger"
+                                                type="button"
+                                                data-delete="${review.ReviewID}"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
+                                    `
+                            : ""
+                        }
+                        </article>
+                    `
+                )
+                .join("");
+
+            list
+                .querySelectorAll("[data-edit]")
+                .forEach((button) => {
+                    button.addEventListener(
+                        "click",
+                        () => {
+                            const selectedReview =
+                                reviews.find(
+                                    (review) =>
+                                        review.ReviewID ===
+                                        Number(
+                                            button.dataset
+                                                .edit
+                                        )
+                                );
+
+                            openEditor(selectedReview);
+                        }
                     );
-                    openEditor(review);
                 });
-            });
 
-            list.querySelectorAll("[data-delete]").forEach(button => {
-                button.addEventListener("click", async () => {
-                    if (!window.confirm("Delete this review?")) return;
+            list
+                .querySelectorAll("[data-delete]")
+                .forEach((button) => {
+                    button.addEventListener(
+                        "click",
+                        async () => {
+                            const shouldDelete =
+                                window.confirm(
+                                    "Delete this review?"
+                                );
 
-                    try {
-                        await apiRequest(
-                            `/feedback/${button.dataset.delete}`,
-                            { method: "DELETE" }
-                        );
-                        showToast("Review deleted.");
-                        loadReviews();
-                    } catch (error) {
-                        showToast(error.message, "error");
-                    }
+                            if (!shouldDelete) {
+                                return;
+                            }
+
+                            try {
+                                await apiRequest(
+                                    `/feedback/${button.dataset.delete}`,
+                                    {
+                                        method: "DELETE",
+                                    }
+                                );
+
+                                showToast(
+                                    "Review deleted successfully."
+                                );
+
+                                await loadReviews();
+                            } catch (error) {
+                                showToast(
+                                    error.message,
+                                    "error"
+                                );
+                            }
+                        }
+                    );
                 });
-            });
         } catch (error) {
-            list.innerHTML = "";
+            console.error(
+                "Unable to load reviews:",
+                error
+            );
+
+            summary.hidden = true;
+
+            list.innerHTML = `
+                <div class="card empty">
+                    <h3>Unable to Load Reviews</h3>
+
+                    <p class="muted">
+                        Please refresh the page or try again
+                        later.
+                    </p>
+                </div>
+            `;
+
             showToast(error.message, "error");
+        } finally {
+            loadButton.disabled = false;
         }
     }
 
     document
         .querySelectorAll("#reviewStars button")
-        .forEach(button => {
+        .forEach((button) => {
             button.addEventListener("click", () => {
-                selectedRating = Number(button.dataset.rating);
+                selectedRating = Number(
+                    button.dataset.rating
+                );
+
                 paintStars();
             });
         });
 
     comment.addEventListener("input", () => {
-        counter.textContent = `${comment.value.length} / 500`;
+        counter.textContent =
+            `${comment.value.length} / 500`;
     });
 
-    loadButton.addEventListener("click", loadReviews);
-    sortInput.addEventListener("change", loadReviews);
-    writeButton.addEventListener("click", () => openEditor());
+    loadButton.addEventListener(
+        "click",
+        loadReviews
+    );
+
+    sortInput.addEventListener(
+        "change",
+        loadReviews
+    );
+
+    stallIdInput.addEventListener(
+        "change",
+        loadReviews
+    );
+
+    writeButton.addEventListener(
+        "click",
+        () => openEditor()
+    );
+
     document
         .getElementById("closeReviewButton")
         .addEventListener("click", closeEditor);
 
-    backdrop.addEventListener("click", event => {
-        if (event.target === backdrop) closeEditor();
+    backdrop.addEventListener("click", (event) => {
+        if (event.target === backdrop) {
+            closeEditor();
+        }
     });
 
-    form.addEventListener("submit", async event => {
+    form.addEventListener("submit", async (event) => {
         event.preventDefault();
         setMessage(message);
 
-        if (selectedRating < 1 || selectedRating > 5) {
-            setMessage(message, "Please select a rating.", "error");
+        const stallId = Number(stallIdInput.value);
+
+        if (
+            !Number.isInteger(stallId) ||
+            stallId <= 0
+        ) {
+            setMessage(
+                message,
+                "Please select a valid stall.",
+                "error"
+            );
+
+            return;
+        }
+
+        if (
+            selectedRating < 1 ||
+            selectedRating > 5
+        ) {
+            setMessage(
+                message,
+                "Please select a rating.",
+                "error"
+            );
+
             return;
         }
 
         const payload = {
-            StallID: Number(stallIdInput.value),
+            StallID: stallId,
             Rating: selectedRating,
-            ReviewComment: comment.value.trim()
+            ReviewComment: comment.value.trim(),
         };
 
         const existingId = reviewId.value;
@@ -234,22 +510,34 @@ document.addEventListener("DOMContentLoaded", () => {
                     ? `/feedback/${existingId}`
                     : "/feedback",
                 {
-                    method: existingId ? "PUT" : "POST",
-                    body: JSON.stringify(payload)
+                    method: existingId
+                        ? "PUT"
+                        : "POST",
+                    body: JSON.stringify(payload),
                 }
             );
 
             closeEditor();
+
             showToast(
                 existingId
                     ? "Review updated successfully."
                     : "Review submitted successfully."
             );
-            loadReviews();
+
+            await loadReviews();
         } catch (error) {
-            setMessage(message, error.message, "error");
+            setMessage(
+                message,
+                error.message,
+                "error"
+            );
         }
     });
 
-    loadReviews();
+    const stallsLoaded = await loadStalls();
+
+    if (stallsLoaded) {
+        await loadReviews();
+    }
 });
