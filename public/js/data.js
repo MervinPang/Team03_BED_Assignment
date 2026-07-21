@@ -61,7 +61,7 @@ window.HAWKER_DATA = {
             MenuItemID: 4,
             StallID: 2,
             ItemName: "Plain Prata",
-            ItemDesc: "Crispy plain prata with curry.",
+            ItemDesc: "Freshly prepared crispy prata served with aromatic curry for a classic local favourite.",
             Price: 1.5,
             ItemImage: "/images/Plain Prata.jpg",
             IsAvailable: true
@@ -70,7 +70,7 @@ window.HAWKER_DATA = {
             MenuItemID: 5,
             StallID: 2,
             ItemName: "Egg Prata",
-            ItemDesc: "Prata with egg served with curry.",
+            ItemDesc: "Golden prata with a fluffy egg filling, served with fragrant curry for extra flavour.",
             Price: 2.2,
             ItemImage: "/images/Egg Prata.jpg",
             IsAvailable: true
@@ -80,7 +80,7 @@ window.HAWKER_DATA = {
             StallID: 3,
             ItemName: "Nasi Lemak Chicken Wing",
             ItemDesc:
-                "Nasi lemak with fried chicken wing, egg and sambal.",
+                "Fragrant coconut rice served with a crispy chicken wing, egg, peanuts, cucumber, and homemade sambal.",
             Price: 4.8,
             ItemImage: "/images/Nasi Lemak.jpg",
             IsAvailable: true
@@ -89,7 +89,7 @@ window.HAWKER_DATA = {
             MenuItemID: 7,
             StallID: 3,
             ItemName: "Iced Milo",
-            ItemDesc: "Cold Milo drink.",
+            ItemDesc: "A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.",
             Price: 1.8,
             ItemImage: "/images/Iced Milo.jpg",
             IsAvailable: true

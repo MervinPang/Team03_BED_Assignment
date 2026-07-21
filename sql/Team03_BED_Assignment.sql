@@ -365,13 +365,13 @@ VALUES
 
 INSERT INTO MenuItem (StallID, ItemName, ItemDesc, ItemPrice, ItemCategory, ItemImage, IsAvailable)
 VALUES
-(1, ' Steamed Chicken Rice', 'Tender steamed chicken served with fragrant rice and house-made chilli sauce.', 4.50, 'Main Dish', '/images/Steamed Chicken Rice.jpg', 1),
+(1, 'Steamed Chicken Rice', 'Tender steamed chicken served with fragrant rice and house-made chilli sauce.', 4.50, 'Main Dish', '/images/Steamed Chicken Rice.jpg', 1),
 (1, 'Roasted Chicken Rice', 'Juicy roasted chicken served with fragrant rice and traditional dipping sauces.', 5.00, 'Main Dish', '/images/Roasted Chicken Rice.jpg', 1),
-(1, 'Chicken Soup', 'Warm chicken soup served as a side.', 1.20, 'Side', '/images/Chicken Soup.png', 1),
-(2, 'Plain Prata', 'Crispy plain prata with curry.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
-(2, 'Egg Prata', 'Prata with egg served with curry.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
-(3, 'Nasi Lemak Chicken Wing', 'Nasi lemak with fried chicken wing, egg and sambal.', 4.80, 'Main Dish', '/images/Nasi Lemak.jpg', 1),
-(3, 'Iced Milo', 'Cold Milo drink.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1),
+(1, 'Chicken Soup', 'A comforting chicken soup prepared with tender chicken and a flavourful broth.', 1.20, 'Side', '/images/Chicken Soup.png', 1),
+(2, 'Plain Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
+(2, 'Egg Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
+(3, 'Nasi Lemak Chicken Wing', 'Fragrant coconut rice served with a crispy chicken wing, egg, peanuts, cucumber, and homemade sambal.', 4.80, 'Main Dish', '/images/Nasi Lemak.jpg', 1),
+(3, 'Iced Milo', 'A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1),
 (4, 'Vendor A Test Chicken Rice', 'Chicken rice used for Vendor A ownership testing.', 5.50, 'Main Dish', '/images/vendora_chickenrice.jpg', 1),
 (4, 'Vendor A Test Drink', 'Drink used for Vendor A same-stall order testing.', 2.00, 'Drink', '/images/vendora_drink.jpg', 1),
 (5, 'Vendor B Test Noodles', 'Noodles used for Vendor B ownership testing.', 6.00, 'Main Dish', '/images/vendorb_noodles.jpg', 1);
