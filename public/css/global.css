@@ -40,10 +40,9 @@ html {
 
 body {
   margin: 0;
-  background: radial-gradient(circle at 5% 2%, rgba(242, 178, 76, .16), transparent 24rem), radial-gradient(circle at 96% 8%, rgba(43, 145, 101, .13), transparent 28rem), linear-gradient(180deg, #fbfcf9 0%, var(--bg) 44%, #f1f5f0 100%);
-  color: var(--ink);
+  background-color: #edf6ed;
   font-family: "DM Sans", system-ui, sans-serif;
-  min-height: 100vh
+  min-height: 100vh;
 }
 
 body::before {
