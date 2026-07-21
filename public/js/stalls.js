@@ -1,77 +1,122 @@
-document.addEventListener("DOMContentLoaded", () => {
-    const grid = document.getElementById("stallGrid");
-    const search = document.getElementById("stallSearch");
+document.addEventListener("DOMContentLoaded", async () => {
+  const grid = document.getElementById("stallGrid");
+  const search = document.getElementById("stallSearch");
 
-    function render() {
-        const query = search.value.trim().toLowerCase();
+  let allStalls = [];
 
-        const stalls = HAWKER_DATA.stalls.filter((stall) => {
-            const searchableText = `${stall.StallName} ${stall.Cuisine}`.toLowerCase();
+  function render() {
+    const query = search.value.trim().toLowerCase();
 
-            return searchableText.includes(query);
-        });
+    const filteredStalls = allStalls.filter((stall) => {
+      const searchableText =
+        `${stall.StallName} ${stall.Cuisine || ""}`.toLowerCase();
 
-        grid.innerHTML =
-            stalls
-                .map((stall) => {
-                    const availabilityClass = stall.IsAvailable
-                        ? "success"
-                        : "unavailable";
+      return searchableText.includes(query);
+    });
 
-                    const availabilityText = stall.IsAvailable
-                        ? "Open"
-                        : "Unavailable";
+    grid.innerHTML =
+      filteredStalls
+        .map((stall) => {
+          const isAvailable = Boolean(stall.IsAvailable);
 
-                    const menuLink = stall.IsAvailable
-                        ? `/menu.html?stall=${stall.StallID}`
-                        : "#";
+          const availabilityClass = isAvailable
+            ? "success"
+            : "unavailable";
 
-                    const buttonText = stall.IsAvailable
-                        ? "View Menu"
-                        : "Currently Unavailable";
+          const availabilityText = isAvailable
+            ? "Open"
+            : "Unavailable";
 
-                    return `
-            <article class="card stall-card">
-              <img
-                src="${stall.StallImage}"
-                alt="${esc(stall.StallName)}"
-              >
+          const menuLink = isAvailable
+            ? `/menu.html?stall=${stall.StallID}`
+            : "#";
 
-              <div class="stall-body stack">
-                <div class="row-between">
-                  <span class="badge ${availabilityClass}">
-                    ${availabilityText}
-                  </span>
+          const buttonText = isAvailable
+            ? "View Menu"
+            : "Currently Unavailable";
 
-                  <span class="small muted">
-                    ${esc(stall.Cuisine)}
-                  </span>
+          return `
+                        <article class="card stall-card">
+                            <img
+                                src="${esc(stall.StallImage)}"
+                                alt="${esc(stall.StallName)}"
+                            >
+
+                            <div class="stall-body stack">
+                                <div class="row-between">
+                                    <span class="badge ${availabilityClass}">
+                                        ${availabilityText}
+                                    </span>
+
+                                    <span class="small muted">
+                                        ${esc(stall.Cuisine || "General")}
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <h3>${esc(stall.StallName)}</h3>
+
+                                    <p class="muted">
+                                        ${esc(
+            stall.Description ||
+            "No description available."
+          )}
+                                    </p>
+                                </div>
+
+                                <a
+                                    class="button primary"
+                                    href="${menuLink}"
+                                    ${isAvailable
+              ? ""
+              : 'aria-disabled="true"'
+            }
+                                >
+                                    ${buttonText}
+                                </a>
+                            </div>
+                        </article>
+                    `;
+        })
+        .join("") ||
+      `
+                <div class="card empty">
+                    No stalls found.
                 </div>
+            `;
+  }
 
-                <div>
-                  <h3>${esc(stall.StallName)}</h3>
+  async function loadStalls() {
+    grid.innerHTML = `
+            <div class="card empty">
+                Loading stalls...
+            </div>
+        `;
 
-                  <p class="muted">
-                    ${esc(stall.Description)}
-                  </p>
+    try {
+      const stalls = await apiRequest("/stalls");
+
+      if (!Array.isArray(stalls)) {
+        throw new Error("Invalid stall data received from the server.");
+      }
+
+      allStalls = stalls;
+      render();
+    } catch (error) {
+      console.error("Unable to load stalls:", error);
+
+      grid.innerHTML = `
+                <div class="card empty">
+                    <h3>Unable to Load Stalls</h3>
+                    <p class="muted">
+                        Please refresh the page or try again later.
+                    </p>
                 </div>
-
-                <a class="button primary" href="${menuLink}">
-                  ${buttonText}
-                </a>
-              </div>
-            </article>
-          `;
-                })
-                .join("") ||
-            `
-        <div class="card empty">
-          No stalls found.
-        </div>
-      `;
+            `;
     }
+  }
 
-    search.addEventListener("input", render);
+  search.addEventListener("input", render);
 
-    render();
+  await loadStalls();
 });
