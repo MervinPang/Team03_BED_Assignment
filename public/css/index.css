@@ -252,66 +252,67 @@
 }
 
 @media (max-width:980px) {
-.hero-grid {
+  .hero-grid {
     grid-template-columns: 1fr
   }
 
-.hero-visual {
+  .hero-visual {
     min-height: 410px
   }
 
-.grid-3 {
+  .grid-3 {
     grid-template-columns: 1fr 1fr
   }
 }
 
 @media (max-width:760px) {
-.grid-3,
+
+  .grid-3,
   .grid-2,
   .metrics {
     grid-template-columns: 1fr
   }
 
-.hero {
+  .hero {
     padding-top: 48px
   }
 
-.hero-visual {
+  .hero-visual {
     min-height: 345px
   }
 
-.hero-photo {
+  .hero-photo {
     left: 22px
   }
 
-.floating-card.two {
+  .floating-card.two {
     right: 0
   }
 }
 
 @media (max-width:480px) {
-.hero h1 {
+  .hero h1 {
     font-size: 3.25rem
   }
 
-.hero-photo {
+  .hero-photo {
     inset: 20px 0 0 10px
   }
 
-.floating-card {
+  .floating-card {
     padding: 12px
   }
 
-.floating-card.one {
+  .floating-card.one {
     left: 0;
     bottom: 28px
   }
 
-.row {
+  .row {
     flex-wrap: wrap
   }
 
-.card-pad {
+  .card-pad {
     padding: 20px
   }
 }
@@ -333,4 +334,9 @@
 .feature-icon img {
   width: 28px;
   height: 28px
+}
+
+.feature-heading {
+  font-size: 2rem;
+  margin: 16px 0 10px;
 }
