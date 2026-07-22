@@ -120,25 +120,26 @@
 }
 
 @media (max-width:760px) {
-.grid-3,
+
+  .grid-3,
   .grid-2,
   .metrics {
     grid-template-columns: 1fr
   }
 
-.page-head {
+  .page-head {
     padding-top: 44px
   }
 }
 
 @media (max-width:480px) {
-.card-pad {
+  .card-pad {
     padding: 20px
   }
 }
 
 @media (max-width:620px) {
-.order-card-top>.badge {
+  .order-card-top>.badge {
     grid-column: 2
   }
 }
@@ -153,7 +154,8 @@
 .payment-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 16px;
   width: 100%;
   box-sizing: border-box;
   padding: 12px 20px;
@@ -162,6 +164,97 @@
   border-bottom: 1px solid var(--line);
 }
 
+.payment-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.payment-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: bold;
+  color: #000000;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.payment-info strong {
+  display: block;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .payment-strip .badge {
   flex-shrink: 0;
+}
+
+.order-status-section {
+  display: grid;
+  gap: 8px;
+}
+
+.order-status-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.timeline-list {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 16px;
+}
+
+.timeline-item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px 18px;
+  background: #f6f8f5;
+  border: 1px solid var(--line);
+  border-left: 4px solid var(--primary);
+  border-radius: 12px;
+}
+
+.timeline-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--text);
+}
+
+.timeline-status::before {
+  content: "";
+  width: 9px;
+  height: 9px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--primary);
+}
+
+.timeline-date {
+  font-size: 0.85rem;
+  color: var(--muted);
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (max-width: 560px) {
+  .timeline-item {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .timeline-date {
+    padding-left: 17px;
+    text-align: left;
+    white-space: normal;
+  }
 }

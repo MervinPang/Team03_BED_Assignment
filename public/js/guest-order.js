@@ -118,12 +118,34 @@ document.addEventListener("DOMContentLoaded", () => {
       </p>
 
       <div class="guest-reference-display">
-        <span>GuestOrderReference</span>
+        <span>Guest Order Reference:</span>
         <strong>${esc(guestReferenceInput.value.trim())}</strong>
       </div>
 
+      <div class="order-status-section">
+        <span class="order-status-label">
+          Current Order Status
+        </span>
+
+      <div class="timeline-list">
+        ${timeline.map(item => `
+          <div class="timeline-item">
+            <span class="timeline-status">
+              ${esc(item.OrderStatus)}
+            </span>
+
+            <span class="timeline-date">
+              ${formatDate(item.StatusDateTime)}
+            </span>
+      </div>
+    `).join("")}
+    </div>
+
       <div class="payment-strip">
+      <div class="payment-info">
+    <span class="payment-label">Payment Method</span>
         <span>${esc(order.PaymentMethod || "No payment method")}</span>
+          </div>
         <span class="badge ${paymentBadgeClass(paymentStatus)}">
           ${esc(paymentLabel(paymentStatus))}
         </span>
@@ -148,14 +170,6 @@ document.addEventListener("DOMContentLoaded", () => {
         <strong>${money(order.TotalAmount)}</strong>
       </div>
 
-      <div class="timeline-list">
-        ${timeline.map(item => `
-          <p class="small muted">
-            ${esc(item.OrderStatus)} ·
-            ${formatDate(item.StatusDateTime)}
-          </p>
-        `).join("")}
-      </div>
     `;
 
     result.hidden = false;
