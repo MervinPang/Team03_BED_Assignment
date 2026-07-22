@@ -199,51 +199,120 @@ function getCart() {
     );
 
     if (!cart || !Array.isArray(cart.items)) {
-      return { StallID: null, StallName: "", items: [] };
+      return {
+        StallID: null,
+        StallName: "",
+        items: []
+      };
     }
 
-    /*
-     * Keep previously saved carts aligned with the current menu data.
-     * This prevents an old browser price from remaining in localStorage
-     * after the SQL/menu price has been corrected.
-     */
-    if (window.HAWKER_DATA?.menuItems) {
-      let changed = false;
+    return cart;
+  } catch (error) {
+    console.error("Unable to read cart:", error);
 
-      cart.items = cart.items.map(item => {
-        const currentItem = window.HAWKER_DATA.menuItems.find(
-          menuItem => Number(menuItem.MenuItemID) === Number(item.MenuItemID)
-        );
+    return {
+      StallID: null,
+      StallName: "",
+      items: []
+    };
+  }
+}
 
-        if (!currentItem) {
-          return item;
-        }
+async function refreshCartFromBackend() {
+  const cart = getCart();
 
-        const currentPrice = Number(currentItem.Price);
+  if (
+    !Number.isInteger(Number(cart.StallID)) ||
+    Number(cart.StallID) <= 0 ||
+    !Array.isArray(cart.items) ||
+    !cart.items.length
+  ) {
+    return cart;
+  }
 
-        if (Number(item.Price) !== currentPrice) {
+  try {
+    const response = await apiRequest(
+      `/stalls/${Number(cart.StallID)}/menu-items`
+    );
+
+    const currentMenuItems = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.menuItems)
+        ? response.menuItems
+        : Array.isArray(response?.items)
+          ? response.items
+          : [];
+
+    if (!currentMenuItems.length) {
+      return cart;
+    }
+
+    let changed = false;
+
+    const refreshedItems = cart.items.map(savedItem => {
+      const currentItem = currentMenuItems.find(
+        menuItem =>
+          Number(menuItem.MenuItemID) ===
+          Number(savedItem.MenuItemID)
+      );
+
+      if (!currentItem) {
+        if (savedItem.IsAvailable !== false) {
           changed = true;
         }
 
         return {
-          ...item,
-          ItemName: currentItem.ItemName,
-          Price: currentPrice,
-          IsAvailable: currentItem.IsAvailable
+          ...savedItem,
+          IsAvailable: false
         };
-      });
-
-      if (changed) {
-        localStorage.setItem(
-          cartStorageKey(),
-          JSON.stringify(cart)
-        );
       }
+
+      const refreshedItem = {
+        ...savedItem,
+        ItemName:
+          currentItem.ItemName ??
+          savedItem.ItemName,
+        Price: Number(currentItem.Price),
+        IsAvailable:
+          currentItem.IsAvailable === true ||
+          Number(currentItem.IsAvailable) === 1
+      };
+
+      if (
+        refreshedItem.ItemName !== savedItem.ItemName ||
+        Number(refreshedItem.Price) !==
+        Number(savedItem.Price) ||
+        refreshedItem.IsAvailable !==
+        savedItem.IsAvailable
+      ) {
+        changed = true;
+      }
+
+      return refreshedItem;
+    });
+
+    const refreshedCart = {
+      ...cart,
+      items: refreshedItems
+    };
+
+    if (changed) {
+      saveCart(refreshedCart);
     }
 
+    return refreshedCart;
+  } catch (error) {
+    console.error(
+      "Unable to refresh cart from backend:",
+      error
+    );
+
+    /*
+     * Do not destroy the cart when the server is temporarily
+     * unavailable. The backend will still validate the items,
+     * prices and availability during checkout.
+     */
     return cart;
-  } catch {
-    return { StallID: null, StallName: "", items: [] };
   }
 }
 
@@ -492,6 +561,21 @@ function setupNav() {
   });
 
   updateCartCount();
+
+  const existingCart = getCart();
+
+  if (canOrder && existingCart.items.length) {
+    refreshCartFromBackend()
+      .then(() => {
+        updateCartCount();
+      })
+      .catch(error => {
+        console.error(
+          "Unable to refresh navigation cart:",
+          error
+        );
+      });
+  }
 }
 
 function requireCustomer() {

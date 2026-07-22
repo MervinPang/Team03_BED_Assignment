@@ -1,4 +1,4 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (!requireVendor()) return;
 
   const form =
@@ -22,17 +22,102 @@ document.addEventListener("DOMContentLoaded", () => {
 
   const currentVendor = getCurrentUser();
 
-  if (stallSelect && window.HAWKER_DATA?.stalls) {
-    stallSelect.insertAdjacentHTML(
-      "beforeend",
-      window.HAWKER_DATA.stalls.map(stall => `
-        <option value="${stall.StallID}">
-          ${esc(stall.StallName)}
-        </option>
-      `).join("")
-    );
-  }
+  let vendorStalls = [];
 
+  async function loadVendorStalls() {
+    if (!stallSelect) {
+      console.error(
+        'Vendor stall dropdown with id="stallId" was not found.'
+      );
+      return false;
+    }
+
+    const submitButton =
+      form?.querySelector('button[type="submit"]');
+
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
+
+    stallSelect.disabled = true;
+
+    stallSelect.innerHTML = `
+    <option value="">
+      Loading your stalls...
+    </option>
+  `;
+
+    try {
+      const response = await apiRequest(
+        "/vendors/me/stalls"
+      );
+
+      console.log(
+        "Vendor stalls API response:",
+        response
+      );
+
+      vendorStalls = normaliseArray(response);
+
+      console.log(
+        "Normalised vendor stalls:",
+        vendorStalls
+      );
+
+      if (!vendorStalls.length) {
+        stallSelect.innerHTML = `
+        <option value="">
+          No assigned stalls
+        </option>
+      `;
+
+        setMessage(
+          message,
+          "No food stall is assigned to your vendor account. Please check FoodStall.VendorUserID in the database.",
+          "warning"
+        );
+
+        metrics.hidden = true;
+        return false;
+      }
+
+      stallSelect.innerHTML = vendorStalls
+        .map(stall => `
+        <option value="${Number(stall.StallID)}">
+          ${esc(stall.StallName || "Unnamed stall")}
+        </option>
+      `)
+        .join("");
+
+      stallSelect.disabled = false;
+
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
+
+      return true;
+    } catch (error) {
+      console.error(
+        "Unable to load vendor stalls:",
+        error
+      );
+
+      stallSelect.innerHTML = `
+      <option value="">
+        Unable to load stalls
+      </option>
+    `;
+
+      setMessage(
+        message,
+        error.message ||
+        "Unable to load your assigned stalls.",
+        "error"
+      );
+
+      return false;
+    }
+  }
 
   function unwrap(value) {
     let current = value;
@@ -377,6 +462,34 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("stallId").value
     );
 
+    if (
+      !Number.isInteger(currentStallId) ||
+      currentStallId <= 0
+    ) {
+      setMessage(
+        message,
+        "Please select a valid assigned stall.",
+        "error"
+      );
+
+      return;
+    }
+
+    const ownsSelectedStall = vendorStalls.some(
+      stall =>
+        Number(stall.StallID) === currentStallId
+    );
+
+    if (!ownsSelectedStall) {
+      setMessage(
+        message,
+        "You are not authorised to view analytics for this stall.",
+        "error"
+      );
+
+      return;
+    }
+
     try {
       const [
         revenueData,
@@ -431,14 +544,16 @@ document.addEventListener("DOMContentLoaded", () => {
       document.getElementById("orders").textContent =
         totalOrders;
 
-      const selectedStall =
-        window.HAWKER_DATA?.stalls?.find(
-          stall => Number(stall.StallID) === currentStallId
-        );
+      const selectedStall = vendorStalls.find(
+        stall =>
+          Number(stall.StallID) === currentStallId
+      );
 
       document.getElementById("stall").textContent =
         selectedStall?.StallName ||
-        stallSelect.options[stallSelect.selectedIndex]?.textContent.trim() ||
+        stallSelect.options[
+          stallSelect.selectedIndex
+        ]?.textContent.trim() ||
         "Selected stall";
 
       const topItems = normaliseArray(topItemData);
@@ -533,6 +648,12 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
   });
+
+  const stallsLoaded = await loadVendorStalls();
+
+  if (stallsLoaded) {
+    currentStallId = Number(stallSelect.value);
+  }
 
   loadOrders();
 
