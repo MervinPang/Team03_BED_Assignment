@@ -324,60 +324,53 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderPaymentChangeSummary() {
     const stallName =
-      paymentChangeOrder.StallName ||
-      "Hawker Stall";
+      paymentChangeOrder.StallName || "Hawker Stall";
 
     const totalAmount = Number(
       paymentChangeOrder.TotalAmount || 0
     );
 
     cartContainer.innerHTML = `
-  <div class="receipt-summary payment-change-summary">
-    <div class="payment-change-header">
-      <div>
-        <span class="payment-change-eyebrow">
-          Change Payment Method
-        </span>
+    <div class="payment-change-summary">
+      <div class="payment-change-header">
+        <div>
+          <span class="payment-change-eyebrow">
+            Payment Update
+          </span>
 
-        <h3>
-          Order #${paymentChangeOrder.OrderID}
-        </h3>
+          <h3>
+            Order #${paymentChangeOrder.OrderID}
+          </h3>
+        </div>
+
+        <span class="badge warning">
+          ${esc(paymentChangeOrder.OrderStatus)}
+        </span>
       </div>
 
-      <span class="badge warning">
-        ${esc(paymentChangeOrder.OrderStatus)}
-      </span>
-    </div>
-
-    <div class="payment-change-details">
-      <div class="payment-change-detail">
+      <div class="payment-change-reference">
         <span>Guest Order Reference</span>
 
-        <strong class="guest-reference-value">
+        <strong>
           ${esc(paymentChangeReference)}
         </strong>
       </div>
 
-      ${paymentChangeOrder.StallName
-        ? `
-              <div class="payment-change-detail">
-                <span>Ordering from</span>
+      <div class="payment-change-stall">
+        <span>Ordering from</span>
 
-                <strong>
-                  ${esc(stallName)}
-                </strong>
-              </div>
-            `
-        : ""
-      }
-    </div>
+        <strong>
+          ${esc(stallName)}
+        </strong>
+      </div>
 
-    <div class="payment-change-items">
-      <span class="payment-change-section-title">
-        Order Items
-      </span>
+      <div class="payment-change-section">
+        <span class="payment-change-section-title">
+          Order Items
+        </span>
 
-      ${paymentChangeItems.length
+        <div class="payment-change-item-list">
+          ${paymentChangeItems.length
         ? paymentChangeItems
           .map(item => {
             const quantity = Number(
@@ -398,54 +391,61 @@ document.addEventListener("DOMContentLoaded", async () => {
               unitPrice * quantity;
 
             return `
-                  <div class="payment-change-item">
-                    <div class="payment-change-item-info">
-                      <strong>
-                        ${esc(item.ItemName)}
-                      </strong>
+                      <div class="payment-change-item">
+                        <div>
+                          <strong>
+                            ${esc(item.ItemName)}
+                          </strong>
 
-                      <span>
-                        ${quantity} × ${money(unitPrice)}
-                      </span>
-                    </div>
+                          <span>
+                            ${quantity} × ${money(unitPrice)}
+                          </span>
+                        </div>
 
-                    <strong class="payment-change-item-price">
-                      ${money(itemSubtotal)}
-                    </strong>
-                  </div>
-                `;
+                        <strong class="payment-change-item-price">
+                          ${money(itemSubtotal)}
+                        </strong>
+                      </div>
+                    `;
           })
           .join("")
         : `
-              <p class="muted">
-                No order items were returned.
-              </p>
-            `
+                  <p class="muted">
+                    No order items were returned.
+                  </p>
+                `
       }
-    </div>
+        </div>
+      </div>
 
-    <div class="payment-change-payment">
-      <div class="payment-change-detail">
-        <span>Current Payment Method</span>
+      <div class="payment-change-method">
+        <div>
+          <span>Current Payment Method</span>
 
-        <strong>
-          ${esc(
+          <strong>
+            ${esc(
         paymentChangeOrder.PaymentMethod ||
         "Not recorded"
       )}
+          </strong>
+        </div>
+      </div>
+
+      <div class="payment-change-total">
+        <div>
+          <span>Total Amount</span>
+
+          <small>
+            Amount payable for this order
+          </small>
+        </div>
+
+        <strong>
+          ${money(totalAmount)}
         </strong>
       </div>
     </div>
-
-    <div class="payment-change-total">
-      <span>Amount Payable</span>
-
-      <strong>
-        ${money(totalAmount)}
-      </strong>
-    </div>
-  </div>
-`;
+  `;
   }
 
   function updatePayment() {
