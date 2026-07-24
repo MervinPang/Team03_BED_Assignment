@@ -53,10 +53,9 @@
 
 .payment-layout-bed {
   display: grid;
-  grid-template-columns:
-    minmax(0, 1.35fr) minmax(340px, 0.65fr);
-  align-items: start;
+  grid-template-columns: minmax(0, 1fr) 390px;
   gap: 24px;
+  align-items: start;
 }
 
 .payment-card-bed,
@@ -865,7 +864,16 @@
 
   .payment-summary-card {
     position: static;
-    order: -1;
+    top: auto;
+    width: 100%;
+    max-width: none;
+    justify-self: stretch;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: var(--soft-shadow);
   }
 
   .paynow-content {
@@ -908,7 +916,17 @@
   }
 
   .payment-summary-card {
-    border-radius: 19px;
+    position: sticky;
+    top: 102px;
+    width: 390px;
+    max-width: 100%;
+    justify-self: end;
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--line);
+    border-radius: 24px;
+    background: #ffffff;
+    box-shadow: var(--soft-shadow);
   }
 
   .payment-heading-icon {

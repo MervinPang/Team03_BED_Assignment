@@ -234,67 +234,74 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!cart.items.length) {
       cartContainer.innerHTML = `
-        <div class="empty premium-empty">
-          <h3>Your cart is empty</h3>
+      <div class="empty premium-empty">
+        <h3>Your cart is empty</h3>
 
-          <p class="muted">
-            Browse the stalls to begin a new order.
-          </p>
+        <p class="muted">
+          Browse the stalls to begin a new order.
+        </p>
 
-          <a
-            class="button primary"
-            href="/stalls.html"
-          >
-            Browse Stalls
-          </a>
-        </div>
-      `;
+        <a
+          class="button primary"
+          href="/stalls.html"
+        >
+          Browse Stalls
+        </a>
+      </div>
+    `;
 
       form.hidden = true;
       return;
     }
 
+    const totalAmount = subtotal(cart);
+
     cartContainer.innerHTML = `
-      <div class="receipt-summary stack">
-        <div class="receipt-stall">
-          <div>
-            <span class="small muted">
-              Order Summary
-            </span>
+    <div class="normal-checkout-summary">
+      <div class="normal-checkout-header">
+        <div>
+          <span class="normal-checkout-eyebrow">
+            Order Summary
+          </span>
 
-            <h3>
-              ${esc(cart.StallName)}
-            </h3>
-          </div>
-
-          <a
-            class="text-link"
-            href="/menu.html?stall=${cart.StallID}"
-          >
-            Edit
-          </a>
+          <h3>
+            ${esc(cart.StallName)}
+          </h3>
         </div>
 
-        <div class="checkout-items">
+        <a
+          class="normal-checkout-edit"
+          href="/menu.html?stall=${cart.StallID}"
+        >
+          Edit
+        </a>
+      </div>
+
+      <div class="normal-checkout-section">
+        <span class="normal-checkout-section-title">
+          Order Items
+        </span>
+
+        <div class="normal-checkout-item-list">
           ${cart.items
         .map(
           item => `
-                <div class="checkout-item">
+                <div class="normal-checkout-item">
                   <div>
                     <strong>
                       ${esc(item.ItemName)}
                     </strong>
 
-                    <span class="small muted">
-                      ${item.Quantity} ×
-                      ${money(item.Price)}
+                    <span>
+                      ${Number(item.Quantity)} ×
+                      ${money(Number(item.Price))}
                     </span>
                   </div>
 
-                  <strong>
+                  <strong class="normal-checkout-item-price">
                     ${money(
-            item.Price *
-            item.Quantity
+            Number(item.Price) *
+            Number(item.Quantity)
           )}
                   </strong>
                 </div>
@@ -302,24 +309,23 @@ document.addEventListener("DOMContentLoaded", async () => {
         )
         .join("")}
         </div>
-
-        <div class="summary-line">
-          <span>Subtotal</span>
-
-          <strong>
-            ${money(subtotal(cart))}
-          </strong>
-        </div>
-
-        <div class="summary-line total">
-          <span>Total</span>
-
-          <strong>
-            ${money(subtotal(cart))}
-          </strong>
-        </div>
       </div>
-    `;
+
+      <div class="normal-checkout-total">
+        <div>
+          <span>Amount Payable</span>
+
+          <small>
+            Total for this order
+          </small>
+        </div>
+
+        <strong>
+          ${money(totalAmount)}
+        </strong>
+      </div>
+    </div>
+  `;
   }
 
   function renderPaymentChangeSummary() {
