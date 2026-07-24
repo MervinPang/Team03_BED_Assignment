@@ -28,6 +28,7 @@ const {
 const {
     validatePayment,
     validatePaymentStatus,
+    validatePaymentMethodUpdate,
     validatePaymentId,
     validateOrderIdParam,
 } = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
@@ -87,6 +88,7 @@ app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaym
 app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
 app.post("/payments", optionalJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
+app.put("/payments/:id/method", optionalJWT, validatePaymentId, validatePaymentMethodUpdate, paymentController.updatePaymentMethod);
 app.delete("/payments/:id", verifyJWT, validatePaymentId, paymentController.deletePayment);
 
 // Routes for User Registration and Login

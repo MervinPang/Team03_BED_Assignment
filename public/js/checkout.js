@@ -1,26 +1,69 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
   if (redirectNonCustomerFromOrdering()) return;
 
   const CHECKOUT_DRAFT_KEY = "hawkerhub_checkout_draft";
 
+  const query = new URLSearchParams(window.location.search);
+
+  const isPaymentChange =
+    query.get("changePayment") === "true";
+
+  document.body.classList.toggle(
+    "payment-change-mode",
+    isPaymentChange
+  );
+
+  const paymentChangeOrderId = Number(
+    query.get("orderId")
+  );
+
+  const paymentChangeReference =
+    query.get("reference")?.trim() || "";
+
   const form = document.getElementById("checkoutForm");
-  const cartContainer = document.getElementById("checkoutCart");
-  const messageContainer = document.getElementById("checkoutMessage");
 
-  const guestFields = document.getElementById("guestFields");
-  const guestNameInput = document.getElementById("guestName");
-  const guestEmailInput = document.getElementById("guestEmail");
+  const cartContainer =
+    document.getElementById("checkoutCart");
 
-  const referenceField = document.getElementById("referenceField");
-  const transactionReference = document.getElementById("transactionReference");
+  const messageContainer =
+    document.getElementById("checkoutMessage");
 
-  const instructions = document.getElementById("specialInstructions");
-  const counter = document.getElementById("instructionLimit");
-  const submitButton = document.getElementById("submitButton");
+  const guestFields =
+    document.getElementById("guestFields");
+
+  const guestNameInput =
+    document.getElementById("guestName");
+
+  const guestEmailInput =
+    document.getElementById("guestEmail");
+
+  const referenceField =
+    document.getElementById("referenceField");
+
+  const transactionReference =
+    document.getElementById(
+      "transactionReference"
+    );
+
+  const instructions =
+    document.getElementById(
+      "specialInstructions"
+    );
+
+  const counter =
+    document.getElementById(
+      "instructionLimit"
+    );
+
+  const submitButton =
+    document.getElementById("submitButton");
 
   const currentUser = getCurrentUser();
   const currentRole = role(currentUser?.role);
   const isMember = currentRole === "customer";
+
+  let paymentChangeOrder = null;
+  let paymentChangeItems = [];
 
   if (currentUser && !isMember) {
     window.location.replace(
@@ -28,19 +71,163 @@ document.addEventListener("DOMContentLoaded", () => {
         ? "/vendor-dashboard.html"
         : "/inspection-reports.html"
     );
+
     return;
   }
-
-  guestFields.hidden = isMember;
-  guestNameInput.disabled = isMember;
-  guestEmailInput.disabled = isMember;
-
-  guestNameInput.required = !isMember;
-  guestEmailInput.required = !isMember;
 
   referenceField.hidden = true;
   transactionReference.disabled = true;
   transactionReference.required = false;
+
+  if (isPaymentChange) {
+    guestFields.hidden = true;
+
+    guestNameInput.disabled = true;
+    guestEmailInput.disabled = true;
+
+    guestNameInput.required = false;
+    guestEmailInput.required = false;
+
+    const checkoutTitle =
+      document.getElementById("checkoutTitle");
+
+    const checkoutSubtitle =
+      document.getElementById("checkoutSubtitle");
+
+    if (checkoutTitle) {
+      checkoutTitle.textContent =
+        "Review and Update Payment";
+    }
+
+    if (checkoutSubtitle) {
+      checkoutSubtitle.textContent =
+        "Review your existing order and choose a new payment method.";
+    }
+
+    instructions.readOnly = true;
+    instructions.disabled = false;
+
+    await loadGuestOrderForPaymentChange();
+  } else {
+    guestFields.hidden = isMember;
+
+    guestNameInput.disabled = isMember;
+    guestEmailInput.disabled = isMember;
+
+    guestNameInput.required = !isMember;
+    guestEmailInput.required = !isMember;
+  }
+
+  async function loadGuestOrderForPaymentChange() {
+    if (
+      !Number.isInteger(paymentChangeOrderId) ||
+      paymentChangeOrderId <= 0 ||
+      !paymentChangeReference
+    ) {
+      setMessage(
+        messageContainer,
+        "The guest order information is invalid.",
+        "error"
+      );
+
+      form.hidden = true;
+      return;
+    }
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Loading order…";
+
+    try {
+      const data = await apiRequest(
+        "/order-history/guest",
+        {
+          method: "POST",
+          body: JSON.stringify({
+            OrderID: paymentChangeOrderId,
+            GuestOrderReference:
+              paymentChangeReference
+          })
+        }
+      );
+
+      paymentChangeOrder =
+        data.order || data;
+
+      paymentChangeItems =
+        Array.isArray(data.items)
+          ? data.items
+          : [];
+
+      instructions.value =
+        paymentChangeOrder.SpecialInstructions || "";
+
+      instructions.readOnly = true;
+
+      updateCounter();
+
+      const paymentStatus =
+        paymentChangeOrder.PaymentStatus ||
+        "Not recorded";
+
+      const paymentId = Number(
+        paymentChangeOrder.PaymentID
+      );
+
+      if (
+        paymentChangeOrder.OrderStatus !==
+        "Pending"
+      ) {
+        throw new Error(
+          "The payment method can only be changed while the order is pending."
+        );
+      }
+
+      if (!isPendingPayment(paymentStatus)) {
+        throw new Error(
+          "This payment can no longer be changed."
+        );
+      }
+
+      if (
+        !Number.isInteger(paymentId) ||
+        paymentId <= 0
+      ) {
+        throw new Error(
+          "The payment record could not be found."
+        );
+      }
+
+      const existingPaymentMethod =
+        paymentChangeOrder.PaymentMethod;
+
+      const existingMethodInput =
+        document.querySelector(
+          `input[name="paymentMethod"][value="${existingPaymentMethod}"]`
+        );
+
+      if (existingMethodInput) {
+        existingMethodInput.checked = true;
+      }
+
+      renderPaymentChangeSummary();
+      updatePayment();
+
+      submitButton.disabled = false;
+    } catch (error) {
+      setMessage(
+        messageContainer,
+        error?.message ||
+        "Unable to load the guest order.",
+        "error"
+      );
+
+      form.hidden = true;
+
+      submitButton.disabled = false;
+      submitButton.textContent =
+        "Continue to Payment";
+    }
+  }
 
   function renderSummary() {
     const cart = getCart();
@@ -54,7 +241,10 @@ document.addEventListener("DOMContentLoaded", () => {
             Browse the stalls to begin a new order.
           </p>
 
-          <a class="button primary" href="/stalls.html">
+          <a
+            class="button primary"
+            href="/stalls.html"
+          >
             Browse Stalls
           </a>
         </div>
@@ -66,14 +256,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     cartContainer.innerHTML = `
       <div class="receipt-summary stack">
-
         <div class="receipt-stall">
           <div>
             <span class="small muted">
               Order Summary
             </span>
 
-            <h3>${esc(cart.StallName)}</h3>
+            <h3>
+              ${esc(cart.StallName)}
+            </h3>
           </div>
 
           <a
@@ -87,21 +278,25 @@ document.addEventListener("DOMContentLoaded", () => {
         <div class="checkout-items">
           ${cart.items
         .map(
-          (item) => `
+          item => `
                 <div class="checkout-item">
-
                   <div>
-                    <strong>${esc(item.ItemName)}</strong>
+                    <strong>
+                      ${esc(item.ItemName)}
+                    </strong>
 
                     <span class="small muted">
-                      ${item.Quantity} × ${money(item.Price)}
+                      ${item.Quantity} ×
+                      ${money(item.Price)}
                     </span>
                   </div>
 
                   <strong>
-                    ${money(item.Price * item.Quantity)}
+                    ${money(
+            item.Price *
+            item.Quantity
+          )}
                   </strong>
-
                 </div>
               `
         )
@@ -110,49 +305,300 @@ document.addEventListener("DOMContentLoaded", () => {
 
         <div class="summary-line">
           <span>Subtotal</span>
-          <strong>${money(subtotal(cart))}</strong>
+
+          <strong>
+            ${money(subtotal(cart))}
+          </strong>
         </div>
 
         <div class="summary-line total">
           <span>Total</span>
-          <strong>${money(subtotal(cart))}</strong>
-        </div>
 
+          <strong>
+            ${money(subtotal(cart))}
+          </strong>
+        </div>
       </div>
     `;
   }
 
+  function renderPaymentChangeSummary() {
+    const stallName =
+      paymentChangeOrder.StallName ||
+      "Hawker Stall";
+
+    const totalAmount = Number(
+      paymentChangeOrder.TotalAmount || 0
+    );
+
+    cartContainer.innerHTML = `
+  <div class="receipt-summary payment-change-summary">
+    <div class="payment-change-header">
+      <div>
+        <span class="payment-change-eyebrow">
+          Change Payment Method
+        </span>
+
+        <h3>
+          Order #${paymentChangeOrder.OrderID}
+        </h3>
+      </div>
+
+      <span class="badge warning">
+        ${esc(paymentChangeOrder.OrderStatus)}
+      </span>
+    </div>
+
+    <div class="payment-change-details">
+      <div class="payment-change-detail">
+        <span>Guest Order Reference</span>
+
+        <strong class="guest-reference-value">
+          ${esc(paymentChangeReference)}
+        </strong>
+      </div>
+
+      ${paymentChangeOrder.StallName
+        ? `
+              <div class="payment-change-detail">
+                <span>Ordering from</span>
+
+                <strong>
+                  ${esc(stallName)}
+                </strong>
+              </div>
+            `
+        : ""
+      }
+    </div>
+
+    <div class="payment-change-items">
+      <span class="payment-change-section-title">
+        Order Items
+      </span>
+
+      ${paymentChangeItems.length
+        ? paymentChangeItems
+          .map(item => {
+            const quantity = Number(
+              item.Quantity || 0
+            );
+
+            const unitPrice = Number(
+              item.UnitPrice ??
+              item.Price ??
+              (
+                Number(item.Subtotal || 0) /
+                Number(quantity || 1)
+              )
+            );
+
+            const itemSubtotal =
+              Number(item.Subtotal) ||
+              unitPrice * quantity;
+
+            return `
+                  <div class="payment-change-item">
+                    <div class="payment-change-item-info">
+                      <strong>
+                        ${esc(item.ItemName)}
+                      </strong>
+
+                      <span>
+                        ${quantity} × ${money(unitPrice)}
+                      </span>
+                    </div>
+
+                    <strong class="payment-change-item-price">
+                      ${money(itemSubtotal)}
+                    </strong>
+                  </div>
+                `;
+          })
+          .join("")
+        : `
+              <p class="muted">
+                No order items were returned.
+              </p>
+            `
+      }
+    </div>
+
+    <div class="payment-change-payment">
+      <div class="payment-change-detail">
+        <span>Current Payment Method</span>
+
+        <strong>
+          ${esc(
+        paymentChangeOrder.PaymentMethod ||
+        "Not recorded"
+      )}
+        </strong>
+      </div>
+    </div>
+
+    <div class="payment-change-total">
+      <span>Amount Payable</span>
+
+      <strong>
+        ${money(totalAmount)}
+      </strong>
+    </div>
+  </div>
+`;
+  }
+
   function updatePayment() {
-    const paymentMethod = document.querySelector(
-      'input[name="paymentMethod"]:checked'
-    )?.value;
+    const paymentMethod =
+      document.querySelector(
+        'input[name="paymentMethod"]:checked'
+      )?.value;
 
     if (paymentMethod === "Cash") {
-      submitButton.textContent = "Confirm Cash Payment";
+      submitButton.textContent =
+        isPaymentChange
+          ? "Continue with Cash"
+          : "Confirm Cash Payment";
     } else if (paymentMethod === "Card") {
-      submitButton.textContent = "Continue to Card Payment";
+      submitButton.textContent =
+        "Continue to Card Payment";
     } else if (paymentMethod === "PayNow") {
-      submitButton.textContent = "Continue to PayNow";
+      submitButton.textContent =
+        "Continue to PayNow";
+    } else {
+      submitButton.textContent =
+        "Select a Payment Method";
     }
   }
 
   function updateCounter() {
-    counter.textContent = `${instructions.value.length} / 300`;
+    if (!counter || !instructions) {
+      return;
+    }
+
+    counter.textContent =
+      `${instructions.value.length} / 300`;
   }
 
-  instructions.addEventListener("input", updateCounter);
+  instructions?.addEventListener(
+    "input",
+    updateCounter
+  );
 
   document
-    .querySelectorAll('input[name="paymentMethod"]')
-    .forEach((input) =>
-      input.addEventListener("change", updatePayment)
+    .querySelectorAll(
+      'input[name="paymentMethod"]'
+    )
+    .forEach(input => {
+      input.addEventListener(
+        "change",
+        updatePayment
+      );
+    });
+
+  form.addEventListener(
+    "submit",
+    event => {
+      event.preventDefault();
+
+      setMessage(messageContainer);
+
+      if (isPaymentChange) {
+        handlePaymentChangeSubmission();
+        return;
+      }
+
+      handleNormalCheckoutSubmission();
+    }
+  );
+
+  function handlePaymentChangeSubmission() {
+    if (!paymentChangeOrder) {
+      return setMessage(
+        messageContainer,
+        "The guest order could not be loaded.",
+        "error"
+      );
+    }
+
+    const paymentMethod =
+      document.querySelector(
+        'input[name="paymentMethod"]:checked'
+      )?.value;
+
+    if (!paymentMethod) {
+      return setMessage(
+        messageContainer,
+        "Please select a payment method.",
+        "error"
+      );
+    }
+
+    const totalAmount = Number(
+      paymentChangeOrder.TotalAmount || 0
     );
 
-  form.addEventListener("submit", (event) => {
-    event.preventDefault();
+    const cartItems =
+      paymentChangeItems.map(item => {
+        const quantity = Number(
+          item.Quantity || 0
+        );
 
-    setMessage(messageContainer);
+        const price = Number(
+          item.UnitPrice ??
+          item.Price ??
+          (
+            Number(item.Subtotal || 0) /
+            Number(quantity || 1)
+          )
+        );
 
+        return {
+          MenuItemID: item.MenuItemID,
+          ItemName: item.ItemName,
+          Quantity: quantity,
+          Price: price
+        };
+      });
+
+    sessionStorage.setItem(
+      CHECKOUT_DRAFT_KEY,
+      JSON.stringify({
+        paymentMethod,
+        isPaymentChange: true,
+        isMember: false,
+
+        orderId:
+          paymentChangeOrder.OrderID,
+
+        paymentId:
+          paymentChangeOrder.PaymentID,
+
+        guestReference:
+          paymentChangeReference,
+
+        stallName:
+          paymentChangeOrder.StallName ||
+          "Hawker Stall",
+
+        cartItems,
+
+        estimatedTotal: totalAmount
+      })
+    );
+
+    window.location.assign(
+      `/payment.html?changePayment=true` +
+      `&orderId=${encodeURIComponent(
+        paymentChangeOrder.OrderID
+      )}` +
+      `&reference=${encodeURIComponent(
+        paymentChangeReference
+      )}`
+    );
+  }
+
+  function handleNormalCheckoutSubmission() {
     const cart = getCart();
 
     if (!cart.items.length) {
@@ -163,7 +609,10 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    if (!isMember && !guestNameInput.value.trim()) {
+    if (
+      !isMember &&
+      !guestNameInput.value.trim()
+    ) {
       guestNameInput.focus();
 
       return setMessage(
@@ -175,8 +624,10 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (
       !isMember &&
-      (!guestEmailInput.value.trim() ||
-        !guestEmailInput.validity.valid)
+      (
+        !guestEmailInput.value.trim() ||
+        !guestEmailInput.validity.valid
+      )
     ) {
       guestEmailInput.focus();
 
@@ -187,9 +638,10 @@ document.addEventListener("DOMContentLoaded", () => {
       );
     }
 
-    const paymentMethod = document.querySelector(
-      'input[name="paymentMethod"]:checked'
-    )?.value;
+    const paymentMethod =
+      document.querySelector(
+        'input[name="paymentMethod"]:checked'
+      )?.value;
 
     if (!paymentMethod) {
       return setMessage(
@@ -200,19 +652,29 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const orderPayload = {
-      OrderType: isMember ? "Member" : "Guest",
+      OrderType:
+        isMember ? "Member" : "Guest",
 
-      SpecialInstructions: instructions.value.trim(),
+      SpecialInstructions:
+        instructions.value.trim(),
 
-      items: cart.items.map((item) => ({
-        MenuItemID: Number(item.MenuItemID),
-        Quantity: Number(item.Quantity),
-      })),
+      items: cart.items.map(item => ({
+        MenuItemID: Number(
+          item.MenuItemID
+        ),
+
+        Quantity: Number(
+          item.Quantity
+        )
+      }))
     };
 
     if (!isMember) {
-      orderPayload.GuestName = guestNameInput.value.trim();
-      orderPayload.GuestEmail = guestEmailInput.value.trim();
+      orderPayload.GuestName =
+        guestNameInput.value.trim();
+
+      orderPayload.GuestEmail =
+        guestEmailInput.value.trim();
     }
 
     sessionStorage.setItem(
@@ -223,14 +685,19 @@ document.addEventListener("DOMContentLoaded", () => {
         isMember,
         stallName: cart.StallName,
         cartItems: cart.items,
-        estimatedTotal: subtotal(cart),
+        estimatedTotal: subtotal(cart)
       })
     );
 
-    window.location.assign("/payment.html");
-  });
+    window.location.assign(
+      "/payment.html"
+    );
+  }
 
-  renderSummary();
+  if (!isPaymentChange) {
+    renderSummary();
+  }
+
   updatePayment();
   updateCounter();
 });

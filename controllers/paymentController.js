@@ -146,6 +146,49 @@ async function updatePaymentStatus(req, res) {
     }
 }
 
+// Changes the payment method for an eligible pending payment.
+// Ownership and payment-state rules are enforced by the model.
+async function updatePaymentMethod(req, res) {
+    try {
+        const paymentId = Number(req.params.id);
+
+        const updatedPayment = await paymentModel.updatePaymentMethod(
+            paymentId,
+            req.body,
+            req.user
+        );
+
+        if (!updatedPayment) {
+            return res.status(404).json({
+                error: "Payment not found or access denied",
+            });
+        }
+
+        return res.status(200).json(
+            updatedPayment
+        );
+    } catch (error) {
+        console.error(
+            "Controller error (updatePaymentMethod):",
+            error
+        );
+
+        if (
+            error.message === "Payment method can only be changed while the order is pending" ||
+            error.message === "Only pending or failed payments can change payment method" ||
+            error.message === "Transaction reference has already been used"
+        ) {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
+            error: "Failed to update payment method",
+        });
+    }
+}
+
 // Deletes an eligible payment record.
 // The model validates ownership, payment status and order status before any database changes occur.
 async function deletePayment(req, res) {
@@ -186,5 +229,6 @@ module.exports = {
     getPaymentById,
     getPaymentByOrderId,
     updatePaymentStatus,
+    updatePaymentMethod,
     deletePayment,
 };

@@ -11,32 +11,17 @@ document.addEventListener("DOMContentLoaded", () => {
     return;
   }
 
-  const form =
-    document.getElementById("guestForm");
+  const form = document.getElementById("guestForm");
+  const lookupMessage = document.getElementById("lookupMessage");
+  const result = document.getElementById("guestResult");
+  const savedOrders = document.getElementById("savedOrders");
+  const orderIdInput = document.getElementById("orderId");
+  const guestReferenceInput = document.getElementById("guestReference");
 
-  const lookupMessage =
-    document.getElementById("lookupMessage");
+  const query = new URLSearchParams(location.search);
 
-  const result =
-    document.getElementById("guestResult");
-
-  const savedOrders =
-    document.getElementById("savedOrders");
-
-  const query =
-    new URLSearchParams(location.search);
-
-  const orderIdInput =
-    document.getElementById("orderId");
-
-  const guestReferenceInput =
-    document.getElementById("guestReference");
-
-  orderIdInput.value =
-    query.get("orderId") || "";
-
-  guestReferenceInput.value =
-    query.get("reference") || "";
+  orderIdInput.value = query.get("orderId") || "";
+  guestReferenceInput.value = query.get("reference") || "";
 
   function renderSavedOrders() {
     let saved = [];
@@ -45,44 +30,40 @@ document.addEventListener("DOMContentLoaded", () => {
       const parsed = JSON.parse(
         localStorage.getItem(GUEST_ORDERS_KEY) || "[]"
       );
+
       saved = Array.isArray(parsed) ? parsed : [];
     } catch {
       localStorage.removeItem(GUEST_ORDERS_KEY);
     }
 
-    savedOrders.innerHTML =
-      saved.length
-        ? saved.map(order => `
-          <button
-            class="button secondary"
-            type="button"
-            data-id="${order.OrderID}"
-            data-reference="${esc(
-          order.GuestOrderReference
-        )}"
-          >
-            Order #${order.OrderID}
-          </button>
-        `).join("")
-        : `
+    savedOrders.innerHTML = saved.length
+      ? saved
+        .map(
+          order => `
+              <button
+                class="button secondary"
+                type="button"
+                data-id="${order.OrderID}"
+                data-reference="${esc(order.GuestOrderReference)}"
+              >
+                Order #${order.OrderID}
+              </button>
+            `
+        )
+        .join("")
+      : `
           <p class="muted">
             No guest orders are saved in this browser.
           </p>
         `;
 
-    savedOrders
-      .querySelectorAll("button")
-      .forEach(button => {
-        button.addEventListener("click", () => {
-          orderIdInput.value =
-            button.dataset.id;
-
-          guestReferenceInput.value =
-            button.dataset.reference;
-
-          form.requestSubmit();
-        });
+    savedOrders.querySelectorAll("button").forEach(button => {
+      button.addEventListener("click", () => {
+        orderIdInput.value = button.dataset.id;
+        guestReferenceInput.value = button.dataset.reference;
+        form.requestSubmit();
       });
+    });
   }
 
   function timelineStatusClass(status) {
@@ -108,165 +89,195 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   function renderGuestOrder(data) {
-    const order =
-      data.order || data;
+    const order = data.order || data;
 
-    const items =
-      data.items || [];
+    const items = Array.isArray(data.items)
+      ? data.items
+      : [];
 
-    const timeline =
-      data.timeline || [];
+    const timeline = Array.isArray(data.timeline)
+      ? data.timeline
+      : [];
 
     const paymentStatus =
       order.PaymentStatus || "Not recorded";
 
     const uniqueTimeline = timeline.filter(
       (item, index, array) =>
-        index === array.findIndex(
+        index ===
+        array.findIndex(
           entry =>
             entry.OrderStatus === item.OrderStatus
         )
     );
 
+    const mayChangePayment =
+      order.OrderStatus === "Pending" &&
+      isPendingPayment(paymentStatus) &&
+      Number.isInteger(Number(order.PaymentID));
+
     result.innerHTML = `
-    <div class="guest-order-top">
-      <div>
-        <span class="small muted">
-          Guest order
-        </span>
+      <div class="guest-order-top">
+        <div>
+          <span class="small muted">
+            Guest order
+          </span>
 
-        <h2>
-          Order #${order.OrderID}
-        </h2>
+          <h2>
+            Order #${order.OrderID}
+          </h2>
 
-        <span class="guest-order-date">
-          ${formatDate(order.OrderDateTime)}
-        </span>
-      </div>
+          <span class="guest-order-date">
+            ${formatDate(order.OrderDateTime)}
+          </span>
+        </div>
 
-      <span class="badge ${order.OrderStatus === "Cancelled"
+        <span class="badge ${order.OrderStatus === "Cancelled"
         ? "unavailable"
         : "warning"
       }">
-        ${esc(order.OrderStatus)}
-      </span>
-    </div>
-
-    <div class="guest-reference-display">
-      <span>
-        Guest Order Reference
-      </span>
-
-      <strong>
-        ${esc(
-        guestReferenceInput.value.trim()
-      )}
-      </strong>
-    </div>
-
-    <section class="order-progress-section">
-      <span class="section-label">
-        Order Progress
-      </span>
-
-      <div class="timeline-list">
-        ${uniqueTimeline.map(item => `
-          <div class="timeline-item ${timelineStatusClass(
-        item.OrderStatus
-      )}">
-            <span class="timeline-marker"></span>
-
-            <div class="timeline-content">
-              <strong>
-                ${esc(item.OrderStatus)}
-              </strong>
-
-              <span>
-                ${formatDate(item.StatusDateTime)}
-              </span>
-            </div>
-          </div>
-        `).join("")}
+          ${esc(order.OrderStatus)}
+        </span>
       </div>
-    </section>
 
-    <div class="payment-strip">
-  <div class="payment-info">
-    <span class="payment-label">
-      Payment Method
-    </span>
+      <div class="guest-reference-display">
+        <span>
+          Guest Order Reference
+        </span>
 
-    <strong>
-      ${esc(
-        order.PaymentMethod ||
-        "No payment method"
-      )}
-    </strong>
-  </div>
+        <strong>
+          ${esc(guestReferenceInput.value.trim())}
+        </strong>
+      </div>
 
-  <div class="payment-actions">
-    <span class="badge ${paymentBadgeClass(paymentStatus)
-      }">
-      ${esc(paymentLabel(paymentStatus))}
-    </span>
+      <section class="order-progress-section">
+        <span class="section-label">
+          Order Progress
+        </span>
 
-    ${order.OrderStatus === "Pending" &&
-        ["Pending", "Failed"].includes(paymentStatus)
-        ? `
-          <button
-            class="button secondary change-payment-button"
-            type="button"
-            data-change-payment
-          >
-            Change Payment Method
-          </button>
-        `
-        : ""
+        <div class="timeline-list">
+          ${uniqueTimeline.length
+        ? uniqueTimeline
+          .map(
+            item => `
+                      <div class="timeline-item ${timelineStatusClass(
+              item.OrderStatus
+            )}">
+                        <span class="timeline-marker"></span>
+
+                        <div class="timeline-content">
+                          <strong>
+                            ${esc(item.OrderStatus)}
+                          </strong>
+
+                          <span>
+                            ${formatDate(item.StatusDateTime)}
+                          </span>
+                        </div>
+                      </div>
+                    `
+          )
+          .join("")
+        : `
+                  <p class="small muted">
+                    No order progress records are available yet.
+                  </p>
+                `
       }
-  </div>
-</div>
+        </div>
+      </section>
 
-    <div class="guest-order-items">
-      ${items.map(item => `
-        <div class="guest-order-item">
-          <span>
-            ${item.Quantity} ×
-            ${esc(item.ItemName)}
+      <div class="payment-strip">
+        <div class="payment-info">
+          <span class="payment-label">
+            Payment Method
           </span>
 
           <strong>
-            ${money(
-        item.Subtotal ??
-        item.UnitPrice *
-        item.Quantity
+            ${esc(
+        order.PaymentMethod ||
+        "No payment method"
       )}
           </strong>
         </div>
-      `).join("")}
-    </div>
 
-    <div class="guest-order-total">
-      <strong>Total</strong>
+        <div class="payment-actions">
+          <span class="badge ${paymentBadgeClass(
+        paymentStatus
+      )}">
+            ${esc(paymentLabel(paymentStatus))}
+          </span>
 
-      <strong>
-        ${money(order.TotalAmount)}
-      </strong>
-    </div>
-  `;
+          ${mayChangePayment
+        ? `
+                  <button
+                    class="button secondary change-payment-button"
+                    type="button"
+                    data-change-payment
+                  >
+                    Change Payment Method
+                  </button>
+                `
+        : ""
+      }
+        </div>
+      </div>
 
-    const changePaymentButton =
-      result.querySelector("[data-change-payment]");
+      <div class="guest-order-items">
+        ${items.length
+        ? items
+          .map(
+            item => `
+                    <div class="guest-order-item">
+                      <span>
+                        ${Number(item.Quantity || 0)} ×
+                        ${esc(item.ItemName)}
+                      </span>
 
-    changePaymentButton?.addEventListener("click", () => {
-      const orderId = encodeURIComponent(order.OrderID);
+                      <strong>
+                        ${money(
+              item.Subtotal ??
+              Number(item.UnitPrice || 0) *
+              Number(item.Quantity || 0)
+            )}
+                      </strong>
+                    </div>
+                  `
+          )
+          .join("")
+        : `
+                <p class="muted">
+                  No order items were returned.
+                </p>
+              `
+      }
+      </div>
 
-      const reference = encodeURIComponent(
-        guestReferenceInput.value.trim()
-      );
+      <div class="guest-order-total">
+        <strong>
+          Total
+        </strong>
 
-      window.location.href =
-        `/payment.html?orderId=${orderId}&reference=${reference}`;
-    });
+        <strong>
+          ${money(order.TotalAmount)}
+        </strong>
+      </div>
+    `;
+
+    result
+      .querySelector("[data-change-payment]")
+      ?.addEventListener("click", () => {
+        const orderId = encodeURIComponent(order.OrderID);
+
+        const reference = encodeURIComponent(
+          guestReferenceInput.value.trim()
+        );
+
+        window.location.href =
+          `/checkout.html?changePayment=true` +
+          `&orderId=${orderId}` +
+          `&reference=${reference}`;
+      });
 
     result.hidden = false;
 
@@ -279,47 +290,82 @@ document.addEventListener("DOMContentLoaded", () => {
     renderSavedOrders();
   }
 
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    setMessage(lookupMessage);
-    result.hidden = true;
+  form.addEventListener(
+    "submit",
+    async event => {
+      event.preventDefault();
 
-    const orderId = Number(orderIdInput.value);
-    const reference = guestReferenceInput.value.trim();
+      setMessage(lookupMessage);
+      result.hidden = true;
 
-    if (!Number.isInteger(orderId) || orderId <= 0) {
-      setMessage(lookupMessage, "Enter a valid Order ID.", "error");
-      orderIdInput.focus();
-      return;
-    }
+      const orderId = Number(orderIdInput.value);
 
-    if (!reference) {
-      setMessage(lookupMessage, "Enter your guest order reference.", "error");
-      guestReferenceInput.focus();
-      return;
-    }
+      const reference =
+        guestReferenceInput.value.trim();
 
-    try {
-      const data = await apiRequest(
-        "/order-history/guest",
-        {
-          method: "POST",
-          body: JSON.stringify({
-            OrderID: orderId,
-            GuestOrderReference: reference
-          })
+      if (
+        !Number.isInteger(orderId) ||
+        orderId <= 0
+      ) {
+        setMessage(
+          lookupMessage,
+          "Enter a valid Order ID.",
+          "error"
+        );
+
+        orderIdInput.focus();
+        return;
+      }
+
+      if (!reference) {
+        setMessage(
+          lookupMessage,
+          "Enter your guest order reference.",
+          "error"
+        );
+
+        guestReferenceInput.focus();
+        return;
+      }
+
+      const submitButton = form.querySelector(
+        'button[type="submit"], button:not([type])'
+      );
+
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.textContent =
+          "Tracking order…";
+      }
+
+      try {
+        const data = await apiRequest(
+          "/order-history/guest",
+          {
+            method: "POST",
+            body: JSON.stringify({
+              OrderID: orderId,
+              GuestOrderReference: reference
+            })
+          }
+        );
+
+        renderGuestOrder(data);
+      } catch (error) {
+        setMessage(
+          lookupMessage,
+          error.message,
+          "error"
+        );
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.textContent =
+            "Track Order Status";
         }
-      );
-
-      renderGuestOrder(data);
-    } catch (error) {
-      setMessage(
-        lookupMessage,
-        error.message,
-        "error"
-      );
+      }
     }
-  });
+  );
 
   renderSavedOrders();
 

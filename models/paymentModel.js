@@ -363,7 +363,7 @@ async function createPayment(paymentData, user) {
                 throw new Error("Payment has already been made for this order");
             }
         }
-        
+
         console.error("Database error (createPayment):", error);
         throw error;
     } finally {
@@ -543,6 +543,198 @@ async function updatePaymentStatus(paymentId, paymentStatus, user) {
     }
 }
 
+// Changes the method of an existing pending payment.
+// The update is performed atomically so the order is never left
+// without a payment record.
+async function updatePaymentMethod(paymentId, paymentData, user) {
+    let connection;
+    let transaction;
+    let transactionStarted = false;
+
+    try {
+        connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
+
+        await transaction.begin();
+        transactionStarted = true;
+
+        const currentRequest = new sql.Request(transaction);
+
+        currentRequest.input("PaymentID", sql.Int, paymentId);
+        currentRequest.input("UserID", sql.Int, user?.id || null);
+        currentRequest.input("Role", sql.VarChar(20), user?.role || null);
+        currentRequest.input("GuestOrderReference", sql.VarChar(50), paymentData.GuestOrderReference || null);
+
+        const currentResult =
+            await currentRequest.query(`
+                SELECT
+                    p.PaymentID,
+                    p.OrderID,
+                    p.PaymentMethod,
+                    p.PaymentStatus,
+                    p.TransactionReference,
+                    p.PaidAt,
+                    co.UserID,
+                    co.OrderType,
+                    co.OrderStatus,
+                    co.GuestOrderReference
+                FROM Payment p
+                JOIN CustomerOrder co
+                    ON p.OrderID = co.OrderID
+                WHERE
+                    p.PaymentID = @PaymentID
+                    AND
+                    (
+                        (
+                            @Role = 'customer'
+                            AND co.UserID = @UserID
+                        )
+                        OR
+                        (
+                            @Role IS NULL
+                            AND co.UserID IS NULL
+                            AND co.OrderType = 'Guest'
+                            AND co.GuestOrderReference =
+                                @GuestOrderReference
+                        )
+                    );
+            `);
+
+        if (currentResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+
+            return null;
+        }
+
+        const currentPayment = currentResult.recordset[0];
+
+        if (currentPayment.OrderStatus !== "Pending") {
+            throw new Error(
+                "Payment method can only be changed while the order is pending"
+            );
+        }
+
+        if (
+            !["Pending", "Failed"].includes(
+                currentPayment.PaymentStatus
+            )
+        ) {
+            throw new Error(
+                "Only pending or failed payments can change payment method"
+            );
+        }
+
+        const nextPaymentStatus =
+            paymentData.PaymentMethod === "Cash" ? "Pending" : "Successful";
+
+        const nextTransactionReference =
+            paymentData.PaymentMethod === "Cash" ? null : paymentData.TransactionReference;
+
+        const nextPaidAt =
+            nextPaymentStatus === "Successful" ? new Date() : null;
+
+        if (nextTransactionReference) {
+            const duplicateRequest = new sql.Request(transaction);
+
+            duplicateRequest.input("PaymentID", sql.Int, paymentId);
+            duplicateRequest.input("TransactionReference", sql.VarChar(100), nextTransactionReference);
+
+            const duplicateResult =
+                await duplicateRequest.query(`
+                    SELECT PaymentID
+                    FROM Payment
+                    WHERE
+                        TransactionReference =
+                            @TransactionReference
+                        AND PaymentID <> @PaymentID;
+                `);
+
+            if (duplicateResult.recordset.length > 0) {
+                throw new Error(
+                    "Transaction reference has already been used"
+                );
+            }
+        }
+
+        const updateRequest =
+            new sql.Request(transaction);
+
+        updateRequest.input("PaymentID", sql.Int, paymentId);
+        updateRequest.input("PaymentMethod", sql.VarChar(30), paymentData.PaymentMethod);
+        updateRequest.input("PaymentStatus", sql.VarChar(30), nextPaymentStatus);
+        updateRequest.input("TransactionReference", sql.VarChar(100), nextTransactionReference);
+        updateRequest.input("PaidAt", sql.DateTime, nextPaidAt);
+
+        const updateResult =
+            await updateRequest.query(`
+                UPDATE Payment
+                SET
+                    PaymentMethod =
+                        @PaymentMethod,
+                    PaymentStatus =
+                        @PaymentStatus,
+                    TransactionReference =
+                        @TransactionReference,
+                    PaidAt =
+                        @PaidAt
+                WHERE PaymentID =
+                    @PaymentID;
+            `);
+
+        if (updateResult.rowsAffected[0] === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+
+            return null;
+        }
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return await getCreatedPaymentById(
+            paymentId
+        );
+    } catch (error) {
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Rollback error:",
+                    rollbackError
+                );
+            }
+        }
+
+        if (
+            error.number === 2601 ||
+            error.number === 2627
+        ) {
+            if (
+                error.message.includes(
+                    "UX_Payment_TransactionReference"
+                )
+            ) {
+                throw new Error(
+                    "Transaction reference has already been used"
+                );
+            }
+        }
+
+        console.error(
+            "Database error (updatePaymentMethod):",
+            error
+        );
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
 // Deletes an eligible payment using a transaction
 // Completed records are preserved to maintain payment integrity and auditability.
 async function deletePayment(paymentId, user) {
@@ -641,5 +833,6 @@ module.exports = {
     getPaymentById,
     getPaymentByOrderId,
     updatePaymentStatus,
+    updatePaymentMethod,
     deletePayment,
 };

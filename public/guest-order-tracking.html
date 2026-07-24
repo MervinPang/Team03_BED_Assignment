@@ -111,7 +111,7 @@
                          </div>
                          <div class="form-message" id="lookupMessage">
                          </div>
-                         <button class="button primary">
+                         <button class="button primary" type="submit">
                               Track Order Status
                          </button>
                     </form>
@@ -127,6 +127,106 @@
                </section>
           </section>
      </main>
+
+     <div class="modal-backdrop" id="guestPaymentBackdrop" hidden>
+          <form class="modal payment-change-modal" id="guestPaymentChangeForm">
+               <div class="modal-header">
+                    <div>
+                         <span class="eyebrow">
+                              Pending payment
+                         </span>
+
+                         <h2>
+                              Choose another payment method
+                         </h2>
+                    </div>
+
+                    <button aria-label="Close payment window" class="modal-close modal-close-inline"
+                         id="closeGuestPaymentModal" type="button">
+                         ×
+                    </button>
+               </div>
+
+               <div class="modal-body-scroll">
+                    <p class="muted">
+                         Choose how you would like to pay for this order.
+                         Card and PayNow payments will be confirmed immediately,
+                         while cash payment will be confirmed by the stall after
+                         you pay during collection.
+                    </p>
+
+                    <input id="guestExistingPaymentId" type="hidden" />
+
+                    <div class="payment-options">
+                         <div class="payment-option">
+                              <input id="guestChangeCash" name="guestChangedPaymentMethod" type="radio" value="Cash" />
+
+                              <label for="guestChangeCash">
+                                   <strong>
+                                        Cash
+                                   </strong>
+
+                                   <span class="small muted">
+                                        Pay during collection
+                                   </span>
+                              </label>
+                         </div>
+
+                         <div class="payment-option">
+                              <input id="guestChangeCard" name="guestChangedPaymentMethod" type="radio" value="Card" />
+
+                              <label for="guestChangeCard">
+                                   <strong>
+                                        Card
+                                   </strong>
+
+                                   <span class="small muted">
+                                        Confirm payment now
+                                   </span>
+                              </label>
+                         </div>
+
+                         <div class="payment-option">
+                              <input id="guestChangePayNow" name="guestChangedPaymentMethod" type="radio"
+                                   value="PayNow" />
+
+                              <label for="guestChangePayNow">
+                                   <strong>
+                                        PayNow
+                                   </strong>
+
+                                   <span class="small muted">
+                                        Confirm payment now
+                                   </span>
+                              </label>
+                         </div>
+                    </div>
+
+                    <div class="field" id="guestChangeReferenceField" hidden>
+                         <label for="guestChangeReference">
+                              Transaction reference
+                         </label>
+
+                         <input class="input" id="guestChangeReference" maxlength="100"
+                              placeholder="Enter a unique transaction reference" type="text" />
+                    </div>
+
+                    <div class="form-message" id="guestPaymentChangeMessage">
+                    </div>
+               </div>
+
+               <div class="modal-footer">
+                    <button class="button secondary" id="cancelGuestPaymentChange" type="button">
+                         Keep current payment
+                    </button>
+
+                    <button class="button primary" id="confirmGuestPaymentChange" type="submit">
+                         Confirm payment change
+                    </button>
+               </div>
+          </form>
+     </div>
+
      <footer class="site-footer">
           <div class="footer-social-band">
                <div class="shell footer-social-row">

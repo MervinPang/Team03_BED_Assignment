@@ -574,21 +574,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     submitButton.textContent = "Updating payment…";
 
     try {
-      await apiRequest(`/payments/${existingPaymentId}`, {
-        method: "DELETE",
-      });
-
-      await apiRequest("/payments", {
-        method: "POST",
-        body: JSON.stringify({
-          OrderID: orderId,
-          PaymentMethod: paymentMethod,
-          TransactionReference:
-            paymentMethod === "Cash"
-              ? ""
-              : referenceInput.value.trim(),
-        }),
-      });
+      await apiRequest(
+        `/payments/${existingPaymentId}/method`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            PaymentMethod: paymentMethod,
+            TransactionReference:
+              paymentMethod === "Cash"
+                ? ""
+                : referenceInput.value.trim(),
+          }),
+        }
+      );
 
       closePaymentModal();
       showToast("Payment method updated successfully.");

@@ -257,29 +257,24 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
         orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
         const orderResult = await orderRequest.query(`
-            SELECT DISTINCT
+            SELECT
                 co.OrderID,
-                co.OrderType,
+                co.GuestOrderReference,
                 co.OrderStatus,
                 co.TotalAmount,
                 co.SpecialInstructions,
                 co.OrderDateTime,
                 co.UpdatedAt,
-
                 fs.StallID,
                 fs.StallName,
                 fs.StallUnitNo,
                 fs.StallImage,
-
-                hc.HawkerCentreID,
                 hc.HCName,
                 hc.HCAddress,
-
                 p.PaymentID,
                 p.PaymentMethod,
                 p.PaymentStatus,
-                p.Amount AS PaymentAmount,
-                p.PaidAt
+                p.TransactionReference
             FROM CustomerOrder co
             JOIN OrderItem oi
                 ON co.OrderID = oi.OrderID
@@ -291,10 +286,7 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
                 ON fs.HawkerCentreID = hc.HawkerCentreID
             LEFT JOIN Payment p
                 ON co.OrderID = p.OrderID
-            WHERE
-                co.OrderID = @OrderID
-                AND co.OrderType = 'Guest'
-                AND co.UserID IS NULL
+            WHERE co.OrderID = @OrderID
                 AND co.GuestOrderReference = @GuestOrderReference;
         `);
 
@@ -308,21 +300,15 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
 
         const itemResult = await itemRequest.query(`
             SELECT
-                oi.OrderItemID,
                 oi.MenuItemID,
                 mi.ItemName,
-                mi.ItemDesc,
-                mi.ItemImage,
                 oi.Quantity,
                 oi.UnitPrice,
                 oi.Subtotal
             FROM OrderItem oi
-            JOIN MenuItem mi
+            INNER JOIN MenuItem mi
                 ON oi.MenuItemID = mi.MenuItemID
-            WHERE
-                oi.OrderID = @OrderID
-            ORDER BY
-                oi.OrderItemID;
+            WHERE oi.OrderID = @OrderID;
         `);
 
         // Retrieve the complete order status history for the guest's order
@@ -331,27 +317,24 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
 
         const timelineResult = await timelineRequest.query(`
             SELECT
-                OrderStatusHistoryID,
                 OrderStatus,
                 StatusDateTime
             FROM OrderStatusHistory
-            WHERE
-                OrderID = @OrderID
-            ORDER BY
-                StatusDateTime ASC,
-                OrderStatusHistoryID ASC;
+            WHERE OrderID = @OrderID
+            ORDER BY StatusDateTime ASC;
         `);
 
         return {
             order: orderResult.recordset[0],
             items: itemResult.recordset,
-            timeline: timelineResult.recordset,
+            timeline: timelineResult.recordset
         };
     } catch (error) {
         console.error(
-            "Database error (getGuestOrderHistory):",
+            "Error retrieving guest order history:",
             error
         );
+
         throw error;
     } finally {
         if (connection) {
