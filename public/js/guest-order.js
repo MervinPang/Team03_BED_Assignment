@@ -85,6 +85,28 @@ document.addEventListener("DOMContentLoaded", () => {
       });
   }
 
+  function timelineStatusClass(status) {
+    switch (String(status || "").toLowerCase()) {
+      case "pending":
+        return "timeline-pending";
+
+      case "preparing":
+        return "timeline-preparing";
+
+      case "ready":
+        return "timeline-ready";
+
+      case "completed":
+        return "timeline-completed";
+
+      case "cancelled":
+        return "timeline-cancelled";
+
+      default:
+        return "";
+    }
+  }
+
   function renderGuestOrder(data) {
     const order =
       data.order || data;
@@ -98,79 +120,153 @@ document.addEventListener("DOMContentLoaded", () => {
     const paymentStatus =
       order.PaymentStatus || "Not recorded";
 
-    result.innerHTML = `
-      <div class="row-between wrap">
-        <div>
-          <span class="small muted">Guest order</span>
-          <h2>#${order.OrderID}</h2>
-        </div>
+    const uniqueTimeline = timeline.filter(
+      (item, index, array) =>
+        index === array.findIndex(
+          entry =>
+            entry.OrderStatus === item.OrderStatus
+        )
+    );
 
-        <span class="badge ${order.OrderStatus === "Cancelled"
+    result.innerHTML = `
+    <div class="guest-order-top">
+      <div>
+        <span class="small muted">
+          Guest order
+        </span>
+
+        <h2>
+          Order #${order.OrderID}
+        </h2>
+
+        <span class="guest-order-date">
+          ${formatDate(order.OrderDateTime)}
+        </span>
+      </div>
+
+      <span class="badge ${order.OrderStatus === "Cancelled"
         ? "unavailable"
         : "warning"
       }">
-          ${esc(order.OrderStatus)}
-        </span>
-      </div>
-
-      <p class="muted">
-        ${formatDate(order.OrderDateTime)}
-      </p>
-
-      <div class="guest-reference-display">
-        <span>Guest Order Reference:</span>
-        <strong>${esc(guestReferenceInput.value.trim())}</strong>
-      </div>
-
-      <div class="order-status-section">
-        <span class="order-status-label">
-          Current Order Status
-        </span>
-
-      <div class="timeline-list">
-        ${timeline.map(item => `
-          <div class="timeline-item">
-            <span class="timeline-status">
-              ${esc(item.OrderStatus)}
-            </span>
-
-            <span class="timeline-date">
-              ${formatDate(item.StatusDateTime)}
-            </span>
-      </div>
-    `).join("")}
+        ${esc(order.OrderStatus)}
+      </span>
     </div>
 
-      <div class="payment-strip">
-      <div class="payment-info">
-    <span class="payment-label">Payment Method</span>
-        <span>${esc(order.PaymentMethod || "No payment method")}</span>
-          </div>
-        <span class="badge ${paymentBadgeClass(paymentStatus)}">
-          ${esc(paymentLabel(paymentStatus))}
-        </span>
-      </div>
+    <div class="guest-reference-display">
+      <span>
+        Guest Order Reference
+      </span>
 
+      <strong>
+        ${esc(
+        guestReferenceInput.value.trim()
+      )}
+      </strong>
+    </div>
+
+    <section class="order-progress-section">
+      <span class="section-label">
+        Order Progress
+      </span>
+
+      <div class="timeline-list">
+        ${uniqueTimeline.map(item => `
+          <div class="timeline-item ${timelineStatusClass(
+        item.OrderStatus
+      )}">
+            <span class="timeline-marker"></span>
+
+            <div class="timeline-content">
+              <strong>
+                ${esc(item.OrderStatus)}
+              </strong>
+
+              <span>
+                ${formatDate(item.StatusDateTime)}
+              </span>
+            </div>
+          </div>
+        `).join("")}
+      </div>
+    </section>
+
+    <div class="payment-strip">
+  <div class="payment-info">
+    <span class="payment-label">
+      Payment Method
+    </span>
+
+    <strong>
+      ${esc(
+        order.PaymentMethod ||
+        "No payment method"
+      )}
+    </strong>
+  </div>
+
+  <div class="payment-actions">
+    <span class="badge ${paymentBadgeClass(paymentStatus)
+      }">
+      ${esc(paymentLabel(paymentStatus))}
+    </span>
+
+    ${order.OrderStatus === "Pending" &&
+        ["Pending", "Failed"].includes(paymentStatus)
+        ? `
+          <button
+            class="button secondary change-payment-button"
+            type="button"
+            data-change-payment
+          >
+            Change Payment Method
+          </button>
+        `
+        : ""
+      }
+  </div>
+</div>
+
+    <div class="guest-order-items">
       ${items.map(item => `
-        <div class="row-between">
+        <div class="guest-order-item">
           <span>
-            ${item.Quantity} × ${esc(item.ItemName)}
+            ${item.Quantity} ×
+            ${esc(item.ItemName)}
           </span>
+
           <strong>
             ${money(
         item.Subtotal ??
-        item.UnitPrice * item.Quantity
+        item.UnitPrice *
+        item.Quantity
       )}
           </strong>
         </div>
       `).join("")}
+    </div>
 
-      <div class="summary-line total">
-        <span>Total</span>
-        <strong>${money(order.TotalAmount)}</strong>
-      </div>
+    <div class="guest-order-total">
+      <strong>Total</strong>
 
-    `;
+      <strong>
+        ${money(order.TotalAmount)}
+      </strong>
+    </div>
+  `;
+
+    const changePaymentButton =
+      result.querySelector("[data-change-payment]");
+
+    changePaymentButton?.addEventListener("click", () => {
+      const orderId = encodeURIComponent(order.OrderID);
+
+      const reference = encodeURIComponent(
+        guestReferenceInput.value.trim()
+      );
+
+      window.location.href =
+        `/payment.html?orderId=${orderId}&reference=${reference}`;
+    });
 
     result.hidden = false;
 

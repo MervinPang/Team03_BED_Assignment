@@ -190,71 +190,243 @@
   flex-shrink: 0;
 }
 
-.order-status-section {
+.guest-order-result {
   display: grid;
-  gap: 8px;
+  gap: 18px;
+  margin-top: 26px;
 }
 
-.order-status-label {
-  font-size: 0.75rem;
+.guest-order-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.guest-order-top h2 {
+  margin: 4px 0 6px;
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: var(--text);
+  letter-spacing: -0.02em;
+}
+
+.guest-order-date {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.guest-reference-display {
+  display: grid;
+  gap: 4px;
+  padding: 2px 0 14px;
+  border-bottom: 1px solid var(--line);
+}
+
+.guest-reference-display span,
+.section-label,
+.payment-label {
+  font-size: 0.68rem;
   font-weight: 700;
   color: var(--muted);
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+}
+
+.guest-reference-display strong {
+  font-size: 0.92rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.order-progress-section {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+  background: rgba(30, 120, 75, 0.06);
+  border-left: 4px solid var(--primary);
+  border-radius: 10px;
 }
 
 .timeline-list {
   display: grid;
-  gap: 10px;
-  margin: 0 0 16px;
+  gap: 0;
+  padding-left: 5px;
 }
 
 .timeline-item {
+  position: relative;
   display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-  gap: 16px;
-  padding: 14px 18px;
-  background: #f6f8f5;
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--primary);
-  border-radius: 12px;
+  grid-template-columns: 16px minmax(0, 1fr);
+  gap: 12px;
+  padding-bottom: 16px;
 }
 
-.timeline-status {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--text);
+.timeline-item:last-child {
+  padding-bottom: 0;
 }
 
-.timeline-status::before {
+.timeline-item:not(:last-child)::before {
   content: "";
-  width: 9px;
-  height: 9px;
-  flex-shrink: 0;
+  position: absolute;
+  top: 13px;
+  left: 5px;
+  width: 2px;
+  height: calc(100% - 1px);
+  background: var(--line);
+}
+
+.timeline-marker {
+  position: relative;
+  z-index: 1;
+  width: 11px;
+  height: 11px;
+  margin-top: 4px;
   border-radius: 50%;
   background: var(--primary);
+  box-shadow: 0 0 0 4px rgba(30, 120, 75, 0.12);
 }
 
-.timeline-date {
-  font-size: 0.85rem;
+.timeline-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.timeline-content strong {
+  font-size: 1rem;
+  font-weight: 750;
+  color: currentColor;
+}
+
+.timeline-content span {
   color: var(--muted);
+  font-size: 0.84rem;
   text-align: right;
   white-space: nowrap;
 }
 
+.payment-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 18px;
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-info {
+  display: grid;
+  gap: 3px;
+}
+
+.payment-info strong {
+  font-size: 0.95rem;
+  font-weight: 650;
+  color: var(--text);
+}
+
+.payment-strip .badge {
+  flex-shrink: 0;
+}
+
+.guest-order-items {
+  display: grid;
+}
+
+.guest-order-item {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 0.95rem;
+}
+
+.guest-order-item strong {
+  flex-shrink: 0;
+  font-weight: 700;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.guest-order-total {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding-top: 2px;
+  font-size: 1.05rem;
+}
+
+.timeline-pending {
+  color: #2e7d32;
+}
+
+.timeline-preparing {
+  color: #d97706;
+}
+
+.timeline-ready {
+  color: #2563eb;
+}
+
+.timeline-completed {
+  color: #15803d;
+}
+
+.timeline-cancelled {
+  color: #dc2626;
+}
+
+.timeline-marker {
+  background: currentColor;
+}
+
+.payment-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.change-payment-button {
+  padding: 8px 12px;
+  font-size: 0.82rem;
+}
+
 @media (max-width: 560px) {
-  .timeline-item {
-    grid-template-columns: 1fr;
-    gap: 5px;
+  .guest-order-card {
+    padding: 24px 18px;
   }
 
-  .timeline-date {
-    padding-left: 17px;
+  .guest-order-top {
+    gap: 12px;
+  }
+
+  .timeline-content {
+    display: grid;
+    gap: 4px;
+  }
+
+  .timeline-content span {
     text-align: left;
     white-space: normal;
+  }
+
+  .payment-strip {
+    align-items: flex-start;
+  }
+
+  .payment-actions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .guest-order-item {
+    gap: 12px;
   }
 }
