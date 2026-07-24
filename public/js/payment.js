@@ -300,19 +300,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (paymentSummary) {
     paymentSummary.innerHTML = `
-      <div class="summary-header">
-        <h3>
-          ${changePaymentMode
-        ? "Existing Order Summary"
-        : "Order Summary"
-      }
-        </h3>
+    <div class="payment-review-summary">
 
-        <span class="payment-method-badge">
+      <div class="payment-review-header">
+        <div>
+          <span class="payment-review-eyebrow">
+            ${changePaymentMode ? "Payment Update" : "Order Summary"}
+          </span>
+
+          <h3>
+            ${changePaymentMode
+        ? `Order #${draft.orderId}`
+        : esc(draft.stallName || "Hawker Stall")}
+          </h3>
+        </div>
+
+        <span class="payment-review-method">
           <img
-            src="${methodIcons[method] ||
-      methodIcons.Cash
-      }"
+            src="${methodIcons[method] || methodIcons.Cash}"
             alt=""
           >
 
@@ -320,85 +325,89 @@ document.addEventListener("DOMContentLoaded", async () => {
         </span>
       </div>
 
-      <div class="summary-stall">
-        <span>
-          ${changePaymentMode
-        ? "Order from"
-        : "Ordering from"
-      }
-        </span>
-
-        <strong>
-          ${esc(
-        draft.stallName ||
-        "Hawker stall"
-      )}
-        </strong>
-      </div>
-
-      ${changePaymentMode
+      ${changePaymentMode && draft.guestReference
         ? `
-              <div class="summary-line">
-                <span>Order ID</span>
+            <div class="payment-review-reference">
+              <span>Guest Order Reference</span>
 
-                <strong>
-                  #${draft.orderId}
-                </strong>
-              </div>
-            `
+              <strong>
+                ${esc(draft.guestReference)}
+              </strong>
+            </div>
+          `
         : ""
       }
 
-      <div class="checkout-items">
-        ${Array.isArray(draft.cartItems) &&
+      <div class="payment-review-stall">
+        <span>Ordering from</span>
+
+        <strong>
+          ${esc(draft.stallName || "Hawker Stall")}
+        </strong>
+      </div>
+
+      <div class="payment-review-section">
+        <span class="payment-review-section-title">
+          Order Items
+        </span>
+
+        <div class="payment-review-item-list">
+
+          ${Array.isArray(draft.cartItems) &&
         draft.cartItems.length
         ? draft.cartItems
           .map(
             item => `
-                    <div class="checkout-item">
-                      <div>
-                        <strong>
-                          ${esc(item.ItemName)}
-                        </strong>
+                      <div class="payment-review-item">
 
-                        <span class="muted">
-                          ${Number(
-              item.Quantity
-            )} ×
-                          ${money(item.Price)}
-                        </span>
-                      </div>
+                        <div>
+                          <strong>
+                            ${esc(item.ItemName)}
+                          </strong>
 
-                      <strong>
-                        ${money(
+                          <span>
+                            ${Number(item.Quantity)} ×
+                            ${money(Number(item.Price))}
+                          </span>
+                        </div>
+
+                        <strong class="payment-review-item-price">
+                          ${money(
               Number(item.Price) *
               Number(item.Quantity)
             )}
-                      </strong>
-                    </div>
-                  `
+                        </strong>
+
+                      </div>
+                    `
           )
           .join("")
         : `
-                <p class="muted">
-                  No order items were returned.
-                </p>
-              `
+                  <p class="muted">
+                    No order items were returned.
+                  </p>
+                `
       }
-      </div>
 
-      <div class="summary-totals">
-        <div class="summary-line total">
-          <span>Amount Payable</span>
-
-          <strong>
-            ${money(
-        draft.estimatedTotal
-      )}
-          </strong>
         </div>
       </div>
-    `;
+
+      <div class="payment-review-total">
+        <div>
+          <span>Amount Payable</span>
+
+          <small>
+            Total for this order
+          </small>
+        </div>
+
+        <strong>
+          ${money(draft.estimatedTotal)}
+        </strong>
+      </div>
+
+    </div>
+  `;
   }
 
   copyButton?.addEventListener(
