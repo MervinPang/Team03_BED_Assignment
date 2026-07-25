@@ -459,8 +459,8 @@ function paymentLabel(paymentStatus) {
   const status = String(paymentStatus || "");
 
   if (status === "Successful") return "Paid";
-  if (status === "Pending") return "Awaiting payment";
-  if (status === "Failed") return "Payment failed";
+  if (status === "Pending") return "Awaiting Payment";
+  if (status === "Failed") return "Payment Failed";
   if (status === "Refunded") return "Refunded";
 
   return "Not recorded";

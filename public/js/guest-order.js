@@ -116,12 +116,13 @@ document.addEventListener("DOMContentLoaded", () => {
       isPendingPayment(paymentStatus) &&
       Number.isInteger(Number(order.PaymentID));
 
+    const mayCancelOrder =
+      order.OrderStatus === "Pending" &&
+      String(paymentStatus).toLowerCase() !== "successful";
+
     result.innerHTML = `
       <div class="guest-order-top">
         <div>
-          <span class="small muted">
-            Guest order
-          </span>
 
           <h2>
             Order #${order.OrderID}
@@ -220,6 +221,19 @@ document.addEventListener("DOMContentLoaded", () => {
                 `
         : ""
       }
+
+        ${mayCancelOrder
+        ? `
+            <button
+              class="button cancel-order-button"
+              type="button"
+              data-cancel-guest-order
+            >
+              Cancel Order
+            </button>
+          `
+        : ""
+      }
         </div>
       </div>
 
@@ -278,6 +292,74 @@ document.addEventListener("DOMContentLoaded", () => {
           `&orderId=${orderId}` +
           `&reference=${reference}`;
       });
+
+    const cancelOrderButton = result.querySelector(
+      "[data-cancel-guest-order]"
+    );
+
+    cancelOrderButton?.addEventListener(
+      "click",
+      async () => {
+        const confirmed = window.confirm(
+          "Are you sure you want to cancel this order?"
+        );
+
+        if (!confirmed) {
+          return;
+        }
+
+        const originalButtonText =
+          cancelOrderButton.textContent;
+
+        cancelOrderButton.disabled = true;
+        cancelOrderButton.textContent =
+          "Cancelling Order...";
+
+        const reference =
+          guestReferenceInput.value.trim();
+
+        try {
+          await apiRequest(
+            `/orders/${encodeURIComponent(
+              order.OrderID
+            )}/guest-cancel`,
+            {
+              method: "PUT",
+              body: JSON.stringify({
+                GuestOrderReference: reference
+              })
+            }
+          );
+
+          const updatedData = await apiRequest(
+            "/order-history/guest",
+            {
+              method: "POST",
+              body: JSON.stringify({
+                OrderID: Number(order.OrderID),
+                GuestOrderReference: reference
+              })
+            }
+          );
+
+          renderGuestOrder(updatedData);
+
+          window.alert(
+            "Order cancelled successfully."
+          );
+        } catch (error) {
+          setMessage(
+            lookupMessage,
+            error.message,
+            "error"
+          );
+
+          cancelOrderButton.disabled = false;
+          cancelOrderButton.textContent =
+            originalButtonText;
+        }
+      }
+    );
 
     result.hidden = false;
 
