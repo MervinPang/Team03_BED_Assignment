@@ -99,8 +99,7 @@ document.addEventListener("DOMContentLoaded", () => {
       ? data.timeline
       : [];
 
-    const paymentStatus =
-      order.PaymentStatus || "Not recorded";
+    const paymentStatus = order.PaymentStatus || "Not recorded";
 
     const uniqueTimeline = timeline.filter(
       (item, index, array) =>
@@ -111,14 +110,13 @@ document.addEventListener("DOMContentLoaded", () => {
         )
     );
 
-    const mayChangePayment =
-      order.OrderStatus === "Pending" &&
-      isPendingPayment(paymentStatus) &&
-      Number.isInteger(Number(order.PaymentID));
+    const mayChangePayment = order.OrderStatus === "Pending" &&
+      isPendingPayment(paymentStatus) && Number.isInteger(Number(order.PaymentID));
 
-    const mayCancelOrder =
-      order.OrderStatus === "Pending" &&
+    const mayCancelOrder = order.OrderStatus === "Pending" &&
       String(paymentStatus).toLowerCase() !== "successful";
+
+    const showPaymentBadgeBelow = mayChangePayment || mayCancelOrder;
 
     result.innerHTML = `
       <div class="guest-order-top">
@@ -133,13 +131,12 @@ document.addEventListener("DOMContentLoaded", () => {
           </span>
         </div>
 
-        <span class="badge ${
-          order.OrderStatus === "Completed"
-            ? "success"
-            : order.OrderStatus === "Cancelled"
-              ? "unavailable"
-              : "warning"
-        }">
+        <span class="badge ${order.OrderStatus === "Completed"
+        ? "success"
+        : order.OrderStatus === "Cancelled"
+          ? "unavailable"
+          : "warning"
+      }">
           ${esc(order.OrderStatus)}
         </span>
       </div>
@@ -198,19 +195,28 @@ document.addEventListener("DOMContentLoaded", () => {
           </span>
 
           <strong>
-            ${esc(
-        order.PaymentMethod ||
-        "No payment method"
-      )}
+            ${esc(order.PaymentMethod || "No payment method")}
           </strong>
+
+          ${showPaymentBadgeBelow
+        ? `
+              <span class="badge ${paymentBadgeClass(paymentStatus)}">
+                ${esc(paymentLabel(paymentStatus))}
+              </span>
+              `
+        : ""
+      }
         </div>
 
         <div class="payment-actions">
-          <span class="badge ${paymentBadgeClass(
-        paymentStatus
-      )}">
-            ${esc(paymentLabel(paymentStatus))}
-          </span>
+            ${!showPaymentBadgeBelow
+        ? `
+                <span class="badge ${paymentBadgeClass(paymentStatus)}">
+                  ${esc(paymentLabel(paymentStatus))}
+                </span>
+                `
+        : ""
+      }
 
           ${mayChangePayment
         ? `

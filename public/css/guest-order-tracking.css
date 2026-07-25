@@ -206,9 +206,16 @@
 }
 
 .payment-info {
-  display: grid;
-  gap: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
   min-width: 0;
+}
+
+.payment-info .badge {
+  margin-top: 4px;
+  width: fit-content;
 }
 
 .payment-label {
