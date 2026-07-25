@@ -523,13 +523,14 @@ async function deleteOrder(orderId, user) {
 
         if (ownershipResult.recordset.length === 0) {
             await transaction.rollback();
+            transactionStarted = false;
             return null;
         }
 
         const order = ownershipResult.recordset[0];
 
         if (order.OrderStatus !== "Pending") {
-            throw new Error("Only pending orders can be deleted");
+            throw new Error("Only pending orders can be cancelled");
         }
 
         const paymentRequest = new sql.Request(transaction);
@@ -544,42 +545,58 @@ async function deleteOrder(orderId, user) {
 
         if (
             paymentResult.recordset.some(
-                (payment) => payment.PaymentStatus === "Successful"
+                payment => payment.PaymentStatus === "Successful"
             )
         ) {
-            throw new Error("Paid orders cannot be deleted");
+            throw new Error("Paid orders cannot be cancelled");
         }
 
-        const deletePaymentRequest = new sql.Request(transaction);
-        deletePaymentRequest.input("OrderID", sql.Int, orderId);
-        await deletePaymentRequest.query(`
-            DELETE FROM Payment WHERE OrderID = @OrderID;
+        const updateOrderRequest = new sql.Request(transaction);
+
+        updateOrderRequest.input("OrderID", sql.Int, orderId);
+        updateOrderRequest.input("UserID", sql.Int, user.id);
+
+        const updateResult = await updateOrderRequest.query(`
+            UPDATE CustomerOrder
+            SET
+                OrderStatus = 'Cancelled',
+                UpdatedAt = GETDATE()
+            WHERE
+                OrderID = @OrderID
+                AND UserID = @UserID
+                AND OrderStatus = 'Pending';
         `);
 
-        const deleteItemsRequest = new sql.Request(transaction);
-        deleteItemsRequest.input("OrderID", sql.Int, orderId);
-        await deleteItemsRequest.query(`
-            DELETE FROM OrderItem
-            WHERE OrderID = @OrderID;
-        `);
+        if (updateResult.rowsAffected[0] === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+            return null;
+        }
 
-        const deleteOrderRequest = new sql.Request(transaction);
-        deleteOrderRequest.input("OrderID", sql.Int, orderId);
+        const historyRequest = new sql.Request(transaction);
+        historyRequest.input("OrderID", sql.Int, orderId);
 
-        const result = await deleteOrderRequest.query(`
-            DELETE FROM CustomerOrder
-            WHERE OrderID = @OrderID;
+        await historyRequest.query(`
+            INSERT INTO OrderStatusHistory (
+                OrderID,
+                OrderStatus,
+                StatusDateTime
+            )
+            VALUES (
+                @OrderID,
+                'Cancelled',
+                GETDATE()
+            );
         `);
 
         await transaction.commit();
         transactionStarted = false;
 
-        return result.rowsAffected[0] > 0;
+        return true;
     } catch (error) {
         if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
-                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }

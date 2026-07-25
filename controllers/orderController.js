@@ -119,7 +119,7 @@ async function updateOrderStatus(req, res) {
     }
 }
 
-// Delete a pending customer order
+// Cancel a pending customer order
 // The model validates ownership,
 // payment status and transactional integrity
 // before permanently removing related records
@@ -141,8 +141,8 @@ async function deleteOrder(req, res) {
 
         // Handle business rule errors
         if (
-            error.message === "Only pending orders can be deleted" ||
-            error.message === "Paid orders cannot be deleted"
+            error.message === "Only pending orders can be cancelled" ||
+            error.message === "Paid orders cannot be cancelled"
         ) {
             return res.status(409).json({
                 error: error.message,
