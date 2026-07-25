@@ -133,10 +133,13 @@ document.addEventListener("DOMContentLoaded", () => {
           </span>
         </div>
 
-        <span class="badge ${order.OrderStatus === "Cancelled"
-        ? "unavailable"
-        : "warning"
-      }">
+        <span class="badge ${
+          order.OrderStatus === "Completed"
+            ? "success"
+            : order.OrderStatus === "Cancelled"
+              ? "unavailable"
+              : "warning"
+        }">
           ${esc(order.OrderStatus)}
         </span>
       </div>
@@ -212,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
           ${mayChangePayment
         ? `
                   <button
-                    class="button secondary change-payment-button"
+                    class="button primary change-payment-button"
                     type="button"
                     data-change-payment
                   >
@@ -225,7 +228,7 @@ document.addEventListener("DOMContentLoaded", () => {
         ${mayCancelOrder
         ? `
             <button
-              class="button cancel-order-button"
+              class="button danger cancel-order-button"
               type="button"
               data-cancel-guest-order
             >
