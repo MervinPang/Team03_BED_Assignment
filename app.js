@@ -18,6 +18,7 @@ const {
     validateOrder,
     validateOrderStatus,
     validateOrderId,
+    validateGuestOrderCancellation,
 } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
 
 const {
@@ -75,6 +76,7 @@ app.get("/orders/:id", verifyJWT, validateOrderId, orderController.getOrderById)
 app.post("/orders", optionalJWT, validateOrder, orderController.createOrder);
 app.put("/orders/:id/status", verifyJWT, validateOrderId, validateOrderStatus, orderController.updateOrderStatus);
 app.delete("/orders/:id", verifyJWT, validateOrderId, orderController.deleteOrder);
+app.put("/orders/:id/guest-cancel", validateOrderId, validateGuestOrderCancellation, orderController.cancelGuestOrder);
 
 // Routes for Order History
 app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);

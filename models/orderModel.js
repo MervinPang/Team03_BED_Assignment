@@ -495,8 +495,8 @@ async function updateOrderStatus(orderId, orderStatus, user) {
     }
 }
 
-// Deletes a customer order using a transaction
-// Related payment records and order items are removed together to preserve referential integrity
+// Cancels a pending member order using a transaction
+// The order and related records are preserved for order history
 async function deleteOrder(orderId, user) {
     let connection;
     let transaction;
@@ -506,7 +506,7 @@ async function deleteOrder(orderId, user) {
         connection = await sql.connect(dbConfig);
         transaction = new sql.Transaction(connection);
 
-        // Transaction ensures payment, order items and order are deleted together
+        // Transaction ensures the status update and timeline entry are committed together
         await transaction.begin();
         transactionStarted = true;
 
@@ -611,6 +611,160 @@ async function deleteOrder(orderId, user) {
     }
 }
 
+// Cancels a pending guest order using the guest order reference
+// Successfully paid PayNow and Card orders cannot be cancelled
+async function cancelGuestOrder(orderId, guestOrderReference) {
+    let connection;
+    let transaction;
+    let transactionStarted = false;
+
+    try {
+        connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
+
+        await transaction.begin();
+        transactionStarted = true;
+
+        // Verify that the Order ID and guest reference
+        // belong to the same guest order
+        const orderRequest = new sql.Request(transaction);
+
+        orderRequest.input("OrderID", sql.Int, orderId);
+        orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
+
+        const orderResult = await orderRequest.query(`
+            SELECT
+                OrderID,
+                OrderType,
+                OrderStatus
+            FROM CustomerOrder
+            WHERE
+                OrderID = @OrderID
+                AND GuestOrderReference = @GuestOrderReference
+                AND OrderType = 'Guest';
+        `);
+
+        if (orderResult.recordset.length === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+            return null;
+        }
+
+        const order = orderResult.recordset[0];
+
+        if (order.OrderStatus !== "Pending") {
+            throw new Error(
+                "Only pending guest orders can be cancelled"
+            );
+        }
+
+        // Retrieve all payments belonging to the order
+        const paymentRequest = new sql.Request(transaction);
+
+        paymentRequest.input("OrderID", sql.Int, orderId);
+
+        const paymentResult =
+            await paymentRequest.query(`
+                SELECT
+                    PaymentMethod,
+                    PaymentStatus
+                FROM Payment
+                WHERE OrderID = @OrderID;
+            `);
+
+        // Successfully paid electronic orders cannot
+        // be cancelled by the guest
+        const hasSuccessfulPayment =
+            paymentResult.recordset.some(
+                (payment) =>
+                    payment.PaymentStatus === "Successful"
+            );
+
+        if (hasSuccessfulPayment) {
+            throw new Error(
+                "Paid orders cannot be cancelled"
+            );
+        }
+
+        // Update instead of deleting so the cancelled order
+        // remains available in the order history
+        const updateRequest = new sql.Request(transaction);
+
+        updateRequest.input("OrderID", sql.Int, orderId);
+        updateRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
+
+        const updateResult =
+            await updateRequest.query(`
+                UPDATE CustomerOrder
+                SET
+                    OrderStatus = 'Cancelled',
+                    UpdatedAt = GETDATE()
+                WHERE
+                    OrderID = @OrderID
+                    AND GuestOrderReference =
+                        @GuestOrderReference
+                    AND OrderType = 'Guest'
+                    AND OrderStatus = 'Pending';
+            `);
+
+        if (updateResult.rowsAffected[0] === 0) {
+            await transaction.rollback();
+            transactionStarted = false;
+            return null;
+        }
+
+        // Add the cancellation to the guest order timeline
+        const historyRequest = new sql.Request(transaction);
+
+        historyRequest.input("OrderID", sql.Int, orderId);
+
+        await historyRequest.query(`
+            INSERT INTO OrderStatusHistory
+            (
+                OrderID,
+                OrderStatus,
+                StatusDateTime
+            )
+            VALUES
+            (
+                @OrderID,
+                'Cancelled',
+                GETDATE()
+            );
+        `);
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return {
+            OrderID: orderId,
+            OrderStatus: "Cancelled",
+        };
+    } catch (error) {
+        if (transaction && transactionStarted) {
+            try {
+                await transaction.rollback();
+            } catch (rollbackError) {
+                console.error(
+                    "Guest cancellation rollback error:",
+                    rollbackError
+                );
+            }
+        }
+
+        console.error(
+            "Database error (cancelGuestOrder):",
+            error
+        );
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
 // Export model functions for use in OrderController
 module.exports = {
     createOrder,
@@ -618,4 +772,5 @@ module.exports = {
     getOrderById,
     updateOrderStatus,
     deleteOrder,
+    cancelGuestOrder,
 };

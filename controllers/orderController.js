@@ -122,7 +122,7 @@ async function updateOrderStatus(req, res) {
 // Cancel a pending customer order
 // The model validates ownership,
 // payment status and transactional integrity
-// before permanently removing related records
+// before preserving the order with a Cancelled status
 async function deleteOrder(req, res) {
     try {
         const id = parseInt(req.params.id);
@@ -157,6 +157,53 @@ async function deleteOrder(req, res) {
     }
 }
 
+// Cancel a pending guest order
+// The guest order reference acts as proof that the
+// requester has access to the selected guest order
+async function cancelGuestOrder(req, res) {
+    try {
+        const id = parseInt(req.params.id);
+
+        const cancelledOrder = await orderModel.cancelGuestOrder(id, req.body.GuestOrderReference);
+
+        if (!cancelledOrder) {
+            return res.status(404).json({
+                error:
+                    "Guest order not found or guest order reference is incorrect",
+            });
+        }
+
+        return res.status(200).json({
+            message:
+                "Guest order cancelled successfully",
+            order: cancelledOrder,
+        });
+    } catch (error) {
+        console.error(
+            "Controller error (cancelGuestOrder):",
+            error
+        );
+
+        if (error.message === "Only pending guest orders can be cancelled") {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        if (
+            error.message === "Paid orders cannot be cancelled") {
+            return res.status(409).json({
+                error: error.message,
+            });
+        }
+
+        return res.status(500).json({
+            error:
+                "Failed to cancel guest order",
+        });
+    }
+}
+
 // Export controller functions for use in order routes
 module.exports = {
     createOrder,
@@ -164,4 +211,5 @@ module.exports = {
     getOrderById,
     updateOrderStatus,
     deleteOrder,
+    cancelGuestOrder,
 };

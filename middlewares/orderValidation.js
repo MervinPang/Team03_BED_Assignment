@@ -80,6 +80,16 @@ const orderStatusSchema = Joi.object({
     }),
 }).unknown(false);
 
+const guestOrderCancellationSchema = Joi.object({
+    GuestOrderReference: Joi.string().trim().min(1).max(50).required().messages({
+        "string.base": "Guest order reference must be a string",
+        "string.empty": "Guest order reference cannot be empty",
+        "string.min": "Guest order reference cannot be empty",
+        "string.max": "Guest order reference cannot exceed 50 characters",
+        "any.required": "Guest order reference is required",
+    }),
+}).unknown(false);
+
 // Middleware to validate order data for POST
 function validateOrder(req, res, next) {
     const { error, value } = orderSchema.validate(req.body, { abortEarly: false });
@@ -126,6 +136,30 @@ function validateOrderStatus(req, res, next) {
     next();
 }
 
+// Middleware to validate guest cancellation details
+function validateGuestOrderCancellation(req, res, next) {
+    const { error, value } =
+        guestOrderCancellationSchema.validate(
+            req.body,
+            {
+                abortEarly: false,
+            }
+        );
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({
+            error: errorMessage,
+        });
+    }
+
+    req.body = value;
+    next();
+}
+
 // Ensures route parameters contain a valid
 // positive integer before database access,
 // preventing invalid queries
@@ -145,4 +179,5 @@ module.exports = {
     validateOrder,
     validateOrderStatus,
     validateOrderId,
+    validateGuestOrderCancellation,
 };
