@@ -1,46 +1,9 @@
 /* =========================================================
-   CHECKOUT ITEMS
-   ========================================================= */
-
-.checkout-items {
-  display: grid;
-  gap: 2px;
-  padding: 4px 0 12px;
-}
-
-.checkout-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 20px;
-  padding: 15px 0;
-  border-bottom: 1px solid var(--line);
-}
-
-.checkout-item>div {
-  display: grid;
-  gap: 4px;
-}
-
-
-/* =========================================================
    EMPTY STATES
    ========================================================= */
-
-.empty-state-icon {
-  display: grid;
-  place-items: center;
-  width: 58px;
-  height: 58px;
-  margin: 0 auto 15px;
-  border-radius: 18px;
-  background: var(--surface-soft);
-  font-size: 1.55rem;
-}
-
 .empty {
   padding: 46px 20px;
-  color: var(--muted);
+  color: #6b776f;
   text-align: center;
 }
 
@@ -48,7 +11,7 @@
   content: "🛒";
   display: block;
   margin-bottom: 10px;
-  font-size: 2.15rem;
+  font-size: 34px;
   filter: grayscale(0.15);
 }
 
@@ -56,53 +19,22 @@
   display: none;
 }
 
-
 /* =========================================================
    TEXTAREA AND COUNTER
    ========================================================= */
-
 .textarea[maxlength="300"] {
   min-height: 128px;
 }
 
 .counter {
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: #6b776f;
+  font-size: 13px;
   text-align: right;
 }
-
-.counter.over,
-.counter.limit-reached {
-  color: var(--danger);
-  font-weight: 800;
-}
-
-
-/* =========================================================
-   SUCCESS ANIMATION
-   ========================================================= */
-
-.success-panel {
-  animation: successReveal 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
-}
-
-@keyframes successReveal {
-  from {
-    opacity: 0;
-    transform: translateY(14px) scale(0.985);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
 
 /* =========================================================
    PAGE HEADING
    ========================================================= */
-
 .page-head {
   position: relative;
   padding: 58px 0 28px;
@@ -110,26 +42,19 @@
 
 .page-head h1 {
   margin: 10px 0 14px;
-  font: 800 clamp(2.5rem, 5.4vw, 5rem) / 1.02 Manrope, sans-serif;
-  letter-spacing: -0.055em;
+  font-size: 56px;
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -3px;
 }
 
 .page-head.compact h1 {
-  font-size: clamp(2.3rem, 4.5vw, 4rem);
+  font-size: 48px;
 }
-
-.lead {
-  max-width: 730px;
-  color: var(--muted);
-  font-size: 1.08rem;
-  line-height: 1.75;
-}
-
 
 /* =========================================================
    GENERAL LAYOUT HELPERS
    ========================================================= */
-
 .grid {
   display: grid;
   gap: 20px;
@@ -155,16 +80,9 @@
   gap: 12px;
 }
 
-.search-shell .input {
-  padding-left: 43px;
-}
-
-
 /* =========================================================
    MAIN CHECKOUT LAYOUT
    ========================================================= */
-
-.menu-layout,
 .checkout-layout {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 390px;
@@ -173,7 +91,7 @@
 }
 
 .checkout-layout form {
-  background: rgba(255, 255, 255, 0.96);
+  background-color: rgba(255, 255, 255, 0.96);
 }
 
 .checkout-layout aside {
@@ -182,11 +100,9 @@
   justify-self: end;
 }
 
-
 /* =========================================================
    PAYMENT METHOD OPTIONS
    ========================================================= */
-
 .payment-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -212,7 +128,7 @@
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: 16px;
-  background: #ffffff;
+  background-color: #ffffff;
   cursor: pointer;
   transition:
     transform 0.2s ease,
@@ -233,7 +149,7 @@
   width: 92px;
   height: 92px;
   border-radius: 50%;
-  background: rgba(23, 107, 69, 0.055);
+  background-color: rgba(23, 107, 69, 0.055);
   transition: transform 0.25s ease;
 }
 
@@ -249,10 +165,10 @@
 
 .payment-option input:checked+label {
   transform: translateY(-2px);
-  border-color: var(--brand);
-  background: linear-gradient(145deg, #edf7ef, #f8fbf8);
+  border-color: #11613d;
+  background-color: linear-gradient(145deg, #edf7ef, #f8fbf8);
   box-shadow:
-    inset 0 0 0 1px var(--brand),
+    inset 0 0 0 1px #11613d,
     0 8px 20px rgba(17, 97, 61, 0.08);
 }
 
@@ -267,47 +183,32 @@
   object-fit: contain;
 }
 
-
-/* =========================================================
-   REFERENCE DISPLAY
-   ========================================================= */
-
-.reference {
-  padding: 18px;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #10251a, #1e4430);
-  color: #ffffff;
-  word-break: break-all;
-  box-shadow:
-    inset 0 0 0 1px rgba(255, 255, 255, 0.08);
-}
-
-
 /* =========================================================
    READ-ONLY SPECIAL INSTRUCTIONS
    ========================================================= */
-
 .payment-change-mode #specialInstructions[readonly] {
-  background: var(--surface-soft);
-  color: var(--text);
+  background-color: #f4f7f3;
+  color: #142019;
   cursor: default;
 }
 
 .payment-change-mode #specialInstructions[readonly]:focus {
-  border-color: var(--line);
+  border-color: #dce5dd;
   outline: none;
   box-shadow: none;
 }
 
-
 /* =========================================================
    MEMBER AND GUEST CHECKOUT SUMMARY
    ========================================================= */
-
 .normal-checkout-summary {
   display: flex;
   flex-direction: column;
   width: 100%;
+}
+
+#checkoutTitle {
+  font-size: 65px;
 }
 
 .normal-checkout-header {
@@ -326,18 +227,20 @@
 .normal-checkout-eyebrow {
   display: block;
   margin-bottom: 7px;
-  color: var(--brand);
-  font-size: 0.74rem;
+  color: #11613d;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 1px;
   line-height: 1.4;
   text-transform: uppercase;
 }
 
 .normal-checkout-header h3 {
   margin: 0;
-  color: var(--text);
-  font: 800 1.55rem / 1.2 Manrope, sans-serif;
+  color: #142019;
+  font-size: 25px;
+  font-weight: 800;
+  line-height: 1.2;
   overflow-wrap: anywhere;
 }
 
@@ -346,9 +249,9 @@
   padding: 8px 13px;
   border: 1px solid rgba(23, 107, 69, 0.16);
   border-radius: 999px;
-  background: #edf7f1;
-  color: var(--brand);
-  font-size: 0.82rem;
+  background-color: #edf7f1;
+  color: #11613d;
+  font-size: 13px;
   font-weight: 800;
   text-decoration: none;
   transition:
@@ -360,7 +263,7 @@
 .normal-checkout-edit:hover {
   transform: translateY(-1px);
   border-color: rgba(23, 107, 69, 0.28);
-  background: #e2f2e8;
+  background-color: #e2f2e8;
 }
 
 .normal-checkout-edit:focus-visible {
@@ -376,10 +279,10 @@
 .normal-checkout-section-title {
   display: block;
   margin-bottom: 13px;
-  color: var(--muted);
-  font-size: 0.74rem;
+  color: #6b776f;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -396,7 +299,7 @@
   padding: 14px 15px;
   border: 1px solid rgba(31, 79, 55, 0.06);
   border-radius: 14px;
-  background: #f7faf8;
+  background-color: #f7faf8;
 }
 
 .normal-checkout-item>div {
@@ -406,22 +309,22 @@
 }
 
 .normal-checkout-item>div strong {
-  color: var(--text);
-  font-size: 0.94rem;
+  color: #142019;
+  font-size: 15px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
 .normal-checkout-item>div span {
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: #6b776f;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .normal-checkout-item-price {
   flex: 0 0 auto;
-  color: var(--text);
-  font-size: 0.96rem;
+  color: #142019;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.4;
 }
@@ -435,9 +338,7 @@
   padding: 18px;
   border: 1px solid rgba(23, 107, 69, 0.12);
   border-radius: 16px;
-  background: linear-gradient(135deg,
-      #eef8f1,
-      #f8fbf9);
+  background-color: linear-gradient(135deg, #eef8f1, #f8fbf9);
 }
 
 .normal-checkout-total>div {
@@ -447,30 +348,28 @@
 }
 
 .normal-checkout-total span {
-  color: var(--text);
-  font-size: 0.96rem;
+  color: #142019;
+  font-size: 15px;
   font-weight: 800;
 }
 
 .normal-checkout-total small {
-  color: var(--muted);
-  font-size: 0.76rem;
+  color: #6b776f;
+  font-size: 12px;
   line-height: 1.4;
 }
 
 .normal-checkout-total>strong {
   flex: 0 0 auto;
-  color: var(--brand);
-  font-size: 1.6rem;
+  color: #11613d;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1;
 }
 
-
 /* =========================================================
    GUEST PAYMENT UPDATE SUMMARY
    ========================================================= */
-
 .payment-change-summary {
   display: flex;
   flex-direction: column;
@@ -478,13 +377,11 @@
   padding: 28px;
   border: 1px solid var(--line);
   border-radius: 22px;
-  background: #ffffff;
+  background-color: #ffffff;
   box-shadow: 0 18px 42px rgba(20, 72, 47, 0.08);
 }
 
-
 /* Payment update header */
-
 .payment-change-header {
   display: flex;
   align-items: flex-start;
@@ -501,18 +398,18 @@
 .payment-change-eyebrow {
   display: block;
   margin-bottom: 7px;
-  color: var(--brand);
-  font-size: 0.74rem;
+  color: #11613d;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 1px;
   line-height: 1.4;
   text-transform: uppercase;
 }
 
 .payment-change-header h3 {
   margin: 0;
-  color: var(--text);
-  font-size: 1.55rem;
+  color: #142019;
+  font-size: 25px;
   line-height: 1.2;
 }
 
@@ -521,49 +418,36 @@
   margin-top: 2px;
 }
 
-
 /* Guest reference */
-
 .payment-change-reference {
   margin-top: 20px;
   padding: 15px 16px;
   border: 1px solid rgba(23, 107, 69, 0.18);
   border-radius: 14px;
-  background: linear-gradient(135deg,
-      rgba(237, 247, 241, 0.9),
-      rgba(248, 251, 249, 0.95));
+  background-color: linear-gradient(135deg, rgba(237, 247, 241, 0.9), rgba(248, 251, 249, 0.95));
 }
 
 .payment-change-reference span {
   display: block;
   margin-bottom: 6px;
-  color: var(--muted);
-  font-size: 0.76rem;
+  color: #6b776f;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.03em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
 .payment-change-reference strong {
   display: block;
-  color: var(--brand);
-  font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    monospace;
-  font-size: 0.86rem;
+  color: #11613d;
+  font-size: 14px;
   font-weight: 800;
   line-height: 1.55;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   overflow-wrap: anywhere;
 }
 
-
 /* Stall row */
-
 .payment-change-stall {
   display: flex;
   align-items: flex-start;
@@ -575,23 +459,21 @@
 
 .payment-change-stall span {
   flex: 0 0 auto;
-  color: var(--muted);
-  font-size: 0.88rem;
+  color: #6b776f;
+  font-size: 14px;
   line-height: 1.45;
 }
 
 .payment-change-stall strong {
   min-width: 0;
-  color: var(--text);
-  font-size: 0.94rem;
+  color: #142019;
+  font-size: 15px;
   line-height: 1.45;
   text-align: right;
   overflow-wrap: anywhere;
 }
 
-
 /* Payment update order items */
-
 .payment-change-section {
   padding: 20px 0;
   border-bottom: 1px solid var(--line);
@@ -600,10 +482,10 @@
 .payment-change-section-title {
   display: block;
   margin-bottom: 13px;
-  color: var(--muted);
-  font-size: 0.74rem;
+  color: #6b776f;
+  font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.09em;
+  letter-spacing: 1px;
   text-transform: uppercase;
 }
 
@@ -620,7 +502,7 @@
   padding: 14px 15px;
   border: 1px solid rgba(31, 79, 55, 0.06);
   border-radius: 14px;
-  background: #f7faf8;
+  background-color: #f7faf8;
 }
 
 .payment-change-item>div {
@@ -630,29 +512,27 @@
 }
 
 .payment-change-item>div strong {
-  color: var(--text);
-  font-size: 0.94rem;
+  color: #142019;
+  font-size: 15px;
   line-height: 1.4;
   overflow-wrap: anywhere;
 }
 
 .payment-change-item>div span {
-  color: var(--muted);
-  font-size: 0.82rem;
+  color: #6b776f;
+  font-size: 13px;
   line-height: 1.4;
 }
 
 .payment-change-item-price {
   flex: 0 0 auto;
-  color: var(--text);
-  font-size: 0.96rem;
+  color: #142019;
+  font-size: 15px;
   font-weight: 800;
   line-height: 1.4;
 }
 
-
 /* Current payment method */
-
 .payment-change-method {
   padding: 20px 0;
   border-bottom: 1px solid var(--line);
@@ -666,8 +546,8 @@
 }
 
 .payment-change-method span {
-  color: var(--muted);
-  font-size: 0.88rem;
+  color: #6b776f;
+  font-size: 14px;
   line-height: 1.45;
 }
 
@@ -675,15 +555,13 @@
   flex: 0 0 auto;
   padding: 7px 13px;
   border-radius: 999px;
-  background: #edf7f1;
-  color: var(--brand);
-  font-size: 0.85rem;
+  background-color: #edf7f1;
+  color: #11613d;
+  font-size: 14px;
   font-weight: 800;
 }
 
-
 /* Payment update total */
-
 .payment-change-total {
   display: flex;
   align-items: center;
@@ -693,9 +571,7 @@
   padding: 18px;
   border: 1px solid rgba(23, 107, 69, 0.12);
   border-radius: 16px;
-  background: linear-gradient(135deg,
-      #eef8f1,
-      #f8fbf9);
+  background-color: linear-gradient(135deg, #eef8f1, #f8fbf9);
 }
 
 .payment-change-total>div {
@@ -705,30 +581,28 @@
 }
 
 .payment-change-total span {
-  color: var(--text);
-  font-size: 0.96rem;
+  color: #142019;
+  font-size: 15px;
   font-weight: 800;
 }
 
 .payment-change-total small {
-  color: var(--muted);
-  font-size: 0.76rem;
+  color: #6b776f;
+  font-size: 12px;
   line-height: 1.4;
 }
 
 .payment-change-total>strong {
   flex: 0 0 auto;
-  color: var(--brand);
-  font-size: 1.6rem;
+  color: #11613d;
+  font-size: 26px;
   font-weight: 800;
   line-height: 1;
 }
 
-
 /* =========================================================
    PAYMENT CHANGE DESKTOP WIDTH
    ========================================================= */
-
 .payment-change-mode .checkout-layout {
   grid-template-columns: minmax(0, 1fr) 390px;
 }
@@ -737,33 +611,9 @@
   width: 100%;
 }
 
-
 /* =========================================================
-   OLDER SHARED HELPERS
+   FOOTER ICON
    ========================================================= */
-
-.summary-line {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  margin-top: 9px;
-  color: var(--muted);
-}
-
-.receipt-stall {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--line);
-}
-
-.text-link {
-  color: var(--brand);
-  font-weight: 800;
-}
-
 .contact-icon {
   flex: 0 0 auto;
   width: 18px;
@@ -772,18 +622,14 @@
 }
 
 /* =========================================================
-   RESPONSIVE — TABLET
+   RESPONSIVE - TABLET
    ========================================================= */
-
 @media (max-width: 980px) {
 
-  .menu-layout,
-  .checkout-layout,
-  .payment-change-mode .checkout-layout {
+  .checkout-layout {
     grid-template-columns: 1fr;
   }
 
-  .cart-panel,
   .checkout-layout aside {
     position: static;
   }
@@ -796,10 +642,7 @@
 }
 
 @media (max-width: 760px) {
-
-  .grid-3,
-  .grid-2,
-  .metrics {
+  .grid-2 {
     grid-template-columns: 1fr;
   }
 
@@ -812,11 +655,9 @@
   }
 }
 
-
 /* =========================================================
-   RESPONSIVE — MOBILE
+   RESPONSIVE - MOBILE
    ========================================================= */
-
 @media (max-width: 600px) {
 
   .normal-checkout-summary,
@@ -833,7 +674,7 @@
 
   .normal-checkout-header h3,
   .payment-change-header h3 {
-    font-size: 1.3rem;
+    font-size: 21px;
   }
 
   .normal-checkout-section,
@@ -863,7 +704,7 @@
 
   .normal-checkout-total>strong,
   .payment-change-total>strong {
-    font-size: 1.38rem;
+    font-size: 22px;
   }
 
   .payment-change-reference {
@@ -895,27 +736,13 @@
     padding: 20px;
   }
 
-  .checkout-item {
-    align-items: flex-start;
-    gap: 12px;
-  }
-
-  .receipt-stall {
-    align-items: flex-start;
-  }
-
-  .normal-checkout-header,
-  .payment-change-header {
-    align-items: flex-start;
-  }
-
   .normal-checkout-edit {
     padding: 7px 11px;
-    font-size: 0.76rem;
+    font-size: 12px;
   }
 
   .payment-change-header .badge {
-    font-size: 0.72rem;
+    font-size: 12px;
   }
 
   .payment-change-method>div {
