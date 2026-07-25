@@ -16,135 +16,80 @@
                <a aria-label="HawkerHub home" class="brand brand-premium" href="/index.html">
                     <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
                     <span class="brand-copy">
-                         <strong>
-                              HawkerHubSG
-                         </strong>
-                         <small>
-                              Discover | Order | Collect
-                         </small>
+                         <strong>HawkerHubSG</strong>
+                         <small>Discover | Order | Collect</small>
                     </span>
                </a>
                <button aria-expanded="false" aria-label="Open navigation" class="mobile-toggle" data-mobile-toggle=""
                     type="button">
-                    <span>
-                    </span>
-                    <span>
-                    </span>
-                    <span>
-                    </span>
+                    <span></span>
+                    <span></span>
+                    <span></span>
                </button>
                <nav aria-label="Main navigation" class="nav-links">
-                    <a class="nav-link" href="/index.html">
-                         Home
-                    </a>
-                    <a class="nav-link" href="/stalls.html">
-                         Place Order
-                    </a>
-                    <a class="nav-link" data-customer-only="" href="/order-history.html">
-                         Your Orders
-                    </a>
-                    <a class="nav-link" data-auth-only="" href="/profile.html">
-                         Profile
-                    </a>
-                    <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">
-                         Track Order
-                    </a>
-                    <a class="nav-link" href="/reviews.html">
-                         Reviews
-                    </a>
-                    <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
-                         Vendor dashboard
-                    </a>
-                    <a class="nav-link" data-nea-only="" href="/inspection-reports.html">
-                         Inspections
-                    </a>
+                    <a class="nav-link" href="/index.html">Home</a>
+                    <a class="nav-link" href="/stalls.html">Place Order</a>
+                    <a class="nav-link" data-customer-only="" href="/order-history.html">Your Orders</a>
+                    <a class="nav-link" data-auth-only="" href="/profile.html">Profile</a>
+                    <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">Track Order</a>
+                    <a class="nav-link" href="/reviews.html">Reviews</a>
+                    <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">Vendor dashboard</a>
+                    <a class="nav-link" data-nea-only="" href="/inspection-reports.html">Inspections</a>
                </nav>
                <div class="nav-actions">
                     <a aria-label="View cart" class="cart-pill cart-pill-premium" href="/checkout.html">
                          <img alt="" class="nav-icon" src="/images/takeaway-black.svg" />
-                         <span>
-                              Cart
-                         </span>
-                         <strong data-cart-count="">
-                              0
-                         </strong>
+                         <span>Cart</span>
+                         <strong data-cart-count="">0</strong>
                     </a>
-                    <a class="button secondary nav-sign-in" data-guest-only="" href="/login.html">
-                         Sign In
-                    </a>
-                    <button class="button primary nav-logout" data-auth-only="" data-logout="" type="button">
-                         Log Out
-                    </button>
+                    <a class="button secondary nav-sign-in" data-guest-only="" href="/login.html">Sign In</a>
+                    <button class="button primary nav-logout" data-auth-only="" data-logout="" type="button">Log
+                         Out</button>
                </div>
           </div>
      </header>
-     <main>
-          <section class="shell">
-               <div class="page-head compact">
-                    <span class="eyebrow">
-                         Guest Order Tracking
-                    </span>
-                    <h1>
-                         Track Your Guest Order
-                    </h1>
-                    <p class="lead">
-                         Track your guest order using your Order ID and Guest Order Reference
-                         provided after checkout. Stay updated on your order status without
-                         creating an account.
-                    </p>
-               </div>
-               <div class="grid grid-2">
-                    <form class="card card-pad stack" id="guestForm">
-                         <div class="field">
-                              <label>
-                                   Order ID
-                              </label>
-                              <input class="input" id="orderId" min="1" required="" type="number"
-                                   placeholder="Enter your Order ID" />
-                         </div>
-                         <div class="field">
-                              <label>
-                                   Guest Order Reference
-                              </label>
-                              <input class="input" id="guestReference" maxlength="50" minlength="10" required=""
-                                   placeholder="Enter your Guest Order Reference" />
-                         </div>
-                         <div class="form-message" id="lookupMessage">
-                         </div>
-                         <button class="button primary" type="submit">
-                              Track Order Status
-                         </button>
-                    </form>
-                    <aside class="card card-pad">
-                         <h3>
-                              Previously Tracked Orders
-                         </h3>
-                         <div class="stack" id="savedOrders">
-                         </div>
-                    </aside>
-               </div>
-               <section class="card card-pad stack" hidden="" id="guestResult" style="margin-top:22px">
-               </section>
-          </section>
-     </main>
+     <section class="shell">
+          <div class="page-head compact">
+               <span class="eyebrow">Guest Order Tracking</span>
+               <h1>Track Your Guest Order</h1>
+               <p class="lead">Track your guest order using your Order ID and Guest Order Reference
+                    provided after checkout. Stay updated on your order status without creating an account.
+               </p>
+          </div>
+          <div class="grid grid-2">
+               <form class="card card-pad stack" id="guestForm">
+                    <div class="field">
+                         <label>Order ID</label>
+                         <input class="input" id="orderId" min="1" required="" type="number"
+                              placeholder="Enter your Order ID" />
+                    </div>
+                    <div class="field">
+                         <label>Guest Order Reference</label>
+                         <input class="input" id="guestReference" maxlength="50" minlength="10" required=""
+                              placeholder="Enter your Guest Order Reference" />
+                    </div>
+                    <div class="form-message" id="lookupMessage"></div>
+                    <button class="button primary" type="submit">Track Order Status</button>
+               </form>
+               <aside class="card card-pad">
+                    <h3>Previously Tracked Orders</h3>
+                    <div class="stack" id="savedOrders"></div>
+               </aside>
+          </div>
+          <section class="card card-pad stack" hidden="" id="guestResult" style="margin-top:22px"></section>
+     </section>
 
      <div class="modal-backdrop" id="guestPaymentBackdrop" hidden>
           <form class="modal payment-change-modal" id="guestPaymentChangeForm">
                <div class="modal-header">
                     <div>
-                         <span class="eyebrow">
-                              Pending payment
-                         </span>
+                         <span class="eyebrow">Pending payment</span>
 
-                         <h2>
-                              Choose another payment method
-                         </h2>
+                         <h2>Choose another payment method</h2>
                     </div>
 
                     <button aria-label="Close payment window" class="modal-close modal-close-inline"
-                         id="closeGuestPaymentModal" type="button">
-                         ×
-                    </button>
+                         id="closeGuestPaymentModal" type="button">x</button>
                </div>
 
                <div class="modal-body-scroll">
@@ -162,13 +107,9 @@
                               <input id="guestChangeCash" name="guestChangedPaymentMethod" type="radio" value="Cash" />
 
                               <label for="guestChangeCash">
-                                   <strong>
-                                        Cash
-                                   </strong>
+                                   <strong>Cash</strong>
 
-                                   <span class="small muted">
-                                        Pay during collection
-                                   </span>
+                                   <span class="small muted">Pay during collection</span>
                               </label>
                          </div>
 
@@ -176,13 +117,8 @@
                               <input id="guestChangeCard" name="guestChangedPaymentMethod" type="radio" value="Card" />
 
                               <label for="guestChangeCard">
-                                   <strong>
-                                        Card
-                                   </strong>
-
-                                   <span class="small muted">
-                                        Confirm payment now
-                                   </span>
+                                   <strong>Card</strong>
+                                   <span class="small muted">Confirm payment now</span>
                               </label>
                          </div>
 
@@ -191,38 +127,27 @@
                                    value="PayNow" />
 
                               <label for="guestChangePayNow">
-                                   <strong>
-                                        PayNow
-                                   </strong>
-
-                                   <span class="small muted">
-                                        Confirm payment now
-                                   </span>
+                                   <strong>PayNow</strong>
+                                   <span class="small muted">Confirm payment now</span>
                               </label>
                          </div>
                     </div>
 
                     <div class="field" id="guestChangeReferenceField" hidden>
-                         <label for="guestChangeReference">
-                              Transaction reference
-                         </label>
+                         <label for="guestChangeReference">Transaction reference</label>
 
                          <input class="input" id="guestChangeReference" maxlength="100"
                               placeholder="Enter a unique transaction reference" type="text" />
                     </div>
 
-                    <div class="form-message" id="guestPaymentChangeMessage">
-                    </div>
+                    <div class="form-message" id="guestPaymentChangeMessage"></div>
                </div>
 
                <div class="modal-footer">
-                    <button class="button secondary" id="cancelGuestPaymentChange" type="button">
-                         Keep current payment
-                    </button>
-
-                    <button class="button primary" id="confirmGuestPaymentChange" type="submit">
-                         Confirm payment change
-                    </button>
+                    <button class="button secondary" id="cancelGuestPaymentChange" type="button">Keep current
+                         payment</button>
+                    <button class="button primary" id="confirmGuestPaymentChange" type="submit">Confirm payment
+                         change</button>
                </div>
           </form>
      </div>
@@ -230,9 +155,7 @@
      <footer class="site-footer">
           <div class="footer-social-band">
                <div class="shell footer-social-row">
-                    <p>
-                         Stay connected with HawkerHubSG
-                    </p>
+                    <p>Stay connected with HawkerHubSG</p>
                     <div aria-label="Social media links" class="social-links">
                          <a aria-label="LinkedIn" href="#" title="LinkedIn">
                               <img alt="" src="/images/linkedin.svg" />
@@ -250,68 +173,34 @@
                <div class="shell footer-grid">
                     <section class="footer-brand-column">
                          <a class="footer-logo" href="/index.html">
-                              <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                              <img alt="HawkerHubSG Logo" class="brand-image" src="/images/hawkerhub-logo.png" />
                               <span>
-                                   <strong>
-                                        HawkerHubSG
-                                   </strong>
-                                   <small>
-                                        Singapore's Digital Hawker Ordering Platform
-                                   </small>
+                                   <strong>HawkerHubSG</strong>
+                                   <small>Singapore's Digital Hawker Ordering Platform</small>
                               </span>
                          </a>
-                         <p>
-                              Providing a seamless digital ordering experience for customers, vendors, and NEA officers
-                              across Singapore's hawker centres.
-                         </p>
-                         <span class="footer-team">
-                              Developed by Team 03 | BED Assignment 2026
-                         </span>
+                         <p>Providing a seamless digital ordering experience for customers, vendors, and NEA
+                              officers across Singapore's hawker centres.</p>
+                         <span class="footer-team">Developed by Team 03 | BED Assignment 2026</span>
                     </section>
                     <section class="footer-column">
-                         <h3>
-                              Explore
-                         </h3>
-                         <a href="/index.html">
-                              Home
-                         </a>
-                         <a href="/stalls.html">
-                              Place Order
-                         </a>
-                         <a href="/reviews.html">
-                              Stall Reviews
-                         </a>
+                         <h3>Explore</h3>
+                         <a href="/index.html">Home</a>
+                         <a href="/stalls.html">Place Order</a>
+                         <a href="/reviews.html">Stall Reviews</a>
                     </section>
                     <section class="footer-column">
-                         <h3>
-                              Account &amp; orders
-                         </h3>
-                         <a data-guest-only="" href="/login.html">
-                              Sign In
-                         </a>
-                         <a data-guest-only="" href="/register.html">
-                              Create Account
-                         </a>
-                         <a data-customer-only="" href="/order-history.html">
-                              Your Orders
-                         </a>
-                         <a data-auth-only="" href="/profile.html">
-                              Profile
-                         </a>
-                         <a data-guest-only="" href="/guest-order-tracking.html">
-                              Track Guest Order
-                         </a>
-                         <a data-vendor-only="" href="/vendor-dashboard.html">
-                              Vendor Dashboard
-                         </a>
-                         <a data-nea-only="" href="/inspection-reports.html">
-                              Inspection Portal
-                         </a>
+                         <h3>Account &amp; orders</h3>
+                         <a data-guest-only="" href="/login.html">Sign In</a>
+                         <a data-guest-only="" href="/register.html">Create Account</a>
+                         <a data-customer-only="" href="/order-history.html">Your Orders</a>
+                         <a data-auth-only="" href="/profile.html">Profile</a>
+                         <a data-guest-only="" href="/guest-order-tracking.html">Track Guest Order</a>
+                         <a data-vendor-only="" href="/vendor-dashboard.html">Vendor Dashboard</a>
+                         <a data-nea-only="" href="/inspection-reports.html">Inspection Portal</a>
                     </section>
                     <section class="footer-column footer-contact">
-                         <h3>
-                              Contact
-                         </h3>
+                         <h3>Contact</h3>
                          <p>
                               <img alt="" class="contact-icon" src="/images/location.svg" />
                               Singapore
@@ -333,18 +222,13 @@
           </div>
           <div class="footer-bottom">
                <div class="shell footer-bottom-row">
-                    <span>
-                         &copy; 2026 HawkerHubSG | Team 03 BED Assignment
-                    </span>
+                    <span>&copy; 2026 HawkerHubSG | Team 03 BED Assignment</span>
                </div>
           </div>
      </footer>
-     <div class="toast-region">
-     </div>
-     <script src="/js/common.js">
-     </script>
-     <script src="/js/guest-order.js">
-     </script>
+     <div class="toast-region"></div>
+     <script src="/js/common.js"></script>
+     <script src="/js/guest-order.js"></script>
 </body>
 
 </html>
