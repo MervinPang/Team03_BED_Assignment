@@ -2,7 +2,7 @@
    PAYMENT PAGE LAYOUT
    ========================================================= */
 
-.payment-main {
+.payment {
   padding: 48px 0 80px;
 }
 
@@ -906,7 +906,7 @@
 }
 
 @media (max-width: 560px) {
-  .payment-main {
+  .payment {
     padding-top: 28px;
   }
 
