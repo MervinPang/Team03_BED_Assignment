@@ -528,7 +528,6 @@
   padding: 32px;
   overflow: hidden;
   border: 1px solid #dce5dd;
-  border-top: 5px solid #11613d;
   border-radius: 22px;
   background-color: #eef7f0;
   box-shadow: 0 14px 34px rgba(20, 32, 25, 0.08);
@@ -634,7 +633,8 @@
 
 #guestForm .button {
   width: 100%;
-  min-height: 54px;
+  min-height: 0;
+  padding: 8px 17px;
   margin-top: 2px;
   border-radius: 13px;
   font-size: 15px;
@@ -657,6 +657,11 @@
 }
 
 @media (max-width: 560px) {
+  #guestForm .button {
+    min-height: 0;
+    padding: 8px 17px;
+  }
+
   #guestForm {
     gap: 18px;
     padding: 24px;
@@ -668,10 +673,6 @@
 
   #guestForm .input {
     height: 52px;
-  }
-
-  #guestForm .button {
-    min-height: 52px;
   }
 }
 
