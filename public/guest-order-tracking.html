@@ -5,9 +5,9 @@
      <meta charset="utf-8" />
      <meta content="width=device-width,initial-scale=1" name="viewport" />
      <title>Guest Order Tracking | Singapore Hawker Centre Management System</title>
-     <link href="/css/guest-order-tracking.css" rel="stylesheet" />
      <link href="css/global.css" rel="stylesheet" />
      <link href="css/navigation-footer.css" rel="stylesheet" />
+     <link href="/css/guest-order-tracking.css" rel="stylesheet" />
 </head>
 
 <body>
@@ -57,19 +57,20 @@
                </p>
           </div>
           <div class="grid grid-2">
-               <form class="card card-pad stack" id="guestForm">
-                    <div class="field">
-                         <label>Order ID</label>
-                         <input class="input" id="orderId" min="1" required="" type="number"
+               <form class="card card-pad stack guest-tracking-form" id="guestForm">
+                    <h2 class="guest-form-title">Enter your order details</h2>
+                    <div class="field guest-form-field">
+                         <label class="guest-form-label" for="orderId">Order ID</label>
+                         <input class="input guest-form-input" id="orderId" min="1" required="" type="number"
                               placeholder="Enter your Order ID" />
                     </div>
-                    <div class="field">
-                         <label>Guest Order Reference</label>
-                         <input class="input" id="guestReference" maxlength="50" minlength="10" required=""
-                              placeholder="Enter your Guest Order Reference" />
+                    <div class="field guest-form-field">
+                         <label class="guest-form-label" for="guestReference">Guest Order Reference</label>
+                         <input class="input guest-form-input" id="guestReference" maxlength="50" minlength="10"
+                              required="" placeholder="Enter your Guest Order Reference" />
                     </div>
-                    <div class="form-message" id="lookupMessage"></div>
-                    <button class="button primary" type="submit">Track Order Status</button>
+                    <div class="form-message guest-form-message" id="lookupMessage"></div>
+                    <button class="button primary guest-track-button" type="submit">Track Order Status</button>
                </form>
                <aside class="card card-pad">
                     <h2 class="saved-orders-title">Saved Guest Orders</h2>

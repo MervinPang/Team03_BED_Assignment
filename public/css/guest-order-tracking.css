@@ -529,35 +529,34 @@
 }
 
 /* Guest order tracking form */
-#guestForm {
+.guest-tracking-form {
   position: relative;
   display: grid;
   align-content: start;
   gap: 50px;
   padding: 32px;
   overflow: hidden;
-  border: 1px solid #dce5dd;
+  border: 1px solid #bfd2c3;
   border-radius: 22px;
-  background-color: #eef7f0;
+  background-color: #dcebdc;
   box-shadow: 0 14px 34px rgba(20, 32, 25, 0.08);
 }
 
-#guestForm::before {
-  content: "Enter your order details";
+.guest-form-title {
   display: block;
-  margin-bottom: 2px;
+  margin: 0 0 2px;
   color: #142019;
   font-size: 26px;
   font-weight: 800;
   letter-spacing: -0.01em;
 }
 
-#guestForm .field {
+.guest-form-field {
   display: grid;
   gap: 9px;
 }
 
-#guestForm .field label {
+.guest-form-label {
   display: block;
   margin: 0;
   color: #142019;
@@ -565,7 +564,7 @@
   font-weight: 800;
 }
 
-#guestForm .input {
+.guest-form-input {
   width: 100%;
   height: 54px;
   box-sizing: border-box;
@@ -582,33 +581,33 @@
     background-color 0.2s ease;
 }
 
-#guestForm .input::placeholder {
+.guest-form-input::placeholder {
   color: #8a958e;
 }
 
-#guestForm .input:hover {
+.guest-form-input:hover {
   border-color: #9fb7a6;
   background-color: #ffffff;
 }
 
-#guestForm .input:focus {
+.guest-form-input:focus {
   border-color: #11613d;
   background-color: #ffffff;
   box-shadow: 0 0 0 4px rgba(17, 97, 61, 0.12);
 }
 
-#guestForm .form-message {
+.guest-form-message {
   height: auto !important;
   min-height: 0 !important;
   margin: 0;
   box-sizing: border-box;
 }
 
-#guestForm .form-message:empty {
+.guest-form-message:empty {
   display: none;
 }
 
-#guestForm .form-message:not(:empty) {
+.guest-form-message:not(:empty) {
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -623,7 +622,7 @@
   line-height: 1.45;
 }
 
-#guestForm .form-message:not(:empty)::before {
+.guest-form-message:not(:empty)::before {
   content: "!";
   position: absolute;
   top: 13px;
@@ -640,7 +639,7 @@
   line-height: 1;
 }
 
-#guestForm .button {
+.guest-track-button {
   width: 100%;
   min-height: 54px;
   padding: 12px 17px;
@@ -655,32 +654,32 @@
     box-shadow 0.2s ease;
 }
 
-#guestForm .button:hover {
+.guest-track-button:hover {
   transform: translateY(-1px);
   box-shadow: 0 11px 22px rgba(17, 97, 61, 0.22);
 }
 
-#guestForm .button:active {
+.guest-track-button:active {
   transform: translateY(0);
   box-shadow: 0 6px 14px rgba(17, 97, 61, 0.16);
 }
 
 @media (max-width: 560px) {
-  #guestForm .button {
+  .guest-track-button {
     min-height: 0;
     padding: 8px 17px;
   }
 
-  #guestForm {
+  .guest-tracking-form {
     gap: 18px;
     padding: 24px;
   }
 
-  #guestForm::before {
+  .guest-form-title {
     font-size: 22px;
   }
 
-  #guestForm .input {
+  .guest-form-input {
     height: 52px;
   }
 }
