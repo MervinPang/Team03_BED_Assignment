@@ -202,7 +202,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     setMessage(paymentMessage);
   }
 
-  async function cancelOrder(orderId) {
+  async function cancelOrder(orderId, cancelButton) {
     if (
       !window.confirm(
         "Cancel this pending unpaid order? This cannot be undone."
@@ -210,6 +210,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     ) {
       return;
     }
+
+    if (cancelButton.disabled) {
+      return;
+    }
+
+    const originalText = cancelButton.textContent;
+
+    cancelButton.disabled = true;
+    cancelButton.textContent = "Cancelling...";
 
     try {
       await apiRequest(`/orders/${orderId}`, {
@@ -222,6 +231,9 @@ document.addEventListener("DOMContentLoaded", async () => {
       await loadHistory();
     } catch (error) {
       showToast(error.message, "error");
+
+      cancelButton.disabled = false;
+      cancelButton.textContent = originalText;
     }
   }
 
@@ -505,11 +517,15 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
       `;
 
-      document
-        .getElementById("cancelOrderButton")
-        ?.addEventListener("click", () => {
-          cancelOrder(order.OrderID);
-        });
+      const cancelButton =
+        document.getElementById("cancelOrderButton");
+
+      cancelButton?.addEventListener(
+        "click",
+        () => {
+          cancelOrder(order.OrderID, cancelButton);
+        }
+      );
 
       document
         .getElementById("changePaymentButton")
