@@ -160,7 +160,7 @@ async function getOrderById(orderId, user, allowInternalAccess = false) {
         if (order.OrderType === "Member") {
             delete order.GuestName;
             delete order.GuestEmail;
-            delete order.guestOrderReference;
+            delete order.GuestOrderReference;
         }
 
         // Only return the reference immediately after internal guest creation
