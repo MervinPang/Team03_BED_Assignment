@@ -2,6 +2,16 @@ const orderModel = require("../models/orderModel");
 
 // Order Controller - Handles HTTP requests for Place Food Order
 
+function parseOrderId(value) {
+    const id = Number(value);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return null;
+    }
+
+    return id;
+}
+
 // Retrieve all customer orders
 async function getAllOrders(req, res) {
     try {
@@ -16,7 +26,11 @@ async function getAllOrders(req, res) {
 // Retrieve a customer order by its ID
 async function getOrderById(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseOrderId(req.params.id);
+
+        if (id === null) {
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
+        }
 
         const order = await orderModel.getOrderById(id, req.user);
 
@@ -87,7 +101,11 @@ async function createOrder(req, res) {
 // enforced by the model layer
 async function updateOrderStatus(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseOrderId(req.params.id);
+
+        if (id === null) {
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
+        }
 
         const updatedOrder = await orderModel.updateOrderStatus(id, req.body.OrderStatus, req.user);
 
@@ -125,7 +143,11 @@ async function updateOrderStatus(req, res) {
 // before preserving the order with a Cancelled status
 async function deleteOrder(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseOrderId(req.params.id);
+
+        if (id === null) {
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
+        }
 
         const deleted = await orderModel.deleteOrder(id, req.user);
 
@@ -162,7 +184,11 @@ async function deleteOrder(req, res) {
 // requester has access to the selected guest order
 async function cancelGuestOrder(req, res) {
     try {
-        const id = parseInt(req.params.id);
+        const id = parseOrderId(req.params.id);
+
+        if (id === null) {
+            return res.status(400).json({error: "Order ID must be a positive integer",});
+        }
 
         const cancelledOrder = await orderModel.cancelGuestOrder(id, req.body.GuestOrderReference);
 
