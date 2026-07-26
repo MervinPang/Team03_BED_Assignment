@@ -257,7 +257,7 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
         orderRequest.input("GuestOrderReference", sql.VarChar(50), guestOrderReference);
 
         const orderResult = await orderRequest.query(`
-            SELECT
+            SELECT DISTINCT
                 co.OrderID,
                 co.GuestOrderReference,
                 co.OrderStatus,
