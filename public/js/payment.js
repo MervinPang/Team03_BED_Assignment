@@ -26,6 +26,62 @@ document.addEventListener("DOMContentLoaded", async () => {
   let draft = null;
   let paymentChange = null;
 
+  function getPendingOrder() {
+    const rawPendingOrder =
+      localStorage.getItem(PENDING_ORDER_KEY);
+
+    if (!rawPendingOrder) {
+      return null;
+    }
+
+    try {
+      const saved =
+        JSON.parse(rawPendingOrder);
+
+      /*
+       * Do not reuse an order from a different
+       * checkout session.
+       */
+      if (
+        !saved.checkoutId ||
+        saved.checkoutId !== draft?.checkoutId
+      ) {
+        localStorage.removeItem(
+          PENDING_ORDER_KEY
+        );
+
+        return null;
+      }
+
+      const pendingOrder =
+        saved.order;
+
+      const orderId = Number(
+        pendingOrder?.OrderID ??
+        pendingOrder?.order?.OrderID
+      );
+
+      if (
+        !Number.isInteger(orderId) ||
+        orderId <= 0
+      ) {
+        localStorage.removeItem(
+          PENDING_ORDER_KEY
+        );
+
+        return null;
+      }
+
+      return pendingOrder;
+    } catch {
+      localStorage.removeItem(
+        PENDING_ORDER_KEY
+      );
+
+      return null;
+    }
+  }
+
   if (rawDraft) {
     try {
       draft = JSON.parse(rawDraft);
@@ -260,7 +316,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   };
 
   const transactionReference =
-    generateTransactionReference(method);
+    method === "Cash"
+      ? null
+      : generateTransactionReference(method);
 
   if (title) {
     title.textContent = method;
@@ -274,7 +332,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (referenceDisplay) {
     referenceDisplay.textContent =
-      transactionReference;
+      transactionReference ||
+      "Not applicable for cash payment";
+  }
+
+  if (copyButton) {
+    copyButton.hidden = !transactionReference;
   }
 
   if (button) {
@@ -413,6 +476,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   copyButton?.addEventListener(
     "click",
     async () => {
+      if (!transactionReference) {
+        return;
+      }
+
       try {
         await navigator.clipboard.writeText(
           transactionReference
@@ -634,7 +701,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             savedPaymentChange.GuestOrderReference,
           TransactionReference:
             method === "Cash"
-              ? ""
+              ? null
               : transactionReference
         })
       }
@@ -666,15 +733,31 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function createNewOrderAndPayment() {
-    const order = await apiRequest(
-      "/orders",
-      {
-        method: "POST",
-        body: JSON.stringify(
-          draft.orderPayload
-        )
-      }
-    );
+    let order = getPendingOrder();
+
+    /* Only create a new order when there is no valid pending order from an
+    earlier failed payment attempt. */
+    if (!order) {
+      order = await apiRequest(
+        "/orders",
+        {
+          method: "POST",
+          body: JSON.stringify(
+            draft.orderPayload
+          )
+        }
+      );
+
+      localStorage.setItem(
+        PENDING_ORDER_KEY,
+        JSON.stringify({
+          checkoutId:
+            draft.checkoutId,
+
+          order
+        })
+      );
+    }
 
     const orderId = Number(
       order?.OrderID ??
@@ -690,25 +773,30 @@ document.addEventListener("DOMContentLoaded", async () => {
       !Number.isInteger(orderId) ||
       orderId <= 0
     ) {
+      localStorage.removeItem(
+        PENDING_ORDER_KEY
+      );
+
       throw new Error(
         "The backend did not return a valid Order ID."
       );
     }
 
-    localStorage.setItem(
-      PENDING_ORDER_KEY,
-      JSON.stringify(order)
-    );
-
     const paymentPayload = {
       OrderID: orderId,
       PaymentMethod: method,
       TransactionReference:
-        transactionReference
+        method === "Cash"
+          ? null
+          : transactionReference
     };
 
     if (!draft.isMember) {
       if (!guestReference) {
+        localStorage.removeItem(
+          PENDING_ORDER_KEY
+        );
+
         throw new Error(
           "The backend did not return a guest order reference."
         );
@@ -748,21 +836,22 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const items = serverItems.length
       ? serverItems.map(item => ({
-        MenuItemID: item.MenuItemID,
-        ItemName: item.ItemName,
+        MenuItemID:
+          item.MenuItemID,
+
+        ItemName:
+          item.ItemName,
+
         Quantity: Number(
           item.Quantity
         ),
+
         Price: Number(
           item.UnitPrice ??
           item.Price ??
           (
-            Number(
-              item.Subtotal
-            ) /
-            Number(
-              item.Quantity || 1
-            )
+            Number(item.Subtotal) /
+            Number(item.Quantity || 1)
           )
         )
       }))
@@ -775,23 +864,37 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const backendTransactionReference =
       payment?.TransactionReference ??
-      transactionReference;
+      (
+        method === "Cash"
+          ? null
+          : transactionReference
+      );
 
     sessionStorage.setItem(
       ORDER_CONFIRMATION_KEY,
       JSON.stringify({
         orderId,
         guestReference,
+
         transactionReference:
           backendTransactionReference,
-        isMember: draft.isMember,
-        stallName: draft.stallName,
+
+        isMember:
+          draft.isMember,
+
+        stallName:
+          draft.stallName,
+
         items,
+
         subtotal:
           Number.isFinite(serverTotal)
             ? serverTotal
             : draft.estimatedTotal,
-        paymentMethod: method,
+
+        paymentMethod:
+          method,
+
         paymentStatus:
           payment?.PaymentStatus ||
           (
@@ -799,6 +902,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               ? "Pending"
               : "Successful"
           ),
+
         placedAt:
           new Date().toISOString()
       })
@@ -806,6 +910,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     clearCart();
 
+    /* Remove the pending order only after
+    payment creation succeeds. */
     localStorage.removeItem(
       PENDING_ORDER_KEY
     );

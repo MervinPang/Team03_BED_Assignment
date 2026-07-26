@@ -683,9 +683,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         guestEmailInput.value.trim();
     }
 
+    const checkoutId =
+      crypto?.randomUUID
+        ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
+    localStorage.removeItem(
+      PENDING_ORDER_KEY
+    );
+
     sessionStorage.setItem(
       CHECKOUT_DRAFT_KEY,
       JSON.stringify({
+        checkoutId,
         orderPayload,
         paymentMethod,
         isMember,
