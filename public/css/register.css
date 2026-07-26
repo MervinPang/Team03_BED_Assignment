@@ -144,3 +144,35 @@
   object-fit: contain;
   flex: 0 0 auto
 }
+
+/* Light background */
+.auth-panel {
+  background: #f7faf7;
+}
+
+/* Make the input and select boxes rounder */
+.auth-panel .input,
+.auth-panel .select {
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+}
+
+/* Green border when clicked */
+.auth-panel .input:focus,
+.auth-panel .select:focus {
+  border-color: var(--brand);
+  outline: none;
+}
+
+/* Make the labels bold */
+.auth-panel .field label {
+  font-weight: bold;
+}
+
+/* Full width create account button */
+.auth-panel .button.primary {
+  width: 100%;
+  padding: 14px;
+  border-radius: 14px;
+}
