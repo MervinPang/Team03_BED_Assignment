@@ -16,7 +16,9 @@ async function getAllPayments(req, res) {
 // Retrieve payment by Payment ID
 async function getPaymentById(req, res) {
     try {
-        const paymentId = Number(req.params.id);
+        if (!Number.isInteger(paymentId) || paymentId <= 0) {
+            return res.status(400).json({error: "Payment ID must be a positive integer",});
+        }
 
         const payment = await paymentModel.getPaymentById(paymentId, req.user);
 
