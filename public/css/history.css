@@ -785,6 +785,13 @@ body.modal-open {
   font-weight: 800;
 }
 
+.frequent-order-placeholder {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 40px;
+}
+
 .payment-strip {
   display: flex;
   align-items: center;

@@ -166,11 +166,20 @@ document.addEventListener("DOMContentLoaded", async () => {
                     ${index + 1}
                 </div>
 
-                <img
-                    class="frequent-order-image"
-                    src="${esc(item.ItemImage || "/images/default-food.jpg")}"
-                    alt="${esc(item.ItemName)}"
-                >
+                ${item.ItemImage
+                  ? `
+                      <img
+                        class="frequent-order-image"
+                        src="${esc(item.ItemImage)}"
+                        alt="${esc(item.ItemName)}"
+                      >
+                    `
+                  : `
+                      <div class="frequent-order-image frequent-order-placeholder">
+                        🍽️
+                      </div>
+                    `
+                }
 
                 <div class="frequent-order-content">
 
