@@ -81,6 +81,7 @@ app.put("/orders/:id/guest-cancel", validateOrderId, validateGuestOrderCancellat
 // Routes for Order History
 app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);
 app.get("/order-history/previous",verifyJWT,orderHistoryController.getPreviousOrderHistory);
+app.get("/order-history/most-frequent", verifyJWT, orderHistoryController.getMostFrequentOrders);
 app.post("/order-history/guest",validateGuestOrderHistory,orderHistoryController.getGuestOrderHistory);
 app.get("/order-history/:id",verifyJWT,validateOrderHistoryId,orderHistoryController.getOrderHistoryById);
 

@@ -135,6 +135,65 @@ async function getPreviousOrderHistory(userId) {
     }
 }
 
+// Retrieve the customer's most frequently ordered menu items
+// Only completed member orders are included in the calculation
+async function getMostFrequentOrders(userId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("UserID", sql.Int, userId);
+
+        const result = await request.query(`
+            SELECT TOP 3
+                mi.MenuItemID,
+                mi.ItemName,
+                mi.ItemImage,
+                fs.StallID,
+                fs.StallName,
+                SUM(oi.Quantity) AS TotalQuantityOrdered,
+                COUNT(DISTINCT co.OrderID) AS OrderCount,
+                MAX(co.OrderDateTime) AS LastOrderedAt
+            FROM CustomerOrder co
+            JOIN OrderItem oi
+                ON co.OrderID = oi.OrderID
+            JOIN MenuItem mi
+                ON oi.MenuItemID = mi.MenuItemID
+            JOIN FoodStall fs
+                ON mi.StallID = fs.StallID
+            WHERE
+                co.UserID = @UserID
+                AND co.OrderType = 'Member'
+                AND co.OrderStatus = 'Completed'
+            GROUP BY
+                mi.MenuItemID,
+                mi.ItemName,
+                mi.ItemImage,
+                fs.StallID,
+                fs.StallName
+            ORDER BY
+                TotalQuantityOrdered DESC,
+                OrderCount DESC,
+                LastOrderedAt DESC,
+                mi.ItemName ASC;
+        `);
+
+        return result.recordset;
+    } catch (error) {
+        console.error(
+            "Database error (getMostFrequentOrders):",
+            error
+        );
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
 // Retrieve complete order details for the authenticated customer
 // The response includes order information, ordered items and the order status timeline
 async function getOrderHistoryById(orderId, userId) {
@@ -348,6 +407,7 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
 module.exports = {
     getActiveOrderHistory,
     getPreviousOrderHistory,
+    getMostFrequentOrders,
     getOrderHistoryById,
     getGuestOrderHistory,
 };

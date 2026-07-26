@@ -34,6 +34,24 @@ async function getPreviousOrderHistory(req, res) {
     }
 }
 
+// Retrieves the customer's most frequently ordered menu items
+async function getMostFrequentOrders(req, res) {
+    try {
+        const items = await orderHistoryModel.getMostFrequentOrders(req.user.id);
+
+        return res.status(200).json(items);
+    } catch (error) {
+        console.error(
+            "Controller error (getMostFrequentOrders):",
+            error
+        );
+
+        return res.status(500).json({
+            error: "Error retrieving most frequent orders",
+        });
+    }
+}
+
 // Retrieves the complete details of a customer's order, including ordered items and status history
 async function getOrderHistoryById(req, res) {
     try {
@@ -66,7 +84,7 @@ async function getGuestOrderHistory(req, res) {
         const orderId = parseOrderId(req.body.OrderID);
 
         if (orderId === null) {
-            return res.status(400).json({error: "Order ID must be a positive integer",});
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
         }
 
         const order = await orderHistoryModel.getGuestOrderHistory(orderId, req.body.GuestOrderReference);
@@ -86,6 +104,7 @@ async function getGuestOrderHistory(req, res) {
 module.exports = {
     getActiveOrderHistory,
     getPreviousOrderHistory,
+    getMostFrequentOrders,
     getOrderHistoryById,
     getGuestOrderHistory,
 };

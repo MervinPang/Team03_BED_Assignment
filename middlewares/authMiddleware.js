@@ -41,6 +41,7 @@ function verifyJWT(req, res, next) {
             // Order History
             "GET /order-history/active": ["customer"],
             "GET /order-history/previous": ["customer"],
+            "GET /order-history/most-frequent": ["customer"],
             "GET /order-history/[^/]+": ["customer"],
 
             // Payments
