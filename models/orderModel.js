@@ -574,17 +574,23 @@ async function deleteOrder(orderId, user) {
         }
 
         const historyRequest = new sql.Request(transaction);
+
         historyRequest.input("OrderID", sql.Int, orderId);
+        historyRequest.input("UpdatedByUserID", sql.Int, user.id);
 
         await historyRequest.query(`
-            INSERT INTO OrderStatusHistory (
+            INSERT INTO OrderStatusHistory
+            (
                 OrderID,
                 OrderStatus,
+                UpdatedByUserID,
                 StatusDateTime
             )
-            VALUES (
+            VALUES
+            (
                 @OrderID,
                 'Cancelled',
+                @UpdatedByUserID,
                 GETDATE()
             );
         `);
@@ -717,18 +723,21 @@ async function cancelGuestOrder(orderId, guestOrderReference) {
         const historyRequest = new sql.Request(transaction);
 
         historyRequest.input("OrderID", sql.Int, orderId);
+        historyRequest.input("UpdatedByUserID", sql.Int, user.id);
 
         await historyRequest.query(`
             INSERT INTO OrderStatusHistory
             (
                 OrderID,
                 OrderStatus,
+                UpdatedByUserID,
                 StatusDateTime
             )
             VALUES
             (
                 @OrderID,
                 'Cancelled',
+                @UpdatedByUserID,
                 GETDATE()
             );
         `);
