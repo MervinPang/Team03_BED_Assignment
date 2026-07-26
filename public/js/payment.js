@@ -25,6 +25,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let draft = null;
   let paymentChange = null;
+  let isProcessingPayment = false;
 
   function getPendingOrder() {
     const rawPendingOrder =
@@ -38,10 +39,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       const saved =
         JSON.parse(rawPendingOrder);
 
-      /*
-       * Do not reuse an order from a different
-       * checkout session.
-       */
+      /* Do not reuse an order from a different
+      checkout session. */
       if (
         !saved.checkoutId ||
         saved.checkoutId !== draft?.checkoutId
@@ -621,6 +620,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
+      if (isProcessingPayment) {
+        return;
+      }
+
+      isProcessingPayment = true;
       button.disabled = true;
 
       button.innerHTML =
@@ -650,6 +654,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           "error"
         );
 
+        isProcessingPayment = false;
         button.disabled = false;
 
         if (changePaymentMode) {
