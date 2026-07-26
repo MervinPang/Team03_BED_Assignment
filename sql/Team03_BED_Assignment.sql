@@ -352,7 +352,7 @@ INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallIma
 VALUES
 (3, '#01-01', 'Ah Tan Chicken Rice', 'Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.', '/images/Stall 01 Banner.jpg', 1, 1),
 (3, '#01-02', 'Muthu Prata House', 'Discover freshly prepared prata served with flavourful curries and popular local favourites.', '/images/Stall 02 Banner.jpg', 1, 1),
-(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy traditional nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2);
+(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2);
 
 INSERT INTO Cuisine (CuisineName, CuisineDesc)
 VALUES
