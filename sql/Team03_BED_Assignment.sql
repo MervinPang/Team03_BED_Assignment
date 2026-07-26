@@ -407,9 +407,9 @@ VALUES
 
 INSERT INTO Payment (OrderID, PaymentMethod, PaymentStatus, Amount, TransactionReference, PaidAt)
 VALUES
-(1, 'PayNow', 'Successful', 9.50, 'PN-20260726-000001', DATEADD(MINUTE, -19, GETDATE()),
+(1, 'PayNow', 'Successful', 9.50, 'PN-20260726-000001', DATEADD(MINUTE, -19, GETDATE())),
 (2, 'Cash', 'Pending', 5.20, NULL, NULL),
-(3, 'Card', 'Successful', 4.80, 'CARD-20260726-000003', DATEADD(MINUTE, -110, GETDATE());
+(3, 'Card', 'Successful', 4.80, 'CARD-20260726-000003', DATEADD(MINUTE, -110, GETDATE()));
 
 INSERT INTO Review (UserID, StallID, Rating, ReviewComment)
 VALUES
