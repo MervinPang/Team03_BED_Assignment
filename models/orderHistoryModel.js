@@ -180,7 +180,8 @@ async function getOrderHistoryById(orderId, userId) {
                 ON co.OrderID = p.OrderID
             WHERE
                 co.OrderID = @OrderID
-                AND co.UserID = @UserID;
+                AND co.UserID = @UserID
+                AND co.OrderType = 'Member';
         `);
 
         if (orderResult.recordset.length === 0) {
