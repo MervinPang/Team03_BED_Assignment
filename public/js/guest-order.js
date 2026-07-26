@@ -388,6 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       setMessage(lookupMessage);
       result.hidden = true;
+      result.innerHTML = "";
 
       const orderId = Number(orderIdInput.value);
 
