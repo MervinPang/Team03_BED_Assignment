@@ -287,7 +287,8 @@ async function getGuestOrderHistory(orderId, guestOrderReference) {
             LEFT JOIN Payment p
                 ON co.OrderID = p.OrderID
             WHERE co.OrderID = @OrderID
-                AND co.GuestOrderReference = @GuestOrderReference;
+                AND co.GuestOrderReference = @GuestOrderReference
+                AND co.OrderType = 'Guest';
         `);
 
         if (orderResult.recordset.length === 0) {
