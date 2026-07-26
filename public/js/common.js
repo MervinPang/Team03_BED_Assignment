@@ -381,15 +381,6 @@ function transferGuestCartToCurrentUser() {
   updateCartCount();
 }
 
-function clearAllSessionCarts() {
-  const currentKey = cartStorageKey();
-
-  localStorage.removeItem(currentKey);
-  localStorage.removeItem(GUEST_CART_KEY);
-  localStorage.removeItem(LEGACY_CART_KEY);
-  updateCartCount();
-}
-
 function cartQty(cart = getCart()) {
   return cart.items.reduce(
     (total, item) => total + Number(item.Quantity || 0),
