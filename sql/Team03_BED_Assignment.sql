@@ -54,16 +54,17 @@ CREATE TABLE HawkerCentre
 /* Table: FoodStall */
 CREATE TABLE FoodStall
 (
-    StallID         INT IDENTITY(1,1)       NOT NULL,
-    VendorUserID    INT                     NULL,
-    StallUnitNo     VARCHAR(10)             NOT NULL,
-    StallName       VARCHAR(80)             NOT NULL,
-    StallDesc       VARCHAR(300)            NULL,
-    StallImage      VARCHAR(255)            NULL,
-    IsActive        BIT                     NOT NULL DEFAULT 1,
-    HawkerCentreID  INT                     NOT NULL,
+    StallID         INT IDENTITY(1,1)           NOT NULL,
+    VendorUserID    INT                         NULL,
+    StallUnitNo     VARCHAR(10)                 NOT NULL,
+    StallName       VARCHAR(80)                 NOT NULL,
+    StallDesc       VARCHAR(300)                NULL,
+    StallImage      VARCHAR(255)                NULL,
+    IsActive        BIT                         NOT NULL DEFAULT 1,
+    HawkerCentreID  INT                         NOT NULL,
 
-    CONSTRAINT      PK_FoodStall            PRIMARY KEY (StallID),
+    CONSTRAINT      PK_FoodStall                PRIMARY KEY (StallID),
+    CONSTRAINT      UQ_FoodStall_Centre_Unit    UNIQUE (HawkerCentreID, StallUnitNo),
     CONSTRAINT      FK_FoodStall_UserAccount
         FOREIGN KEY (VendorUserID) REFERENCES UserAccount(UserID),
     CONSTRAINT FK_FoodStall_HawkerCentre
@@ -136,7 +137,7 @@ CREATE TABLE CustomerOrder
     CONSTRAINT          CHK_CustomerOrder_OrderStatus
         CHECK (OrderStatus IN ('Pending', 'Preparing', 'Ready', 'Completed', 'Cancelled')),
     CONSTRAINT          CHK_CustomerOrder_TotalAmount
-        CHECK (TotalAmount >= 0),
+        CHECK (TotalAmount >= 0.01),
     CONSTRAINT          CHK_CustomerOrder_GuestOrMember
         CHECK (
             (OrderType = 'Member' AND UserID IS NOT NULL AND GuestName IS NULL AND GuestEmail IS NULL AND GuestOrderReference IS NULL)
@@ -174,14 +175,15 @@ ON OrderStatusHistory(OrderID, StatusDateTime);
 /* Table: OrderItem */
 CREATE TABLE OrderItem
 (
-    OrderItemID         INT IDENTITY(1,1)       NOT NULL,
-    OrderID             INT                     NOT NULL,
-    MenuItemID          INT                     NOT NULL,
-    Quantity            INT                     NOT NULL,
-    UnitPrice           DECIMAL(6,2)            NOT NULL,
+    OrderItemID         INT IDENTITY(1,1)                   NOT NULL,
+    OrderID             INT                                 NOT NULL,
+    MenuItemID          INT                                 NOT NULL,
+    Quantity            INT                                 NOT NULL,
+    UnitPrice           DECIMAL(6,2)                        NOT NULL,
     Subtotal            AS (Quantity * UnitPrice) PERSISTED,
 
-    CONSTRAINT          PK_OrderItem            PRIMARY KEY (OrderItemID),
+    CONSTRAINT          PK_OrderItem                        PRIMARY KEY (OrderItemID),
+    CONSTRAINT          UQ_OrderItem_OrderID_MenuItemID     UNIQUE (OrderID, MenuItemID),
     CONSTRAINT          FK_OrderItem_CustomerOrder
         FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID)
         ON DELETE CASCADE,
@@ -212,7 +214,7 @@ CREATE TABLE Payment
     CONSTRAINT             CHK_Payment_Status
         CHECK (PaymentStatus IN ('Pending', 'Successful', 'Failed', 'Refunded')),
     CONSTRAINT             CHK_Payment_Amount
-        CHECK (Amount >= 0)
+        CHECK (Amount >= 0.01)
 );
 
 /* Ensure non-null payment references are unique */
@@ -332,11 +334,9 @@ VALUES
 ('leris_customer', 'leris.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
 ('louis_vendor', 'louis.vendor@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
 ('rayne_nea', 'rayne.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
-('uat_customer_a', 'uat.customer.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
-('uat_customer_b', 'uat.customer.b@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
-('uat_vendor_a', 'uat.vendor.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
-('uat_vendor_b', 'uat.vendor.b@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'vendor'),
-('uat_nea_a', 'uat.nea.a@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer');
+('nigel_customer', 'nigel.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('ming_li_customer', 'mingli.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
+('callula_nea', 'callula.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer');
 
 INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
 VALUES
@@ -352,9 +352,7 @@ INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallIma
 VALUES
 (3, '#01-01', 'Ah Tan Chicken Rice', 'Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.', '/images/Stall 01 Banner.jpg', 1, 1),
 (3, '#01-02', 'Muthu Prata House', 'Discover freshly prepared prata served with flavourful curries and popular local favourites.', '/images/Stall 02 Banner.jpg', 1, 1),
-(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy traditional nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2),
-(7, '#03-01', 'UAT Vendor A Stall', 'Test stall used for Vendor A order ownership testing.', '/images/uatvendora.jpg', 1, 1),
-(8, '#03-02', 'UAT Vendor B Stall', 'Test stall used for Vendor B order ownership testing.', '/images/uatvendorb.jpg', 1, 1);
+(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy traditional nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2);
 
 INSERT INTO Cuisine (CuisineName, CuisineDesc)
 VALUES
@@ -371,10 +369,7 @@ VALUES
 (2, 'Plain Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
 (2, 'Egg Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
 (3, 'Nasi Lemak Chicken Wing', 'Fragrant coconut rice served with a crispy chicken wing, egg, peanuts, cucumber, and homemade sambal.', 4.80, 'Main Dish', '/images/Nasi Lemak.jpg', 1),
-(3, 'Iced Milo', 'A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1),
-(4, 'Vendor A Test Chicken Rice', 'Chicken rice used for Vendor A ownership testing.', 5.50, 'Main Dish', '/images/vendora_chickenrice.jpg', 1),
-(4, 'Vendor A Test Drink', 'Drink used for Vendor A same-stall order testing.', 2.00, 'Drink', '/images/vendora_drink.jpg', 1),
-(5, 'Vendor B Test Noodles', 'Noodles used for Vendor B ownership testing.', 6.00, 'Main Dish', '/images/vendorb_noodles.jpg', 1);
+(3, 'Iced Milo', 'A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1);
 
 INSERT INTO MenuItemCuisine (MenuItemID, CuisineID)
 VALUES
@@ -384,23 +379,20 @@ VALUES
 (4, 2),
 (5, 2),
 (6, 3),
-(7, 4),
-(8, 1),
-(9, 4),
-(10, 1);
+(7, 4);
 
-INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, GuestOrderReference, OrderType, OrderStatus, TotalAmount, SpecialInstructions)
+INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, GuestOrderReference, OrderType, OrderStatus, TotalAmount, SpecialInstructions, OrderDateTime, UpdatedAt)
 VALUES
-(1, NULL, NULL, NULL, 'Member', 'Pending', 9.50, 'Less chilli please'),
-(NULL, 'Guest Customer', 'guest.customer@example.com', 'GUEST-SAMPLE-ORDER-0002', 'Guest', 'Preparing', 6.80, 'Takeaway order'),
-(1, NULL, NULL, NULL, 'Member', 'Completed', 4.80, NULL);
+(1, NULL, NULL, NULL, 'Member', 'Pending', 9.50, 'Less chilli please', DATEADD(MINUTE, -20, GETDATE()), DATEADD(MINUTE, -20, GETDATE())),
+(NULL, 'Patcharapon', 'patcharapon@example.com', 'GUEST-20260726-A8K4Q2', 'Guest', 'Preparing', 5.20, 'Pack the curry separately', DATEADD(MINUTE, -35, GETDATE()), DATEADD(MINUTE, -15, GETDATE())),
+(1, NULL, NULL, NULL, 'Member', 'Completed', 4.80, NULL, DATEADD(HOUR, -2, GETDATE()), DATEADD(MINUTE, -60, GETDATE()));
 
 INSERT INTO OrderStatusHistory (OrderID, OrderStatus, StatusDateTime, UpdatedByUserID)
 VALUES
-(1, 'Pending', DATEADD(MINUTE, -20, GETDATE()), 1),
+(1, 'Pending', DATEADD(MINUTE, -20, GETDATE()), NULL),
 (2, 'Pending', DATEADD(MINUTE, -35, GETDATE()), NULL),
 (2, 'Preparing', DATEADD(MINUTE, -15, GETDATE()), 3),
-(3, 'Pending', DATEADD(HOUR, -2, GETDATE()), 1),
+(3, 'Pending', DATEADD(HOUR, -2, GETDATE()), NULL),
 (3, 'Preparing', DATEADD(MINUTE, -100, GETDATE()), 3),
 (3, 'Ready', DATEADD(MINUTE, -70, GETDATE()), 3),
 (3, 'Completed', DATEADD(MINUTE, -60, GETDATE()), 3);
@@ -411,14 +403,13 @@ VALUES
 (1, 2, 1, 5.00),
 (2, 4, 2, 1.50),
 (2, 5, 1, 2.20),
-(2, 7, 1, 1.80),
 (3, 6, 1, 4.80);
 
 INSERT INTO Payment (OrderID, PaymentMethod, PaymentStatus, Amount, TransactionReference, PaidAt)
 VALUES
-(1, 'PayNow', 'Successful', 9.50, 'PAYNOW-ORDER-0001', GETDATE()),
-(2, 'Cash', 'Pending', 6.80, 'CASH-ORDER-0002', NULL),
-(3, 'Card', 'Successful', 4.80, 'CARD-ORDER-0003', GETDATE());
+(1, 'PayNow', 'Successful', 9.50, 'PN-20260726-000001', DATEADD(MINUTE, -19, GETDATE()),
+(2, 'Cash', 'Pending', 5.20, NULL, NULL),
+(3, 'Card', 'Successful', 4.80, 'CARD-20260726-000003', DATEADD(MINUTE, -110, GETDATE());
 
 INSERT INTO Review (UserID, StallID, Rating, ReviewComment)
 VALUES
@@ -446,7 +437,8 @@ VALUES
 INSERT INTO RentalAgreement (StallID, VendorUserID, StartDate, EndDate, RentalPrice, TermCondition)
 VALUES
 (1, 3, '2026-01-01', '2026-12-31', 1200.00, 'Monthly rental agreement for stall operations.'),
-(2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.');
+(2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.'),
+(3, 3, '2026-01-01', '2026-12-31', 1150.00, 'Vendor must comply with hygiene and food safety requirements.');
 
 ------------------------------------------------------------
 -- Verification Queries (HawkerManagementDB)
