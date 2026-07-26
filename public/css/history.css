@@ -296,17 +296,18 @@ body.modal-open {
 }
 
 @media (max-width:760px) {
-.grid-3,
+
+  .grid-3,
   .grid-2,
   .metrics {
     grid-template-columns: 1fr
   }
 
-.payment-options {
+  .payment-options {
     grid-template-columns: 1fr
   }
 
-.page-head {
+  .page-head {
     padding-top: 44px
   }
 }
@@ -624,63 +625,191 @@ body.modal-open {
   gap: 13px
 }
 
+/* ===========================
+   Most Frequently Ordered
+=========================== */
+
+.frequent-orders-section {
+  margin-bottom: 32px;
+  padding: 24px;
+}
+
+.frequent-orders-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 300px);
+  gap: 20px;
+  margin-top: 20px;
+}
+
+.frequent-order-card {
+  position: relative;
+  border: 1px solid var(--line);
+  border-radius: 18px;
+  background-color: #ffffff;
+  overflow: hidden;
+  transition: 0.2s;
+}
+
+.frequent-order-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.08);
+}
+
+.frequent-order-image {
+  width: 100%;
+  height: 170px;
+  object-fit: cover;
+  background-color: #edf3ee;
+}
+
+.frequent-order-content {
+  padding: 18px;
+}
+
+.frequent-order-content h3 {
+  margin: 0 0 10px;
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.frequent-order-stall {
+  color: var(--muted);
+  font-size: 14px;
+  margin-bottom: 16px;
+}
+
+.frequent-order-stats {
+  display: grid;
+  gap: 10px;
+}
+
+.frequent-order-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.frequent-order-label {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.frequent-order-value {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.frequent-order-rank {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background-color: var(--brand);
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.frequent-orders-loading,
+.frequent-orders-empty,
+.frequent-orders-error {
+  padding: 40px;
+  border: 1px dashed var(--line);
+  border-radius: 18px;
+  background-color: #ffffff;
+  text-align: center;
+  color: var(--muted);
+  font-size: 15px;
+}
+
+.frequent-orders-empty strong,
+.frequent-orders-error strong {
+  display: block;
+  margin-bottom: 8px;
+  color: var(--text);
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.payment-strip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 12px 20px;
+  background: #f6f8f5;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.payment-strip .badge {
+  flex-shrink: 0;
+}
+
 @media (max-width:860px) {
-.confirmation-shell,
+
+  .confirmation-shell,
   .detail-grid {
     grid-template-columns: 1fr
   }
 
-.detail-main {
+  .detail-main {
     border-right: 0;
     border-bottom: 1px solid var(--line)
   }
 
-.order-card-bottom {
+  .order-card-bottom {
     grid-template-columns: repeat(3, 1fr)
   }
 }
 
 @media (max-width:620px) {
-.order-card-top {
+  .order-card-top {
     grid-template-columns: 58px 1fr
   }
 
-.order-stall-image {
+  .order-stall-image {
     width: 58px;
     height: 58px
   }
 
-.order-card-top>.badge {
+  .order-card-top>.badge {
     grid-column: 2
   }
 
-.order-card-bottom {
+  .order-card-bottom {
     grid-template-columns: 1fr 1fr
   }
 
-.detail-hero {
+  .detail-hero {
     height: 220px
   }
 
-.detail-hero-overlay {
+  .detail-hero-overlay {
     left: 20px;
     right: 20px
   }
 
-.detail-hero-overlay h2 {
+  .detail-hero-overlay h2 {
     font-size: 1.8rem
   }
 
-.detail-main,
+  .detail-main,
   .detail-aside {
     padding: 21px
   }
 
-.detail-item {
+  .detail-item {
     grid-template-columns: 44px 1fr auto
   }
 
-.detail-item img,
+  .detail-item img,
   .detail-item-placeholder {
     width: 44px;
     height: 44px
@@ -724,24 +853,22 @@ body.modal-open {
   z-index: 1004 !important;
 }
 
-@media (max-width: 680px) {
-.modal-backdrop {
-    padding: 76px 8px 8px;
+@media (max-width: 980px) {
+  .frequent-orders-grid {
+    grid-template-columns: repeat(2, 300px);
   }
 }
 
-.payment-strip {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  box-sizing: border-box;
-  padding: 12px 20px;
-  background: #f6f8f5;
-  border-top: 1px solid var(--line);
-  border-bottom: 1px solid var(--line);
-}
+@media (max-width: 680px) {
+  .modal-backdrop {
+    padding: 76px 8px 8px;
+  }
 
-.payment-strip .badge {
-  flex-shrink: 0;
+  .frequent-orders-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .frequent-order-image {
+    height: 180px;
+  }
 }

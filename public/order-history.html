@@ -51,21 +51,54 @@
       <section class="shell">
             <div class="page-head compact">
                   <span class="eyebrow">Member Order History</span>
+
                   <h1>Your Orders</h1>
+
                   <p class="lead">
                         View your active orders and revisit your previous purchases.
                   </p>
             </div>
+
             <div class="form-message" id="historyMessage"></div>
-            <div class="tabs">
-                  <button class="tab active" data-tab="active">Active</button>
-                  <button class="tab" data-tab="previous">Previous</button>
-            </div>
-            <section id="activePanel">
-                  <div class="grid grid-2" id="activeOrders">Loading…</div>
+
+            <section class="card frequent-orders-section">
+                  <div class="section-heading">
+                        <div>
+                              <span class="eyebrow">Recommended For You</span>
+
+                              <h2>Most Frequently Ordered</h2>
+
+                              <p class="muted">
+                                    Your most frequently purchased menu items based on completed orders.
+                              </p>
+                        </div>
+                  </div>
+
+                  <div class="frequent-orders-grid" id="mostFrequentOrders">
+                        Loading...
+                  </div>
             </section>
-            <section hidden="" id="previousPanel">
-                  <div class="grid grid-2" id="previousOrders">Loading…</div>
+
+            <div class="tabs">
+                  <button class="tab active" data-tab="active" type="button">
+                        Active
+                  </button>
+
+                  <button class="tab" data-tab="previous" type="button">
+                        Previous
+                  </button>
+            </div>
+
+            <section id="activePanel">
+                  <div class="grid grid-2" id="activeOrders">
+                        Loading…
+                  </div>
+            </section>
+
+            <section hidden id="previousPanel">
+                  <div class="grid grid-2" id="previousOrders">
+                        Loading…
+                  </div>
             </section>
       </section>
       <div class="modal-backdrop" hidden="" id="detailsBackdrop">

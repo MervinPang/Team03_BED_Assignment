@@ -4,6 +4,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const activeOrdersElement = document.getElementById("activeOrders");
   const previousOrdersElement = document.getElementById("previousOrders");
   const messageElement = document.getElementById("historyMessage");
+  const mostFrequentOrdersElement = document.getElementById("mostFrequentOrders");
   const detailsBackdrop = document.getElementById("detailsBackdrop");
   const detailsBody = document.getElementById("detailsBody");
   const paymentBackdrop = document.getElementById("paymentBackdrop");
@@ -137,6 +138,75 @@ document.addEventListener("DOMContentLoaded", async () => {
           openDetails(button.dataset.orderId);
         });
       });
+  }
+
+  function renderMostFrequentOrders(items) {
+
+    if (!Array.isArray(items) || items.length === 0) {
+
+      mostFrequentOrdersElement.innerHTML = `
+            <div class="frequent-orders-empty">
+                <strong>No recommendations yet</strong>
+
+                <p>
+                    Complete a few orders and your most frequently ordered menu items will appear here.
+                </p>
+            </div>
+        `;
+
+      return;
+    }
+
+    mostFrequentOrdersElement.innerHTML = items.map((item, index) => {
+
+      return `
+            <article class="frequent-order-card">
+
+                <div class="frequent-order-rank">
+                    ${index + 1}
+                </div>
+
+                <img
+                    class="frequent-order-image"
+                    src="${esc(item.ItemImage || "/images/default-food.jpg")}"
+                    alt="${esc(item.ItemName)}"
+                >
+
+                <div class="frequent-order-content">
+
+                    <h3>${esc(item.ItemName)}</h3>
+
+                    <div class="frequent-order-stall">
+                        ${esc(item.StallName)}
+                    </div>
+
+                    <div class="frequent-order-stats">
+
+                        <div class="frequent-order-stat">
+                            <span class="frequent-order-label">
+                                Quantity Ordered
+                            </span>
+
+                            <span class="frequent-order-value">
+                                ${item.TotalQuantityOrdered}
+                            </span>
+                        </div>
+
+                        <div class="frequent-order-stat">
+                            <span class="frequent-order-label">
+                                Number of Orders
+                            </span>
+
+                            <span class="frequent-order-value">
+                                ${item.OrderCount}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </article>
+        `;
+
+    }).join("");
   }
 
   function timelineHtml(currentStatus, timeline) {
@@ -693,10 +763,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   async function loadHistory() {
     try {
-      const [activeOrders, previousOrders] =
+      const [activeOrders, previousOrders, mostFrequentOrders,] =
         await Promise.all([
           apiRequest("/order-history/active"),
           apiRequest("/order-history/previous"),
+          apiRequest("/order-history/most-frequent"),
         ]);
 
       renderOrders(
@@ -710,6 +781,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         previousOrders,
         "No Previous Orders"
       );
+
+      renderMostFrequentOrders(
+        mostFrequentOrders
+      );
+
     } catch (error) {
       setMessage(
         messageElement,
