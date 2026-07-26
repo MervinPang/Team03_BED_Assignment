@@ -673,9 +673,7 @@ async function cancelGuestOrder(orderId, guestOrderReference) {
 
         const paymentResult =
             await paymentRequest.query(`
-                SELECT
-                    PaymentMethod,
-                    PaymentStatus
+                SELECT PaymentStatus
                 FROM Payment
                 WHERE OrderID = @OrderID;
             `);
