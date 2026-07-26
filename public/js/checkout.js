@@ -64,6 +64,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   let paymentChangeOrder = null;
   let paymentChangeItems = [];
+  let checkoutCart = null;
 
   if (currentUser && !isMember) {
     window.location.replace(
@@ -229,8 +230,53 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
+  function validateCheckoutCart(cart) {
+    if (
+      !cart ||
+      !Number.isInteger(Number(cart.StallID)) ||
+      Number(cart.StallID) <= 0 ||
+      !Array.isArray(cart.items) ||
+      cart.items.length === 0
+    ) {
+      return {
+        valid: false,
+        message: "Your cart is empty or invalid."
+      };
+    }
+
+    const invalidItem = cart.items.find(item => {
+      const menuItemId = Number(item.MenuItemID);
+      const quantity = Number(item.Quantity);
+      const price = Number(item.Price);
+
+      return (
+        !Number.isInteger(menuItemId) ||
+        menuItemId <= 0 ||
+        !Number.isInteger(quantity) ||
+        quantity < 1 ||
+        quantity > 50 ||
+        !Number.isFinite(price) ||
+        price < 0 ||
+        item.IsAvailable === false
+      );
+    });
+
+    if (invalidItem) {
+      return {
+        valid: false,
+        message:
+          "Your cart contains an invalid or unavailable item. Please review your cart."
+      };
+    }
+
+    return {
+      valid: true,
+      message: ""
+    };
+  }
+
   function renderSummary() {
-    const cart = getCart();
+    const cart = checkoutCart || getCart();
 
     if (!cart.items.length) {
       cartContainer.innerHTML = `
@@ -605,14 +651,12 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function handleNormalCheckoutSubmission() {
-    const cart = getCart();
+    const cart = checkoutCart || getCart();
 
-    if (!cart.items.length) {
-      return setMessage(
-        messageContainer,
-        "Your cart is empty.",
-        "error"
-      );
+    const cartValidation = validateCheckoutCart(cart);
+
+    if (!cartValidation.valid) {
+      return setMessage(messageContainer, cartValidation.message, "error");
     }
 
     if (
@@ -621,11 +665,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     ) {
       guestNameInput.focus();
 
-      return setMessage(
-        messageContainer,
-        "Please enter your name.",
-        "error"
-      );
+      return setMessage(messageContainer, "Please enter your name.", "error");
     }
 
     if (
@@ -638,10 +678,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       guestEmailInput.focus();
 
       return setMessage(
-        messageContainer,
-        "Please enter a valid email address.",
-        "error"
-      );
+        messageContainer, "Please enter a valid email address.", "error");
     }
 
     const paymentMethod =
@@ -651,10 +688,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     if (!paymentMethod) {
       return setMessage(
-        messageContainer,
-        "Please select a payment method.",
-        "error"
-      );
+        messageContainer, "Please select a payment method.", "error");
     }
 
     const orderPayload = {
@@ -710,6 +744,20 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   if (!isPaymentChange) {
+    checkoutCart =
+      await refreshCartFromBackend();
+
+    const cartValidation =
+      validateCheckoutCart(checkoutCart);
+
+    if (!cartValidation.valid) {
+      setMessage(
+        messageContainer,
+        cartValidation.message,
+        "error"
+      );
+    }
+
     renderSummary();
   }
 
