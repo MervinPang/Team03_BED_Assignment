@@ -107,6 +107,14 @@ async function updateOrderStatus(req, res) {
             return res.status(400).json({ error: "Order ID must be a positive integer", });
         }
 
+        const { OrderStatus } = req.body;
+
+        if (
+            typeof OrderStatus !== "string" || OrderStatus.trim() === ""
+        ) {
+            return res.status(400).json({error: "OrderStatus is required",});
+        }
+
         const updatedOrder = await orderModel.updateOrderStatus(id, req.body.OrderStatus, req.user);
 
         if (!updatedOrder) {
@@ -187,7 +195,7 @@ async function cancelGuestOrder(req, res) {
         const id = parseOrderId(req.params.id);
 
         if (id === null) {
-            return res.status(400).json({error: "Order ID must be a positive integer",});
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
         }
 
         const cancelledOrder = await orderModel.cancelGuestOrder(id, req.body.GuestOrderReference);
