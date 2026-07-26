@@ -481,6 +481,7 @@ async function updateOrderStatus(orderId, orderStatus, user) {
         if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error(
                     "Rollback error:",
@@ -603,6 +604,7 @@ async function deleteOrder(orderId, user) {
         if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error("Rollback error:", rollbackError);
             }
@@ -723,21 +725,18 @@ async function cancelGuestOrder(orderId, guestOrderReference) {
         const historyRequest = new sql.Request(transaction);
 
         historyRequest.input("OrderID", sql.Int, orderId);
-        historyRequest.input("UpdatedByUserID", sql.Int, user.id);
 
         await historyRequest.query(`
             INSERT INTO OrderStatusHistory
             (
                 OrderID,
                 OrderStatus,
-                UpdatedByUserID,
                 StatusDateTime
             )
             VALUES
             (
                 @OrderID,
                 'Cancelled',
-                @UpdatedByUserID,
                 GETDATE()
             );
         `);
@@ -753,6 +752,7 @@ async function cancelGuestOrder(orderId, guestOrderReference) {
         if (transaction && transactionStarted) {
             try {
                 await transaction.rollback();
+                transactionStarted = false;
             } catch (rollbackError) {
                 console.error(
                     "Guest cancellation rollback error:",
