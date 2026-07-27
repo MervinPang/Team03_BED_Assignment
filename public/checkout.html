@@ -65,10 +65,60 @@
                                                 placeholder="Enter your name" />
                                     </div>
                                     <div class="field">
-                                          <label>Email</label>
+                                          <label>Email Address</label>
                                           <input class="input" id="guestEmail" maxlength="100" required="" type="email"
                                                 placeholder="Enter your email address" />
                                     </div>
+                              </div>
+                        </div>
+                        <div class="guest-registration" id="guestRegistrationSection">
+                              <label class="guest-registration-option" for="createAccount">
+                                    <input id="createAccount" type="checkbox" />
+                                    <span class="guest-registration-checkbox"></span>
+                                    <span class="guest-registration-copy">
+                                          <strong>Create an account with this order</strong>
+
+                                          <small>Save this order to your account and view
+                                                your order history after checkout.
+                                          </small>
+                                    </span>
+                              </label>
+
+                              <div class="guest-registration-fields" id="guestRegistrationFields" hidden>
+                                    <div class="field">
+                                          <label for="accountUsername">Username</label>
+
+                                          <input autocomplete="username" class="input" id="accountUsername"
+                                                maxlength="50" minlength="3" placeholder="Choose a username"
+                                                type="text" />
+
+                                          <span class="field-help">Use between 3 and 50 characters.</span>
+                                    </div>
+
+                                    <div class="grid-2">
+                                          <div class="field">
+                                                <label for="accountPassword">Password</label>
+
+                                                <input autocomplete="new-password" class="input" id="accountPassword"
+                                                      maxlength="50" minlength="8" placeholder="Create a password"
+                                                      type="password" />
+
+                                                <span class="field-help">At least 8 characters with one letter and one number.</span>
+                                          </div>
+
+                                          <div class="field">
+                                                <label for="confirmAccountPassword">Confirm Password</label>
+
+                                                <input autocomplete="new-password" class="input"
+                                                      id="confirmAccountPassword" maxlength="50" minlength="8"
+                                                      placeholder="Enter the password again" type="password" />
+                                          </div>
+                                    </div>
+                                    <p class="guest-registration-notice">
+                                          Your account will use the name and email address
+                                          entered above. Your completed order will be linked
+                                          to the new customer account.
+                                    </p>
                               </div>
                         </div>
                         <div class="field">
@@ -115,7 +165,7 @@
                                     placeholder="PAYNOW-DEMO-001" />
                         </div>
                         <div class="form-message" id="checkoutMessage"></div>
-                        <button class="button primary" id="submitButton">Place order and pay</button>
+                        <button class="button primary" id="submitButton" type="submit">Place order and pay</button>
                   </form>
                   <aside class="card card-pad" id="checkoutCart"></aside>
             </div>

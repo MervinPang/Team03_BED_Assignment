@@ -2,6 +2,25 @@ const Joi = require("joi"); // Import Joi for validation
 
 // Payment Validation - Validates Checkout and Payment requests
 
+// Validation schema for optional guest account registration
+const accountRegistrationSchema = Joi.object({
+    Username: Joi.string().trim().min(3).max(50).required().messages({
+        "string.base": "Username must be a string",
+        "string.empty": "Username is required",
+        "string.min": "Username must be at least 3 characters",
+        "string.max": "Username cannot exceed 50 characters",
+        "any.required": "Username is required",
+    }),
+
+    Password: Joi.string().min(8).max(100).required().messages({
+        "string.base": "Password must be a string",
+        "string.empty": "Password is required",
+        "string.min": "Password must be at least 8 characters",
+        "string.max": "Password cannot exceed 100 characters",
+        "any.required": "Password is required",
+    }),
+}).unknown(false);
+
 // Validates payment requests before business logic executes
 // Validation protects the application from malformed, incomplete and unexpected client input while ensuring
 // required payment information is supplied
@@ -44,6 +63,8 @@ const paymentSchema = Joi.object({
             "any.required": "Transaction reference is required for Card and PayNow payments",
         }),
     }),
+
+    AccountRegistration: accountRegistrationSchema.allow(null).optional(),
 
     // Keep your TransactionReference validation
 }).unknown(false);

@@ -1,4 +1,6 @@
 const paymentModel = require("../models/paymentModel");
+const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
 
 // Payment Controller - Handles HTTP requests for Checkout and Payment
 
@@ -16,6 +18,8 @@ async function getAllPayments(req, res) {
 // Retrieve payment by Payment ID
 async function getPaymentById(req, res) {
     try {
+        const paymentId = Number(req.params.id);
+
         if (!Number.isInteger(paymentId) || paymentId <= 0) {
             return res.status(400).json({ error: "Payment ID must be a positive integer", });
         }
@@ -41,8 +45,10 @@ async function getPaymentById(req, res) {
 // Retrieve payment by Order ID
 async function getPaymentByOrderId(req, res) {
     try {
+        const orderId = Number(req.params.orderId);
+
         if (!Number.isInteger(orderId) || orderId <= 0) {
-            return res.status(400).json({error: "Order ID must be a positive integer",});
+            return res.status(400).json({ error: "Order ID must be a positive integer", });
         }
 
         const payment = await paymentModel.getPaymentByOrderId(orderId, req.user);
@@ -67,13 +73,48 @@ async function getPaymentByOrderId(req, res) {
 // The controller is responsible for translating business exceptions into appropriate HTTP responses
 async function createPayment(req, res) {
     try {
-        const newPayment = await paymentModel.createPayment(req.body, req.user);
+        const paymentData = { ...req.body };
+
+        if (paymentData.AccountRegistration) {
+            const salt = await bcrypt.genSalt(10);
+            const passwordHash = await bcrypt.hash(paymentData.AccountRegistration.Password, salt);
+
+            paymentData.AccountRegistration.PasswordHash = passwordHash;
+            delete paymentData.AccountRegistration.Password;
+        }
+
+        const newPayment = await paymentModel.createPayment(paymentData, req.user);
+
+        if (
+            newPayment.AccountCreated && newPayment.Account
+        ) {
+            const payload = {
+                id: newPayment.Account.UserID,
+                username: newPayment.Account.Username,
+                email: newPayment.Account.Email,
+                role: newPayment.Account.Role,
+            };
+
+            const token = jwt.sign(payload, process.env.JWT_SECRET, {
+                expiresIn: "3600s",
+            }
+            );
+
+            return res.status(201).json({
+                message: "Payment created and account registered successfully",
+                ...newPayment,
+                token,
+            });
+        }
+
         return res.status(201).json(newPayment);
     } catch (error) {
         console.error("Controller error (createPayment):", error);
 
         if (
-            error.message === "Guest order reference is required for guest checkout"
+            error.message === "Guest order reference is required for guest checkout" ||
+            error.message === "Account registration is only available for guest checkout" ||
+            error.message === "Guest email is required to create an account"
         ) {
             return res.status(400).json({
                 error: error.message,
@@ -99,7 +140,11 @@ async function createPayment(req, res) {
         if (
             error.message === "Payment can only be made for a pending order" ||
             error.message === "Payment has already been made for this order" ||
-            error.message === "Transaction reference has already been used"
+            error.message === "Transaction reference has already been used" ||
+            error.message === "Username is already registered" ||
+            error.message === "Email is already registered" ||
+            error.message === "Only guest orders can be linked to a new account" ||
+            error.message === "Guest order could not be linked to the new account"
         ) {
             return res.status(409).json({
                 error: error.message,
