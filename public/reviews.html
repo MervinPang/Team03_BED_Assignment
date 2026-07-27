@@ -52,6 +52,9 @@
                         <a class="nav-link" href="/reviews.html">
                               Reviews
                         </a>
+                        <a class="nav-link" data-auth-only="" href="/complaints.html">
+                              Complaints
+                        </a>
                         <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
                               Vendor Dashboard
                         </a>
@@ -82,20 +85,20 @@
             <section class="shell">
                   <div class="page-head">
                         <div>
-                              <span class="eyebrow">
+                              <span class="eyebrow" id="reviewsEyebrow">
                                     Community feedback
                               </span>
-                              <h1>
+                              <h1 id="reviewsTitle">
                                     Stall reviews
                               </h1>
-                              <p class="lead">
+                              <p class="lead" id="reviewsLead">
                                     Read and manage feedback through the RESTful Review API.
                               </p>
                         </div>
                   </div>
                   <div class="review-toolbar">
                         <div class="field">
-                              <label for="reviewStallId">
+                              <label for="reviewStallId" id="reviewStallLabel">
                                     Food stall
                               </label>
                               <select class="select" id="reviewStallId">
@@ -244,6 +247,9 @@
                               </a>
                               <a href="/reviews.html">
                                     Stall Reviews
+                              </a>
+                              <a data-auth-only="" href="/complaints.html">
+                                    Complaints
                               </a>
                         </section>
                         <section class="footer-column">

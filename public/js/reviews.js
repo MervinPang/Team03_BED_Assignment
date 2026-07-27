@@ -30,6 +30,28 @@ document.addEventListener("DOMContentLoaded", async () => {
     let selectedRating = 0;
     let stalls = [];
 
+    /* Vendors only manage the stalls assigned to their own account,
+     so the page shows their own stalls instead of every stall on the platform.*/
+    const isVendor = role(getCurrentUser()?.role) === "vendor";
+
+    function applyVendorCopy() {
+        if (!isVendor) {
+            return;
+        }
+
+        document.getElementById("reviewsEyebrow").textContent =
+            "Your customer feedback";
+
+        document.getElementById("reviewsTitle").textContent =
+            "My stall reviews";
+
+        document.getElementById("reviewsLead").textContent =
+            "Read the reviews customers have left for the food stalls assigned to your vendor account.";
+
+        document.getElementById("reviewStallLabel").textContent =
+            "Your stall";
+    }
+
     async function loadStalls() {
         stallIdInput.disabled = true;
         loadButton.disabled = true;
@@ -42,7 +64,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         `;
 
         try {
-            const response = await apiRequest("/stalls");
+            const response = await apiRequest(
+                isVendor ? "/vendors/me/stalls" : "/stalls"
+            );
 
             if (!Array.isArray(response)) {
                 throw new Error(
@@ -55,20 +79,35 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (!stalls.length) {
                 stallIdInput.innerHTML = `
                     <option value="">
-                        No stalls available
+                        ${isVendor
+                        ? "No stall assigned"
+                        : "No stalls available"
+                    }
                     </option>
                 `;
 
-                list.innerHTML = `
-                    <div class="card empty">
-                        <h3>No Stalls Available</h3>
+                list.innerHTML = isVendor
+                    ? `
+                        <div class="card empty">
+                            <h3>No Stall Assigned</h3>
 
-                        <p class="muted">
-                            Reviews cannot be loaded because there
-                            are currently no available stalls.
-                        </p>
-                    </div>
-                `;
+                            <p class="muted">
+                                No food stall is assigned to your
+                                vendor account, so there are no
+                                reviews to display.
+                            </p>
+                        </div>
+                    `
+                    : `
+                        <div class="card empty">
+                            <h3>No Stalls Available</h3>
+
+                            <p class="muted">
+                                Reviews cannot be loaded because there
+                                are currently no available stalls.
+                            </p>
+                        </div>
+                    `;
 
                 return false;
             }
@@ -260,8 +299,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                         <h3>No Reviews Yet</h3>
 
                         <p class="muted">
-                            Be the first customer to leave
-                            feedback.
+                            ${isVendor
+                        ? "No customer has reviewed this stall yet."
+                        : "Be the first customer to leave feedback."
+                    }
                         </p>
                     </div>
                 `;
@@ -534,6 +575,8 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
         }
     });
+
+    applyVendorCopy();
 
     const stallsLoaded = await loadStalls();
 
