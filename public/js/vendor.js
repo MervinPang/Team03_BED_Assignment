@@ -17,6 +17,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("vendorOrdersList");
 
   let currentStallId = null;
+  let analyticsLoaded = false;
+
   const stallSelect =
     document.getElementById("stallId");
 
@@ -229,7 +231,31 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      ordersList.innerHTML = orders.map(order => {
+      /*
+       GET /orders returns order headers only, so each order is read through
+       GET /orders/:id to obtain the items the vendor has to prepare. A failed
+       detail request never removes the order from the list.
+       */
+      const detailedOrders = await Promise.all(
+        orders.map(async order => {
+          try {
+            const detail = await apiRequest(
+              `/orders/${order.OrderID}`
+            );
+
+            return { ...order, ...unwrap(detail) };
+          } catch (error) {
+            console.error(
+              `Unable to load items for order ${order.OrderID}:`,
+              error
+            );
+
+            return order;
+          }
+        })
+      );
+
+      ordersList.innerHTML = detailedOrders.map(order => {
         const payment =
           paymentByOrder.get(Number(order.OrderID));
 
@@ -259,6 +285,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         const canComplete =
           order.OrderStatus === "Ready";
 
+        const items = normaliseArray(order.items);
+
+        const itemCount = items.reduce(
+          (total, item) =>
+            total + Number(item.Quantity || 0),
+          0
+        );
+
         return `
           <article class="card vendor-order-card">
             <div class="row-between wrap">
@@ -287,6 +321,54 @@ document.addEventListener("DOMContentLoaded", async () => {
                 ${esc(paymentLabel(paymentStatus))}
               </span>
             </div>
+
+            <div class="vendor-order-items">
+              <div class="row-between">
+                <span class="small muted">
+                  Items to prepare
+                </span>
+                <span class="small muted">
+                  ${itemCount}
+                  ${itemCount === 1 ? "item" : "items"}
+                </span>
+              </div>
+
+              ${items.length
+            ? items.map(item => `
+                      <div class="vendor-order-item">
+                        <span class="vendor-order-qty">
+                          ${Number(item.Quantity || 0)}×
+                        </span>
+                        <span class="vendor-order-item-name">
+                          ${esc(item.ItemName || "Menu item")}
+                        </span>
+                        <span class="vendor-order-item-price">
+                          ${money(item.Subtotal)}
+                        </span>
+                      </div>
+                    `).join("")
+            : `
+                    <p class="small muted">
+                      No item details were returned for this order.
+                    </p>
+                  `
+          }
+
+              <div class="row-between vendor-order-total">
+                <strong>Order total</strong>
+                <strong>${money(order.TotalAmount)}</strong>
+              </div>
+            </div>
+
+            ${order.SpecialInstructions
+            ? `
+                  <div class="vendor-order-note">
+                    <strong>Special instructions</strong>
+                    <p>${esc(order.SpecialInstructions)}</p>
+                  </div>
+                `
+            : ""
+          }
 
             ${cashAwaitingPayment
             ? `
@@ -399,6 +481,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
               showToast("Cash payment confirmed.");
               await loadOrders();
+              await refreshAnalytics();
             } catch (error) {
               showToast(error.message, "error");
               button.disabled = false;
@@ -439,6 +522,12 @@ document.addEventListener("DOMContentLoaded", async () => {
               );
 
               await loadOrders();
+
+              /*
+               A completed order adds its items to the top-selling
+               totals, so the analytics panel is re-read here.
+               */
+              await refreshAnalytics();
             } catch (error) {
               showToast(error.message, "error");
               button.disabled = false;
@@ -454,40 +543,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  form.addEventListener("submit", async event => {
-    event.preventDefault();
-    setMessage(message);
-
-    currentStallId = Number(
-      document.getElementById("stallId").value
-    );
-
+  /*
+   Analytics counts only change when an order reaches a new status. So the
+   panel is reading again from the API instead of being rendered once and left
+   behind. The announce is used for the explicit load analytics. the
+   silent form is used when refreshing after an order status change.
+   */
+  async function loadAnalytics({ announce = false } = {}) {
     if (
       !Number.isInteger(currentStallId) ||
       currentStallId <= 0
     ) {
-      setMessage(
-        message,
-        "Please select a valid assigned stall.",
-        "error"
-      );
-
-      return;
-    }
-
-    const ownsSelectedStall = vendorStalls.some(
-      stall =>
-        Number(stall.StallID) === currentStallId
-    );
-
-    if (!ownsSelectedStall) {
-      setMessage(
-        message,
-        "You are not authorised to view analytics for this stall.",
-        "error"
-      );
-
-      return;
+      return false;
     }
 
     try {
@@ -573,6 +640,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             const quantity = firstNumber(
               item,
               [
+                // Name returned by GET /analytics/top-items/:stallId
+                "TotalQuantitySold",
+                "totalQuantitySold",
                 "TotalQuantity",
                 "totalQuantity",
                 "QuantitySold",
@@ -622,23 +692,37 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
           `;
 
-      if (totalRevenue === 0 && totalOrders > 0) {
-        setMessage(
-          message,
-          "Orders were found, but the revenue endpoint returned $0.00. Check whether your analytics SQL counts only Successful payments or Completed orders.",
-          "warning"
-        );
-      } else {
-        setMessage(
-          message,
-          "Analytics loaded successfully.",
-          "success"
-        );
+      analyticsLoaded = true;
+
+      if (announce) {
+        if (totalRevenue === 0 && totalOrders > 0) {
+          setMessage(
+            message,
+            "Orders were found, but the revenue endpoint returned $0.00. Check whether your analytics SQL counts only Successful payments or Completed orders.",
+            "warning"
+          );
+        } else {
+          setMessage(
+            message,
+            "Analytics loaded successfully.",
+            "success"
+          );
+        }
+
+        metrics.hidden = false;
       }
 
-      metrics.hidden = false;
-      await loadOrders();
+      return true;
     } catch (error) {
+      if (!announce) {
+        console.error(
+          "Unable to refresh analytics:",
+          error
+        );
+
+        return false;
+      }
+
       setMessage(
         message,
         error.status === 403
@@ -646,6 +730,62 @@ document.addEventListener("DOMContentLoaded", async () => {
           : error.message,
         "error"
       );
+
+      return false;
+    }
+  }
+
+  /*Called after an order status change so the metrics and
+   top-selling item reflect the order that was just completed 
+   or cancelled*/
+  async function refreshAnalytics() {
+    if (!analyticsLoaded) {
+      return;
+    }
+
+    await loadAnalytics();
+  }
+
+  form.addEventListener("submit", async event => {
+    event.preventDefault();
+    setMessage(message);
+
+    currentStallId = Number(stallSelect.value);
+
+    if (
+      !Number.isInteger(currentStallId) ||
+      currentStallId <= 0
+    ) {
+      setMessage(
+        message,
+        "Please select a valid assigned stall.",
+        "error"
+      );
+
+      return;
+    }
+
+    const ownsSelectedStall = vendorStalls.some(
+      stall =>
+        Number(stall.StallID) === currentStallId
+    );
+
+    if (!ownsSelectedStall) {
+      setMessage(
+        message,
+        "You are not authorised to view analytics for this stall.",
+        "error"
+      );
+
+      return;
+    }
+
+    const loaded = await loadAnalytics({
+      announce: true
+    });
+
+    if (loaded) {
+      await loadOrders();
     }
   });
 
@@ -681,6 +821,11 @@ document.addEventListener("DOMContentLoaded", async () => {
           !showAnalytics;
 
         ordersPanel.hidden = showAnalytics;
+
+        // Returning to the analytics tab always shows current figures.
+        if (showAnalytics) {
+          refreshAnalytics();
+        }
       });
     });
 });
