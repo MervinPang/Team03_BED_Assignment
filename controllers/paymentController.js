@@ -102,7 +102,7 @@ async function createPayment(req, res) {
 
             return res.status(201).json({
                 message: "Payment created and account registered successfully",
-                payment: newPayment,
+                ...newPayment,
                 token,
             });
         }

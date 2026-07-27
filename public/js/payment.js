@@ -811,21 +811,29 @@ document.addEventListener("DOMContentLoaded", async () => {
         guestReference;
     }
 
+    if (!draft.isMember && draft.accountRegistration) {
+      paymentPayload.AccountRegistration = draft.accountRegistration;
+    }
+
     const payment = await apiRequest(
       "/payments",
       {
         method: "POST",
-        body: JSON.stringify(
-          paymentPayload
-        )
+        body: JSON.stringify(paymentPayload),
       }
     );
 
-    if (!draft.isMember) {
+    if (payment?.token) {
+      localStorage.setItem(
+        TOKEN_KEY,
+        payment.token
+      );
+    }
+
+    if (!draft.isMember && payment?.AccountCreated !== true) {
       saveGuestOrder({
         OrderID: orderId,
-        GuestOrderReference:
-          guestReference
+        GuestOrderReference: guestReference
       });
     }
 
@@ -885,7 +893,8 @@ document.addEventListener("DOMContentLoaded", async () => {
           backendTransactionReference,
 
         isMember:
-          draft.isMember,
+          draft.isMember ||
+            payment?.AccountCreated === true,
 
         stallName:
           draft.stallName,
