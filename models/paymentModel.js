@@ -212,6 +212,7 @@ async function createPayment(paymentData, user) {
     let connection;
     let transaction;
     let transactionStarted = false;
+    let createdAccount = null;
 
     try {
         // Open the database connection
@@ -236,6 +237,13 @@ async function createPayment(paymentData, user) {
         if (user && user.role !== "customer") {
             throw new Error(
                 "Only customers can create payments"
+            );
+        }
+
+        // Account registration during checkout is only available for guest orders
+        if (user && paymentData.AccountRegistration) {
+            throw new Error(
+                "Account registration is only available for guest checkout"
             );
         }
 
@@ -301,6 +309,112 @@ async function createPayment(paymentData, user) {
             throw new Error("Payment has already been made for this order");
         }
 
+        // Optionally create a customer account using the information
+        // already provided during guest checkout
+        if (paymentData.AccountRegistration) {
+            if (order.OrderType !== "Guest" || order.UserID !== null) {
+                throw new Error(
+                    "Only guest orders can be linked to a new account"
+                );
+            }
+
+            if (!order.GuestEmail) {
+                throw new Error(
+                    "Guest email is required to create an account"
+                );
+            }
+
+            const accountRegistration =
+                paymentData.AccountRegistration;
+
+            // Check whether the username or guest email is already registered
+            const existingAccountRequest = new sql.Request(transaction);
+
+            existingAccountRequest.input("Username", sql.VarChar(50), accountRegistration.Username);
+            existingAccountRequest.input("Email", sql.VarChar(100), order.GuestEmail);
+
+            const existingAccountResult =
+                await existingAccountRequest.query(`
+            SELECT UserID, Username, Email
+            FROM UserAccount
+            WHERE
+                Username = @Username
+                OR Email = @Email;
+        `);
+
+            if (existingAccountResult.recordset.length > 0) {
+                const existingAccount = existingAccountResult.recordset[0];
+
+                if (
+                    existingAccount.Username.toLowerCase() === accountRegistration.Username.toLowerCase()
+                ) {
+                    throw new Error(
+                        "Username is already registered"
+                    );
+                }
+
+                throw new Error(
+                    "Email is already registered"
+                );
+            }
+
+            // PasswordHash was created securely in paymentController
+            const createAccountRequest = new sql.Request(transaction);
+
+            createAccountRequest.input("Username", sql.VarChar(50), accountRegistration.Username);
+            createAccountRequest.input("Email", sql.VarChar(100), order.GuestEmail);
+            createAccountRequest.input("PasswordHash", sql.VarChar(255), accountRegistration.PasswordHash);
+            createAccountRequest.input("Role", sql.VarChar(20), "customer");
+
+            const createAccountResult =
+                await createAccountRequest.query(`
+            INSERT INTO UserAccount
+                (Username, Email, PasswordHash, Role)
+            VALUES
+                (@Username, @Email, @PasswordHash, @Role);
+
+            SELECT SCOPE_IDENTITY() AS UserID;
+        `);
+
+            const newUserId = Number(createAccountResult.recordset[0].UserID);
+
+            createdAccount = {
+                UserID: newUserId,
+                Username: accountRegistration.Username,
+                Email: order.GuestEmail,
+                Role: "customer",
+            };
+
+            // Convert the guest order into a member order so it
+            // appears in the newly created customer's order history
+            const linkOrderRequest = new sql.Request(transaction);
+
+            linkOrderRequest.input("OrderID", sql.Int, paymentData.OrderID);
+            linkOrderRequest.input("UserID", sql.Int, newUserId);
+
+            const linkOrderResult =
+                await linkOrderRequest.query(`
+            UPDATE CustomerOrder
+            SET
+                UserID = @UserID,
+                OrderType = 'Member',
+                GuestName = NULL,
+                GuestEmail = NULL,
+                GuestOrderReference = NULL,
+                UpdatedAt = GETDATE()
+            WHERE
+                OrderID = @OrderID
+                AND OrderType = 'Guest'
+                AND UserID IS NULL;
+        `);
+
+            if (linkOrderResult.rowsAffected[0] === 0) {
+                throw new Error(
+                    "Guest order could not be linked to the new account"
+                );
+            }
+        }
+
         // The server determines the initial payment status
         // Cash payments remain pending until confirmed,
         // while simulated electronic payments are marked successful immediately
@@ -338,7 +452,12 @@ async function createPayment(paymentData, user) {
         transactionStarted = false;
 
         // Retrieve the created payment for both member and guest checkout
-        return await getCreatedPaymentById(newPaymentId);
+        const createdPayment = await getCreatedPaymentById(newPaymentId);
+
+        createdPayment.AccountCreated = createdAccount !== null;
+        createdPayment.Account = createdAccount;
+
+        return createdPayment;
     } catch (error) {
         // Roll back the entire transaction whenever an error occurs to maintain database consistency
         if (transaction && transactionStarted) {
