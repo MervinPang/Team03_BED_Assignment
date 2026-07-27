@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+      <meta charset="utf-8" />
+      <meta content="width=device-width,initial-scale=1" name="viewport" />
+      <title>Complaints | Singapore Hawker Centre Management System</title>
+      <link href="/css/complaints.css" rel="stylesheet" />
+      <link href="css/global.css" rel="stylesheet" />
+      <link href="css/navigation-footer.css" rel="stylesheet" />
+</head>
+
+<body>
+      <header class="site-header">
+            <div class="shell nav nav-premium">
+                  <a aria-label="HawkerHub home" class="brand brand-premium" href="/index.html">
+                        <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                        <span class="brand-copy">
+                              <strong>
+                                    HawkerHubSG
+                              </strong>
+                              <small>
+                                    Discover | Order | Collect
+                              </small>
+                        </span>
+                  </a>
+                  <button aria-expanded="false" aria-label="Open navigation" class="mobile-toggle" data-mobile-toggle=""
+                        type="button">
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                  </button>
+                  <nav aria-label="Main navigation" class="nav-links">
+                        <a class="nav-link" href="/index.html">
+                              Home
+                        </a>
+                        <a class="nav-link" href="/stalls.html">
+                              Place Order
+                        </a>
+                        <a class="nav-link" data-customer-only="" href="/order-history.html">
+                              Your Orders
+                        </a>
+                        <a class="nav-link" data-auth-only="" href="/profile.html">
+                              Profile
+                        </a>
+                        <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">
+                              Track Order
+                        </a>
+                        <a class="nav-link" href="/reviews.html">
+                              Reviews
+                        </a>
+                        <a class="nav-link" data-auth-only="" href="/complaints.html">
+                              Complaints
+                        </a>
+                        <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
+                              Vendor dashboard
+                        </a>
+                        <a class="nav-link" data-nea-only="" href="/inspection-reports.html">
+                              Inspections
+                        </a>
+                  </nav>
+                  <div class="nav-actions">
+                        <a aria-label="View cart" class="cart-pill cart-pill-premium" href="/checkout.html">
+                              <img alt="" class="nav-icon" src="/images/takeaway-black.svg" />
+                              <span>
+                                    Cart
+                              </span>
+                              <strong data-cart-count="">
+                                    0
+                              </strong>
+                        </a>
+                        <a class="button secondary nav-sign-in" data-guest-only="" href="/login.html">
+                              Sign In
+                        </a>
+                        <button class="button primary nav-logout" data-auth-only="" data-logout="" type="button">
+                              Log Out
+                        </button>
+                  </div>
+            </div>
+      </header>
+      <main>
+            <section class="shell">
+                  <div class="page-head">
+                        <div>
+                              <span class="eyebrow">
+                                    Service quality
+                              </span>
+                              <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">
+                                    Complaint centre
+                              </h1>
+                              <p class="lead">
+                                    Raise an issue with a hawker stall and follow every case from submission through to
+                                    resolution.
+                              </p>
+                        </div>
+                  </div>
+                  <div class="complaint-dashboard" id="complaintDashboard">
+                        <section class="card complaint-form-card" data-customer-only="" id="complaintFormCard">
+                              <div class="complaint-card-heading">
+                                    <div class="complaint-icon">
+                                          !
+                                    </div>
+                                    <div>
+                                          <span class="small muted">
+                                                New complaint
+                                          </span>
+                                          <h2>
+                                                Report an issue
+                                          </h2>
+                                    </div>
+                              </div>
+                              <form class="stack" id="complaintForm">
+                                    <div class="field">
+                                          <label for="stallId">
+                                                Food stall
+                                          </label>
+                                          <select class="select" id="stallId" required="">
+                                          </select>
+                                    </div>
+                                    <div class="field">
+                                          <div class="row-between">
+                                                <label for="complaintTitle">
+                                                      Complaint title
+                                                </label>
+                                                <span class="small muted" id="titleCounter">
+                                                      0 / 100
+                                                </span>
+                                          </div>
+                                          <input class="input" id="complaintTitle" maxlength="100"
+                                                placeholder="Summarise the issue in a few words." required=""
+                                                type="text" />
+                                    </div>
+                                    <div class="field">
+                                          <div class="row-between">
+                                                <label for="complaintDesc">
+                                                      Description
+                                                </label>
+                                                <span class="small muted" id="descCounter">
+                                                      0 / 500
+                                                </span>
+                                          </div>
+                                          <textarea class="textarea" id="complaintDesc" maxlength="500"
+                                                placeholder="Describe what happened, when it happened and any order reference."
+                                                required=""></textarea>
+                                    </div>
+                                    <div aria-live="polite" class="form-message" id="complaintMessage">
+                                    </div>
+                                    <button class="button primary button-block" id="submitComplaintButton"
+                                          type="submit">
+                                          Submit complaint
+                                    </button>
+                              </form>
+                        </section>
+                        <aside class="complaint-side stack">
+                              <article class="card metric complaint-metric">
+                                    <span class="muted">
+                                          Open cases
+                                    </span>
+                                    <div class="metric-value" id="openCount">
+                                          —
+                                    </div>
+                                    <span class="small muted" id="openCountCaption">
+                                          Load a stall to see its open complaints.
+                                    </span>
+                              </article>
+                              <article class="card card-pad">
+                                    <span class="small muted">
+                                          How a case progresses
+                                    </span>
+                                    <ul class="status-legend">
+                                          <li>
+                                                <span class="badge complaint-status pending">
+                                                      Pending
+                                                </span>
+                                                Submitted and waiting to be picked up.
+                                          </li>
+                                          <li>
+                                                <span class="badge complaint-status review">
+                                                      In Review
+                                                </span>
+                                                The stall or an NEA officer is investigating.
+                                          </li>
+                                          <li>
+                                                <span class="badge complaint-status resolved">
+                                                      Resolved
+                                                </span>
+                                                Closed, with the resolution time recorded.
+                                          </li>
+                                    </ul>
+                              </article>
+                        </aside>
+                  </div>
+                  <section class="card history-panel">
+                        <div class="history-panel-head">
+                              <div>
+                                    <span class="small muted">
+                                          Complaint records
+                                    </span>
+                                    <h2>
+                                          Case tracker
+                                    </h2>
+                              </div>
+                              <form class="history-search" id="trackerForm">
+                                    <select class="select" id="trackerStallId" required="">
+                                    </select>
+                                    <select class="select" id="trackerStatus">
+                                          <option value="">
+                                                All statuses
+                                          </option>
+                                          <option value="Pending">
+                                                Pending
+                                          </option>
+                                          <option value="In Review">
+                                                In Review
+                                          </option>
+                                          <option value="Resolved">
+                                                Resolved
+                                          </option>
+                                    </select>
+                                    <button class="button secondary" type="submit">
+                                          Load complaints
+                                    </button>
+                              </form>
+                        </div>
+                        <label class="complaint-toggle" data-customer-only="" for="onlyMine">
+                              <input checked="" id="onlyMine" type="checkbox" />
+                              Show only my complaints
+                        </label>
+                        <div class="complaint-summary" hidden="" id="complaintSummary">
+                        </div>
+                        <div aria-live="polite" class="form-message" id="trackerMessage">
+                        </div>
+                        <div class="complaint-list" id="complaintList">
+                              <div class="empty">
+                                    <div class="empty-state-icon">
+                                          📮
+                                    </div>
+                                    <h3>
+                                          No stall selected
+                                    </h3>
+                                    <p class="muted">
+                                          Choose a food stall to review its complaint records.
+                                    </p>
+                              </div>
+                        </div>
+                  </section>
+            </section>
+      </main>
+      <footer class="site-footer">
+            <div class="footer-social-band">
+                  <div class="shell footer-social-row">
+                        <p>
+                              Stay connected with HawkerHubSG
+                        </p>
+                        <div aria-label="Social media links" class="social-links">
+                              <a aria-label="LinkedIn" href="#" title="LinkedIn">
+                                    <img alt="" src="/images/linkedin.svg" />
+                              </a>
+                              <a aria-label="Instagram" href="#" title="Instagram">
+                                    <img alt="" src="/images/instagram.svg" />
+                              </a>
+                              <a aria-label="X" href="#" title="X">
+                                    <img alt="" src="/images/twitter.svg" />
+                              </a>
+                        </div>
+                  </div>
+            </div>
+            <div class="footer-main">
+                  <div class="shell footer-grid">
+                        <section class="footer-brand-column">
+                              <a class="footer-logo" href="/index.html">
+                                    <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                                    <span>
+                                          <strong>
+                                                HawkerHubSG
+                                          </strong>
+                                          <small>
+                                                Singapore's Digital Hawker Ordering Platform
+                                          </small>
+                                    </span>
+                              </a>
+                              <p>
+                                    Providing a seamless digital ordering experience for customers, vendors, and NEA
+                                    officers across Singapore's hawker centres.
+                              </p>
+                              <span class="footer-team">
+                                    Developed by Team 03 | BED Assignment 2026
+                              </span>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Explore
+                              </h3>
+                              <a href="/index.html">
+                                    Home
+                              </a>
+                              <a href="/stalls.html">
+                                    Place Order
+                              </a>
+                              <a href="/reviews.html">
+                                    Stall Reviews
+                              </a>
+                              <a data-auth-only="" href="/complaints.html">
+                                    Complaints
+                              </a>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Account &amp; orders
+                              </h3>
+                              <a data-guest-only="" href="/login.html">
+                                    Sign In
+                              </a>
+                              <a data-guest-only="" href="/register.html">
+                                    Create Account
+                              </a>
+                              <a data-customer-only="" href="/order-history.html">
+                                    Your Orders
+                              </a>
+                              <a data-auth-only="" href="/profile.html">
+                                    Profile
+                              </a>
+                              <a data-guest-only="" href="/guest-order-tracking.html">
+                                    Track Guest Order
+                              </a>
+                              <a data-vendor-only="" href="/vendor-dashboard.html">
+                                    Vendor Dashboard
+                              </a>
+                              <a data-nea-only="" href="/inspection-reports.html">
+                                    Inspection Portal
+                              </a>
+                        </section>
+                        <section class="footer-column footer-contact">
+                              <h3>
+                                    Contact
+                              </h3>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/location.svg" />
+                                    Singapore
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/mail.svg" />
+                                    HawkerHubSG@gmail.com
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/phone.svg" />
+                                    +65 9120 0844
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon footer-clock-icon" src="/images/clock.svg" />
+                                    Daily, 8:00 AM - 10:00 PM
+                              </p>
+                        </section>
+                  </div>
+            </div>
+            <div class="footer-bottom">
+                  <div class="shell footer-bottom-row">
+                        <span>
+                              &copy; 2026 HawkerHubSG | Team 03 BED Assignment
+                        </span>
+                  </div>
+            </div>
+      </footer>
+      <div aria-live="polite" class="toast-region">
+      </div>
+      <script src="/js/common.js">
+      </script>
+      <script src="/js/complaints.js">
+      </script>
+</body>
+
+</html>
