@@ -8,10 +8,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const isPaymentChange =
     query.get("changePayment") === "true";
 
-  document.body.classList.toggle(
-    "payment-change-mode",
-    isPaymentChange
-  );
+  document.body.classList.toggle("payment-change-mode", isPaymentChange);
 
   const paymentChangeOrderId = Number(
     query.get("orderId")
@@ -37,23 +34,35 @@ document.addEventListener("DOMContentLoaded", async () => {
   const guestEmailInput =
     document.getElementById("guestEmail");
 
+  const guestRegistrationSection =
+    document.getElementById("guestRegistrationSection");
+
+  const createAccountInput =
+    document.getElementById("createAccount");
+
+  const guestRegistrationFields =
+    document.getElementById("guestRegistrationFields");
+
+  const accountUsernameInput =
+    document.getElementById("accountUsername");
+
+  const accountPasswordInput =
+    document.getElementById("accountPassword");
+
+  const confirmAccountPasswordInput =
+    document.getElementById("confirmAccountPassword");
+
   const referenceField =
     document.getElementById("referenceField");
 
   const transactionReference =
-    document.getElementById(
-      "transactionReference"
-    );
+    document.getElementById("transactionReference");
 
   const instructions =
-    document.getElementById(
-      "specialInstructions"
-    );
+    document.getElementById("specialInstructions");
 
   const counter =
-    document.getElementById(
-      "instructionLimit"
-    );
+    document.getElementById("instructionLimit");
 
   const submitButton =
     document.getElementById("submitButton");
@@ -82,6 +91,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   if (isPaymentChange) {
     guestFields.hidden = true;
+    guestRegistrationSection.hidden = true;
 
     guestNameInput.disabled = true;
     guestEmailInput.disabled = true;
@@ -111,6 +121,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadGuestOrderForPaymentChange();
   } else {
     guestFields.hidden = isMember;
+    guestRegistrationSection.hidden = isMember;
 
     guestNameInput.disabled = isMember;
     guestEmailInput.disabled = isMember;
@@ -118,6 +129,50 @@ document.addEventListener("DOMContentLoaded", async () => {
     guestNameInput.required = !isMember;
     guestEmailInput.required = !isMember;
   }
+
+  function updateGuestRegistrationFields() {
+    const shouldCreateAccount =
+      Boolean(createAccountInput?.checked) &&
+      !isMember &&
+      !isPaymentChange;
+
+    if (guestRegistrationFields) {
+      guestRegistrationFields.hidden = !shouldCreateAccount;
+    }
+
+    if (accountUsernameInput) {
+      accountUsernameInput.disabled = !shouldCreateAccount;
+
+      accountUsernameInput.required = shouldCreateAccount;
+    }
+
+    if (accountPasswordInput) {
+      accountPasswordInput.disabled = !shouldCreateAccount;
+
+      accountPasswordInput.required = shouldCreateAccount;
+    }
+
+    if (confirmAccountPasswordInput) {
+      confirmAccountPasswordInput.disabled = !shouldCreateAccount;
+
+      confirmAccountPasswordInput.required = shouldCreateAccount;
+    }
+
+    if (!shouldCreateAccount) {
+      if (accountUsernameInput) { accountUsernameInput.value = ""; }
+
+      if (accountPasswordInput) { accountPasswordInput.value = ""; }
+
+      if (confirmAccountPasswordInput) { confirmAccountPasswordInput.value = ""; }
+    }
+  }
+
+  createAccountInput?.addEventListener(
+    "change",
+    updateGuestRegistrationFields
+  );
+
+  updateGuestRegistrationFields();
 
   async function loadGuestOrderForPaymentChange() {
     if (
@@ -151,28 +206,19 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       );
 
-      paymentChangeOrder =
-        data.order || data;
+      paymentChangeOrder = data.order || data;
 
-      paymentChangeItems =
-        Array.isArray(data.items)
-          ? data.items
-          : [];
+      paymentChangeItems = Array.isArray(data.items) ? data.items : [];
 
-      instructions.value =
-        paymentChangeOrder.SpecialInstructions || "";
+      instructions.value = paymentChangeOrder.SpecialInstructions || "";
 
       instructions.readOnly = true;
 
       updateCounter();
 
-      const paymentStatus =
-        paymentChangeOrder.PaymentStatus ||
-        "Not recorded";
+      const paymentStatus = paymentChangeOrder.PaymentStatus || "Not recorded";
 
-      const paymentId = Number(
-        paymentChangeOrder.PaymentID
-      );
+      const paymentId = Number(paymentChangeOrder.PaymentID);
 
       if (
         paymentChangeOrder.OrderStatus !==
@@ -650,6 +696,71 @@ document.addEventListener("DOMContentLoaded", async () => {
     );
   }
 
+  function validateGuestRegistration() {
+    if (
+      isMember ||
+      !createAccountInput?.checked
+    ) {
+      return null;
+    }
+
+    const username = accountUsernameInput?.value.trim() || "";
+
+    const password = accountPasswordInput?.value || "";
+
+    const confirmPassword = confirmAccountPasswordInput?.value || "";
+
+    if (username.length < 3) {
+      accountUsernameInput?.focus();
+
+      return (
+        "Username must be at least " + "3 characters long."
+      );
+    }
+
+    if (username.length > 50) {
+      accountUsernameInput?.focus();
+
+      return (
+        "Username cannot exceed " + "50 characters."
+      );
+    }
+
+    if (password.length < 8) {
+      accountPasswordInput?.focus();
+
+      return (
+        "Password must be at least " + "8 characters long."
+      );
+    }
+
+    if (password.length > 50) {
+      accountPasswordInput?.focus();
+
+      return (
+        "Password cannot exceed " + "50 characters."
+      );
+    }
+
+    if (
+      !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)
+    ) {
+      accountPasswordInput?.focus();
+
+      return (
+        "Password must contain at least " + "one letter and one number."
+      );
+    }
+
+    if (password !== confirmPassword) {
+      confirmAccountPasswordInput?.focus();
+
+      return "Passwords do not match.";
+    }
+
+    return null;
+  }
+
   function handleNormalCheckoutSubmission() {
     const cart = checkoutCart || getCart();
 
@@ -679,6 +790,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       return setMessage(
         messageContainer, "Please enter a valid email address.", "error");
+    }
+
+    const registrationError =
+      validateGuestRegistration();
+
+    if (registrationError) {
+      return setMessage(messageContainer, registrationError, "error");
     }
 
     const paymentMethod =
@@ -717,6 +835,18 @@ document.addEventListener("DOMContentLoaded", async () => {
         guestEmailInput.value.trim();
     }
 
+    let accountRegistration = null;
+
+    if (
+      !isMember &&
+      createAccountInput?.checked
+    ) {
+      accountRegistration = {
+        Username: accountUsernameInput.value.trim(),
+        Password: accountPasswordInput.value
+      };
+    }
+
     const checkoutId =
       crypto?.randomUUID
         ? crypto.randomUUID() : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
@@ -731,6 +861,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         checkoutId,
         orderPayload,
         paymentMethod,
+        accountRegistration,
         isMember,
         stallName: cart.StallName,
         cartItems: cart.items,
