@@ -60,6 +60,62 @@
             <div class="search-shell" style="margin-bottom:24px">
                   <input class="input" id="stallSearch" placeholder="Search by stall name or cuisine" />
             </div>
+            <section class="card card-pad stall-filters" id="stallFilters">
+                  <div class="stall-filter-row">
+                        <div class="field">
+                              <label for="filterArea">Area</label>
+                              <select class="select" id="filterArea">
+                                    <option value="">All areas</option>
+                              </select>
+                        </div>
+                        <div class="field">
+                              <label for="filterMinPrice">Price from</label>
+                              <input class="input" id="filterMinPrice" inputmode="decimal" min="0" placeholder="0.00"
+                                    step="any" type="number" />
+                        </div>
+                        <div class="field">
+                              <label for="filterMaxPrice">Price to</label>
+                              <input class="input" id="filterMaxPrice" inputmode="decimal" min="0" placeholder="Any"
+                                    step="any" type="number" />
+                        </div>
+                        <div class="field">
+                              <label for="filterSort">Sort by</label>
+                              <select class="select" id="filterSort">
+                                    <option value="name">Stall name</option>
+                                    <option value="price_asc">Average price: low to high</option>
+                                    <option value="price_desc">Average price: high to low</option>
+                                    <option value="grade">Hygiene grade</option>
+                              </select>
+                        </div>
+                  </div>
+                  <div class="stall-filter-row stall-filter-bottom">
+                        <fieldset class="grade-filter">
+                              <legend class="small muted">NEA hygiene grade</legend>
+                              <label class="grade-option">
+                                    <input data-grade="A" type="checkbox" />
+                                    <span>A</span>
+                              </label>
+                              <label class="grade-option">
+                                    <input data-grade="B" type="checkbox" />
+                                    <span>B</span>
+                              </label>
+                              <label class="grade-option">
+                                    <input data-grade="C" type="checkbox" />
+                                    <span>C</span>
+                              </label>
+                              <label class="grade-option">
+                                    <input data-grade="D" type="checkbox" />
+                                    <span>D</span>
+                              </label>
+                        </fieldset>
+                        <div class="stall-filter-actions">
+                              <span class="small muted" id="filterSummary"></span>
+                              <button class="button secondary" id="resetFilters" type="button">Reset filters</button>
+                        </div>
+                  </div>
+                  <div class="form-message" id="filterMessage"></div>
+            </section>
+            <section class="area-compare" hidden="" id="areaCompare"></section>
             <section class="grid grid-3" id="stallGrid">
             </section>
       </section>

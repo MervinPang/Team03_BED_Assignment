@@ -137,6 +137,9 @@
                               <button class="tab" data-vendor-tab="orders" type="button">
                                     Your Orders
                               </button>
+                              <button class="tab" data-vendor-tab="menu" type="button">
+                                    Menu &amp; Stall
+                              </button>
                         </div>
                         <div class="metrics">
                               <article class="card metric">
@@ -176,7 +179,154 @@
                         <div class="grid grid-2" id="vendorOrdersList">
                         </div>
                   </section>
+                  <section hidden="" id="vendorMenuPanel" style="margin-top:20px">
+                        <div class="card card-pad stack">
+                              <div class="row-between wrap">
+                                    <div>
+                                          <span class="small muted">
+                                                Menu management
+                                          </span>
+                                          <h3 id="menuStallName">
+                                                Your menu
+                                          </h3>
+                                    </div>
+                                    <button class="button primary" id="addMenuItemButton" type="button">
+                                          Add menu item
+                                    </button>
+                              </div>
+                              <div class="form-message" id="menuMessage">
+                              </div>
+                              <div class="stack" id="menuItemList">
+                              </div>
+                        </div>
+                        <div class="grid grid-2" style="margin-top:20px">
+                              <form class="card card-pad stack" id="stallSettingsForm">
+                                    <div>
+                                          <span class="small muted">
+                                                Stall settings
+                                          </span>
+                                          <h3>
+                                                Stall details
+                                          </h3>
+                                    </div>
+                                    <div class="field">
+                                          <label for="stallNameInput">
+                                                Stall name
+                                          </label>
+                                          <input class="input" id="stallNameInput" maxlength="80" required=""
+                                                type="text" />
+                                    </div>
+                                    <div class="field">
+                                          <label for="stallDescInput">
+                                                Description
+                                          </label>
+                                          <textarea class="textarea" id="stallDescInput" maxlength="300"></textarea>
+                                    </div>
+                                    <div class="field">
+                                          <label for="stallImageInput">
+                                                Banner image path
+                                          </label>
+                                          <input class="input" id="stallImageInput" maxlength="255" type="text" />
+                                    </div>
+                                    <label class="stall-toggle">
+                                          <input id="stallActiveInput" type="checkbox" />
+                                          <span>
+                                                Open to customers
+                                          </span>
+                                    </label>
+                                    <small class="muted">
+                                          Closing the stall hides it from customers without removing any data.
+                                    </small>
+                                    <div class="form-message" id="stallSettingsMessage">
+                                    </div>
+                                    <button class="button primary" type="submit">
+                                          Save stall details
+                                    </button>
+                              </form>
+                              <aside class="card card-pad stack">
+                                    <div>
+                                          <span class="small muted">
+                                                Tenancy
+                                          </span>
+                                          <h3>
+                                                Your rental agreement
+                                          </h3>
+                                    </div>
+                                    <div class="stack" id="vendorTenancy">
+                                    </div>
+                              </aside>
+                        </div>
+                  </section>
             </section>
+            <div class="modal-backdrop" hidden="" id="menuItemBackdrop">
+                  <form class="modal stack" id="menuItemForm">
+                        <header class="row-between">
+                              <div>
+                                    <span class="small muted">
+                                          Menu item
+                                    </span>
+                                    <h2 id="menuItemFormTitle">
+                                          Add menu item
+                                    </h2>
+                              </div>
+                              <button class="button ghost" id="closeMenuItemButton" type="button">
+                                    Close
+                              </button>
+                        </header>
+                        <input id="menuItemId" type="hidden" />
+                        <div class="field">
+                              <label for="menuItemName">
+                                    Item name
+                              </label>
+                              <input class="input" id="menuItemName" maxlength="100" required="" type="text" />
+                        </div>
+                        <div class="field">
+                              <label for="menuItemDesc">
+                                    Description
+                              </label>
+                              <textarea class="textarea" id="menuItemDesc" maxlength="300"></textarea>
+                        </div>
+                        <div class="grid grid-2">
+                              <div class="field">
+                                    <label for="menuItemPrice">
+                                          Price
+                                    </label>
+                                    <input class="input" id="menuItemPrice" min="0.01" required="" step="any"
+                                          type="number" />
+                              </div>
+                              <div class="field">
+                                    <label for="menuItemCategory">
+                                          Category
+                                    </label>
+                                    <input class="input" id="menuItemCategory" list="menuCategories" maxlength="40"
+                                          required="" type="text" />
+                                    <datalist id="menuCategories">
+                                          <option value="Main"></option>
+                                          <option value="Side"></option>
+                                          <option value="Drink"></option>
+                                          <option value="Dessert"></option>
+                                    </datalist>
+                              </div>
+                        </div>
+                        <div class="field">
+                              <label for="menuItemImage">
+                                    Image path
+                              </label>
+                              <input class="input" id="menuItemImage" maxlength="255" type="text" />
+                        </div>
+                        <label class="stall-toggle">
+                              <input id="menuItemAvailable" type="checkbox" />
+                              <span>
+                                    Available to order
+                              </span>
+                        </label>
+                        <div class="form-message" id="menuItemMessage">
+                        </div>
+                        <button class="button primary" type="submit">
+                              Save menu item
+                        </button>
+                  </form>
+            </div>
       </main>
       <footer class="site-footer">
             <div class="footer-social-band">

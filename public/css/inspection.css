@@ -347,3 +347,97 @@
 .payment-strip .badge {
   flex-shrink: 0;
 }
+
+/* --- Stall rental agreements --- */
+.rental-section {
+  margin-top: 34px;
+}
+
+.rental-section .page-head {
+  padding-top: 26px;
+}
+
+.rental-section h2 {
+  font: 800 clamp(1.9rem, 3.4vw, 2.6rem)/1.05 Manrope, sans-serif;
+  letter-spacing: -.04em;
+  margin: 8px 0 12px;
+}
+
+.rental-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.agreement-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.agreement-main {
+  display: grid;
+  gap: 4px;
+  min-width: 230px;
+  flex: 1;
+}
+
+.agreement-main p {
+  margin: 0;
+}
+
+.agreement-warning {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* --- Renewal dialog, matching the other dialogs on the site --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 14, 8, .62);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 104px 20px 20px;
+  backdrop-filter: blur(7px);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  position: relative;
+  z-index: 1001;
+  background: white;
+  border-radius: 25px;
+  padding: 26px;
+  width: min(540px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 35px 90px rgba(0, 0, 0, .25);
+  animation: modalIn .2s ease;
+}
+
+@media (max-width: 980px) {
+  .rental-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .modal-backdrop {
+    padding: 76px 8px 8px;
+  }
+}
