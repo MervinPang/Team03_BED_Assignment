@@ -44,6 +44,7 @@ CREATE TABLE HawkerCentre
     HawkerCentreID  INT IDENTITY(1,1)       NOT NULL,
     HCName          VARCHAR(80)             NOT NULL,
     HCAddress       VARCHAR(150)            NOT NULL,
+    Area            VARCHAR(50)             NULL,
     OperatorID      INT                     NOT NULL,
 
     CONSTRAINT      PK_HawkerCentre         PRIMARY KEY (HawkerCentreID),
@@ -343,16 +344,23 @@ VALUES
 ('Pang Food Operations', 'Adrian Chua', '81234567'),
 ('Singapore Hawker Group', 'Benjamin Koh', '82345678');
 
-INSERT INTO HawkerCentre (HCName, HCAddress, OperatorID)
+INSERT INTO HawkerCentre (HCName, HCAddress, Area, OperatorID)
 VALUES
-('Beauty World Food Centre', '144 Upper Bukit Timah Road, Singapore 588177', 1),
-('Maxwell Food Centre', '1 Kadayanallur Street, Singapore 069184', 2);
+('Beauty World Food Centre', '144 Upper Bukit Timah Road, Singapore 588177', 'Bukit Timah', 1),
+('Maxwell Food Centre', '1 Kadayanallur Street, Singapore 069184', 'Tanjong Pagar', 2),
+('Bedok Interchange Hawker Centre', '208B New Upper Changi Road, Singapore 462208', 'Bedok', 1),
+('Tampines Round Market & Food Centre', '137 Tampines Street 11, Singapore 521137', 'Tampines', 2);
 
+-- Stalls 4 to 7 have no vendor yet, so they are available for rental
 INSERT INTO FoodStall (VendorUserID, StallUnitNo, StallName, StallDesc, StallImage, IsActive, HawkerCentreID)
 VALUES
 (3, '#01-01', 'Ah Tan Chicken Rice', 'Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.', '/images/Stall 01 Banner.jpg', 1, 1),
 (3, '#01-02', 'Muthu Prata House', 'Discover freshly prepared prata served with flavourful curries and popular local favourites.', '/images/Stall 02 Banner.jpg', 1, 1),
-(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2);
+(3, '#02-01', 'Selera Nasi Lemak', 'Enjoy nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2),
+(NULL, '#01-05', 'Bedok Fishball Noodles', 'Handmade fishballs served with springy noodles and house-made chilli.', '/images/Stall 04 banner.jpg', 1, 3),
+(NULL, '#01-08', 'Changi Road Laksa', 'Rich coconut laksa gravy simmered daily with fresh cockles and prawns.', '/images/Stall 05 banner.jpg', 1, 3),
+(NULL, '#02-11', 'Tampines Carrot Cake', 'Black and white carrot cake fried to order over high heat.', '/images/Stall 06 banner.jpg', 1, 4),
+(NULL, '#02-14', 'Round Market Ban Mian', 'Hand-torn noodles in anchovy broth topped with a soft egg.', '/images/Stall 07 banner.jpg', 1, 4);
 
 INSERT INTO Cuisine (CuisineName, CuisineDesc)
 VALUES
@@ -369,7 +377,19 @@ VALUES
 (2, 'Plain Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
 (2, 'Egg Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
 (3, 'Nasi Lemak Chicken Wing', 'Fragrant coconut rice served with a crispy chicken wing, egg, peanuts, cucumber, and homemade sambal.', 4.80, 'Main Dish', '/images/Nasi Lemak.jpg', 1),
-(3, 'Iced Milo', 'A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1);
+(3, 'Iced Milo', 'A refreshing iced Milo made with rich chocolate malt for the perfect accompaniment to your meal.', 1.80, 'Drink', '/images/Iced Milo.jpg', 1),
+(4, 'Fishball Noodle Soup', 'Springy noodles in a clear pork and anchovy broth.', 4.00, 'Main Dish', '/images/fishball noodle soup.png', 1),
+(4, 'Dry Mee Pok', 'Tossed in vinegar, chilli and fried shallots.', 4.50, 'Main Dish', '/images/mee pok dry .png', 1),
+(4, 'Iced Barley', 'House-brewed barley served chilled.', 1.60, 'Drink', '/images/ice barely.png', 1),
+(5, 'Signature Laksa', 'Thick bee hoon in coconut laksa gravy.', 5.50, 'Main Dish', '/images/Signature laksa.png', 1),
+(5, 'Laksa with Extra Cockles', 'Signature laksa with a double portion of cockles.', 7.00, 'Main Dish', '/images/laksa (extra cockles).png', 1),
+(5, 'Sugar Cane Juice', 'Freshly pressed sugar cane.', 2.00, 'Drink', '/images/sugar cane juice.png', 1),
+(6, 'White Carrot Cake', 'Fried with egg and preserved radish.', 4.00, 'Main Dish', '/images/white carrot cake .png', 1),
+(6, 'Black Carrot Cake', 'Fried with sweet dark soy sauce.', 4.20, 'Main Dish', '/images/black carrot cake.png', 1),
+(6, 'Kopi O', 'Traditional black coffee.', 1.40, 'Drink', '/images/kopi o .png', 1),
+(7, 'Ban Mian with Egg', 'Hand-torn noodles in anchovy broth.', 5.00, 'Main Dish', '/images/Ban mian .png', 1),
+(7, 'Mee Hoon Kuey', 'Thin flat noodles with minced meat.', 5.20, 'Main Dish', '/images/mee hoon kueh.png', 1),
+(7, 'Homemade Soya Bean', 'Lightly sweetened soya bean milk.', 1.50, 'Drink', '/images/Soya bean .png', 1);
 
 INSERT INTO MenuItemCuisine (MenuItemID, CuisineID)
 VALUES
@@ -422,11 +442,15 @@ VALUES
 (2, 1, 'Long waiting time', 'The waiting time was longer than expected during lunch hour.', 'Pending'),
 (1, 2, 'Wrong order received', 'I ordered egg prata but received plain prata.', 'In Review');
 
+-- Round Market Ban Mian is left uninspected so an ungraded stall can be tested
 INSERT INTO Inspection (OfficerUserID, StallID, HygieneGrade, InspectionStatus)
 VALUES
 (4, 1, 'A', 'Submitted'),
 (4, 2, 'B', 'Follow-up Required'),
-(4, 3, 'A', 'Reviewed');
+(4, 3, 'A', 'Reviewed'),
+(4, 4, 'A', 'Submitted'),
+(4, 5, 'B', 'Submitted'),
+(4, 6, 'C', 'Submitted');
 
 INSERT INTO InspectionRemark (InspectionID, RemarkText)
 VALUES
@@ -454,6 +478,38 @@ SELECT * FROM Payment;
 SELECT * FROM Review;
 SELECT * FROM Complaint;
 SELECT * FROM Inspection;
+SELECT * FROM RentalAgreement;
+
+------------------------------------------------------------
+-- Stalls by Area Query
+------------------------------------------------------------
+SELECT hc.Area, hc.HCName, fs.StallName, fs.StallUnitNo,
+grade.HygieneGrade, AVG(mi.ItemPrice) AS AveragePrice
+FROM HawkerCentre hc
+JOIN FoodStall fs ON hc.HawkerCentreID = fs.HawkerCentreID
+LEFT JOIN MenuItem mi ON fs.StallID = mi.StallID AND mi.IsAvailable = 1
+OUTER APPLY (
+    SELECT TOP 1 i.HygieneGrade
+    FROM Inspection i
+    WHERE i.StallID = fs.StallID
+    ORDER BY i.InspectionDate DESC, i.InspectionID DESC
+) grade
+WHERE fs.IsActive = 1
+GROUP BY hc.Area, hc.HCName, fs.StallName, fs.StallUnitNo, grade.HygieneGrade
+ORDER BY hc.Area, fs.StallName;
+
+------------------------------------------------------------
+-- Stall Tenancy Query
+-- The vendor of a stall should match the vendor on its current agreement
+------------------------------------------------------------
+SELECT fs.StallID, fs.StallName,
+operator.Username AS OperatedBy, tenant.Username AS RentedBy, ra.EndDate
+FROM FoodStall fs
+LEFT JOIN UserAccount operator ON fs.VendorUserID = operator.UserID
+LEFT JOIN RentalAgreement ra ON fs.StallID = ra.StallID
+AND CAST(GETDATE() AS DATE) BETWEEN ra.StartDate AND ra.EndDate
+LEFT JOIN UserAccount tenant ON ra.VendorUserID = tenant.UserID
+ORDER BY fs.StallID;
 
 ------------------------------------------------------------
 -- Order Details Query

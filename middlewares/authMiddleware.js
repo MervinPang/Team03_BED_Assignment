@@ -63,7 +63,22 @@ function verifyJWT(req, res, next) {
             //Analytics
             "GET /analytics/revenue/[0-9]+": ["vendor"],
             "GET /analytics/orders/[0-9]+": ["vendor"],
-            "GET /analytics/top-items/[0-9]+": ["vendor"]
+            "GET /analytics/top-items/[0-9]+": ["vendor"],
+
+            // Menu and stall management by the vendor who owns the stall
+            "GET /stalls/[0-9]+/manage/menu-items": ["vendor"],
+            "POST /stalls/[0-9]+/menu-items": ["vendor"],
+            "PUT /stalls/[0-9]+/menu-items/[0-9]+": ["vendor"],
+            "PATCH /stalls/[0-9]+/menu-items/[0-9]+/availability": ["vendor"],
+            "DELETE /stalls/[0-9]+/menu-items/[0-9]+": ["vendor"],
+            "PUT /stalls/[0-9]+": ["vendor"],
+
+            // Rental agreements
+            "GET /rental-agreements": ["vendor", "nea_officer"],
+            "GET /rental-agreements/expiring": ["nea_officer"],
+            "GET /rental-agreements/[0-9]+": ["vendor", "nea_officer"],
+            "POST /rental-agreements": ["nea_officer"],
+            "PUT /rental-agreements/[0-9]+/renew": ["nea_officer"]
         };
 
         const requestedEndpoint = `${req.method} ${req.path}`;
