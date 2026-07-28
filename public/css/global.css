@@ -292,22 +292,28 @@ button {
   padding: 6px 10px;
   border-radius: 99px;
   font-size: .75rem;
-  font-weight: 800
+  font-weight: 800;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, .08);
 }
 
 .success {
-  background: #ddf4e7;
-  color: #125d3c
+  background-color: #1b6a49;
+  color: #ffffff;
 }
 
 .warning {
-  background: #fff0c9;
-  color: #8b570b
+  background-color: #b57a18;
+  color: #ffffff;
 }
 
 .unavailable {
-  background: #ffe2e2;
-  color: #992f2f
+  background-color: #c54a4a;
+  color: #ffffff;
+}
+
+.neutral {
+  background: #b9c8c0;
+  color: #ffffff;
 }
 
 .stall-card {
@@ -608,7 +614,7 @@ body {
   flex-direction: column;
 }
 
-body > main {
+body>main {
   position: relative;
   flex: 1 0 auto;
   width: 100%;
@@ -616,7 +622,7 @@ body > main {
 }
 
 @media (max-width: 760px) {
-  body > main {
+  body>main {
     padding-bottom: 48px;
   }
 }

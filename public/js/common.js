@@ -454,7 +454,7 @@ function paymentLabel(paymentStatus) {
   if (status === "Failed") return "Payment Failed";
   if (status === "Refunded") return "Refunded";
 
-  return "Not recorded";
+  return "Not Recorded";
 }
 
 function paymentBadgeClass(paymentStatus) {

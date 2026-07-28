@@ -258,17 +258,6 @@ body.modal-open {
   overflow: hidden
 }
 
-.order-card::after {
-  content: "";
-  position: absolute;
-  width: 90px;
-  height: 90px;
-  border-radius: 50%;
-  right: -45px;
-  top: -45px;
-  background: rgba(17, 97, 61, .05)
-}
-
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -795,13 +784,14 @@ body.modal-open {
 .payment-strip {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 12px;
   width: 100%;
   box-sizing: border-box;
   padding: 12px 20px;
-  background: #f6f8f5;
-  border-top: 1px solid #dce7df;
-  border-bottom: 1px solid #dce7df;
+  background-color: #dff1e8;
+  border-top: 1px solid #bfdccd;
+  border-bottom: 1px solid #bfdccd;
 }
 
 .payment-strip .badge {
@@ -940,4 +930,434 @@ body.modal-open {
   .frequent-order-image {
     height: 190px;
   }
+}
+
+/* Page heading */
+body .page-head .eyebrow {
+  color: #1b4d3e;
+}
+
+body .page-head h1 {
+  color: #153d30;
+}
+
+body .page-head .lead {
+  color: #607168;
+}
+
+/* Most Frequently Ordered container */
+body .card.frequent-orders-section {
+  border-color: #2f6654;
+  background: linear-gradient(145deg, #1b4d3e, #245746);
+  box-shadow: 0 12px 30px rgba(27, 77, 62, 0.18);
+}
+
+body .card.frequent-orders-section .section-heading .eyebrow {
+  color: #a9dfc2;
+}
+
+body .card.frequent-orders-section .section-heading h2 {
+  color: #ffffff;
+}
+
+body .card.frequent-orders-section .section-heading p,
+body .card.frequent-orders-section .section-heading .muted {
+  color: #d7e6df;
+}
+
+/* Frequent-order cards */
+body .frequent-orders-section .frequent-order-card {
+  border-color: #d5e2db;
+  background-color: #ffffff;
+  box-shadow: 0 7px 18px rgba(10, 45, 34, 0.14);
+}
+
+body .frequent-orders-section .frequent-order-card:hover {
+  border-color: #80a996;
+  box-shadow: 0 13px 28px rgba(10, 45, 34, 0.22);
+}
+
+body .frequent-orders-section .frequent-order-image,
+body .frequent-orders-section .frequent-order-placeholder {
+  background-color: #e7f0eb;
+}
+
+body .frequent-orders-section .frequent-order-content h3 {
+  color: #153d30;
+}
+
+body .frequent-orders-section .frequent-order-stall,
+body .frequent-orders-section .frequent-order-label {
+  color: #607168;
+}
+
+body .frequent-orders-section .frequent-order-stats {
+  border-top-color: #dce7e1;
+}
+
+body .frequent-orders-section .frequent-order-value {
+  color: #1b4d3e;
+}
+
+body .frequent-orders-section .frequent-order-rank {
+  border-color: #ffffff;
+  background-color: #1b4d3e;
+  color: #ffffff;
+}
+
+/* Frequent-order loading, empty and error states */
+body .frequent-orders-section .frequent-orders-loading,
+body .frequent-orders-section .frequent-orders-empty,
+body .frequent-orders-section .frequent-orders-error {
+  border-color: #80a996;
+  background-color: #2b6251;
+  color: #d7e6df;
+}
+
+body .frequent-orders-section .frequent-orders-empty strong,
+body .frequent-orders-section .frequent-orders-error strong {
+  color: #ffffff;
+}
+
+/* Tabs */
+body .tabs {
+  border-bottom-color: #cbd8d1;
+}
+
+body .tabs .tab {
+  color: #607168;
+  background-color: transparent;
+}
+
+body .tabs .tab:hover {
+  color: #153d30;
+  background-color: #edf5f1;
+}
+
+body .tabs .tab.active {
+  color: #ffffff;
+  background-color: #1b4d3e;
+  border-bottom-color: #1b4d3e;
+}
+
+/* Order cards */
+body .card.order-card,
+body .card.premium-order-card {
+  border-color: #d5e2db;
+  background-color: #ffffff;
+  box-shadow: 0 8px 22px rgba(27, 77, 62, 0.08);
+}
+
+body .order-card::after {
+  background-color: rgba(27, 77, 62, 0.08);
+}
+
+body .order-stall-image {
+  background-color: #e7f0eb;
+}
+
+body .order-card-copy h3 {
+  color: #153d30;
+}
+
+body .order-card-copy p {
+  color: #607168;
+}
+
+body .payment-strip {
+  background: #d7efe4;
+  border-top: 1px solid #b9dccb;
+  border-bottom: 1px solid #b9dccb;
+  color: #243229;
+}
+
+body .order-card-bottom {
+  background: #d7efe4;
+  border-top: 1px solid #b9dccb;
+  color: #243229;
+}
+
+body .order-card-bottom small,
+body .order-card-bottom span {
+  color: #6b776f;
+}
+
+body .order-card-bottom strong {
+  color: #243229;
+}
+
+body .order-card-bottom .button,
+body .order-card-bottom .button.secondary {
+  background: #ffffff;
+  border: 1px solid #dce7df;
+  color: #11613d;
+}
+
+body .order-card-bottom .button:hover,
+body .order-card-bottom .button.secondary:hover {
+  background: #edf5f1;
+  border-color: #dce7df;
+}
+
+/* Payment-method choices */
+body .payment-option label {
+  border-color: #d5e2db;
+  background-color: #ffffff;
+  color: #153d30;
+}
+
+body .payment-option label:hover {
+  border-color: #80a996;
+  background-color: #f3f7f5;
+}
+
+body .payment-option input:checked+label {
+  border-color: #1b4d3e;
+  background: linear-gradient(145deg, #edf5f1, #f8fbf8);
+  box-shadow:
+    inset 0 0 0 1px #1b4d3e,
+    0 8px 20px rgba(27, 77, 62, 0.12);
+}
+
+body .payment-option input:checked+label::before {
+  color: #1b4d3e;
+}
+
+/* Payment reference */
+body .reference {
+  background: linear-gradient(145deg, #1b4d3e, #245746);
+  color: #ffffff;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.10);
+}
+
+/* Modal backdrop */
+body .modal-backdrop {
+  background-color: rgba(5, 20, 14, 0.68);
+}
+
+/* Payment-change modal */
+body .payment-change-modal {
+  background-color: #ffffff;
+}
+
+body .payment-change-modal .modal-header {
+  border-bottom-color: #2f6654;
+  background: linear-gradient(145deg, #1b4d3e, #245746);
+}
+
+body .payment-change-modal .modal-header .eyebrow {
+  color: #a9dfc2;
+}
+
+body .payment-change-modal .modal-header h2 {
+  color: #ffffff;
+}
+
+body .payment-change-modal .modal-close-inline {
+  border-color: rgba(255, 255, 255, 0.28);
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #ffffff;
+}
+
+body .payment-change-modal .modal-close-inline:hover {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+body .payment-change-modal .modal-body-scroll {
+  background-color: #f7faf8;
+}
+
+body .payment-change-modal .modal-footer {
+  border-top-color: #d5e2db;
+  background-color: #ffffff;
+}
+
+/* Order-detail modal */
+body .order-detail-modal {
+  background-color: #ffffff;
+}
+
+body .detail-hero {
+  background: linear-gradient(145deg, #1b4d3e, #245746);
+}
+
+body .detail-hero::after {
+  background: linear-gradient(to top,
+      rgba(10, 42, 31, 0.90),
+      rgba(10, 42, 31, 0.08));
+}
+
+body .detail-hero-overlay,
+body .detail-hero-overlay h2 {
+  color: #ffffff;
+}
+
+body .detail-hero-overlay p {
+  color: #d7e6df;
+}
+
+body .detail-main {
+  border-right-color: #d5e2db;
+  background-color: #ffffff;
+}
+
+body .detail-aside {
+  background-color: #edf5f1;
+}
+
+body .detail-section-title span,
+body .detail-item span,
+body .detail-info-card p {
+  color: #607168;
+}
+
+body .detail-item {
+  border-bottom-color: #d5e2db;
+}
+
+body .detail-item img,
+body .detail-item-placeholder {
+  background-color: #e7f0eb;
+}
+
+body .detail-total,
+body .detail-info-card h3 {
+  color: #153d30;
+}
+
+body .detail-info-card {
+  border-color: #d5e2db;
+  background-color: #ffffff;
+}
+
+body .detail-note {
+  border-color: #e8d39f;
+  background-color: #fff8e8;
+  color: #6b582d;
+}
+
+/* Timeline */
+body .timeline-step>span,
+body .timeline-step:not(:last-child)::after {
+  background-color: #c3d2ca;
+}
+
+body .timeline-step.done>span,
+body .timeline-step.done:not(:last-child)::after {
+  background-color: #1b4d3e;
+}
+
+body .timeline-step.done>span {
+  box-shadow: 0 0 0 4px rgba(27, 77, 62, 0.14);
+}
+
+body .timeline-step small,
+body .timeline-cancelled small {
+  color: #607168;
+}
+
+/* Modal controls */
+body .modal-close {
+  background-color: #ffffff;
+  color: #1b4d3e;
+}
+
+body .modal-close:hover {
+  background-color: #edf5f1;
+}
+
+body .sticky-detail-actions {
+  border-top-color: #d5e2db;
+  background-color: rgba(255, 255, 255, 0.96);
+}
+
+/* Loading and empty states */
+body .empty {
+  color: #607168;
+}
+
+body .page-spinner {
+  border-color: #d5e2db;
+  border-top-color: #1b4d3e;
+}
+
+/* Responsive colour borders */
+@media (max-width: 860px) {
+  body .detail-main {
+    border-bottom-color: #d5e2db;
+  }
+}
+
+body .card.frequent-orders-section .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.14);
+  color: #b9ebd2;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+body .card.frequent-orders-section .eyebrow::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background-color: #ffc857;
+}
+
+body .payment-strip,
+body .payment-strip span,
+body .payment-strip strong,
+body .payment-strip small,
+body .payment-strip div {
+  color: #243229;
+}
+
+body .tabs {
+  gap: 20px;
+  border-bottom-color: #d8e2dc;
+}
+
+body .tabs .tab {
+  padding: 12px 2px;
+  border-radius: 0;
+  border-bottom: 3px solid transparent;
+  background-color: transparent;
+  color: #607168;
+}
+
+body .tabs .tab:hover {
+  background-color: transparent;
+  color: #1b4d3e;
+}
+
+body .tabs .tab.active {
+  border-bottom-color: #1b4d3e;
+  background-color: transparent;
+  color: #1b4d3e;
+}
+
+.payment-strip .badge.success {
+  background-color: #5fae87;
+  color: #ffffff;
+}
+
+.payment-strip .badge.warning {
+  background: #c48a1d;
+  color: #ffffff;
+}
+
+.payment-strip .badge.neutral {
+  background: #7b8c84;
+  color: #ffffff;
+}
+
+.payment-strip-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
 }
