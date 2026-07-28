@@ -44,10 +44,6 @@ const rentalController = require("./controllers/rentalController");
 
 const { validateAgreement, validateRenewal, validateAgreementQuery, validateExpiryWindow, validateAgreementId } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
 
-const discoveryController = require("./controllers/discoveryController");
-
-const { validateStallSearch, validateAreaQuery, validateHawkerCentreId } = require("./middlewares/discoveryValidation"); // Import Discovery Validation Middleware
-
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -61,8 +57,6 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Food Stalls and Menu Items
 app.get("/stalls", stallController.getAllStalls);
-// Registered before /stalls/:id so "search" is not read as a stall ID
-app.get("/stalls/search", validateStallSearch, discoveryController.searchStalls);
 app.get("/stalls/:id", stallController.getStallById);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
 app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);
@@ -131,11 +125,6 @@ app.get("/feedback/stall/:stallId", feedbackController.getReviewsByStall);
 app.get("/analytics/revenue/:stallId", verifyJWT, validateStallOwnership, analyticsController.getRevenueAnalytics);
 app.get("/analytics/orders/:stallId", verifyJWT, validateStallOwnership, analyticsController.getOrderVolumeAnalytics);
 app.get("/analytics/top-items/:stallId", verifyJWT, validateStallOwnership, analyticsController.getTopSellingItems);
-
-// Routes for Searching Hawker Centres by Area
-app.get("/areas", discoveryController.getAreas);
-app.get("/hawker-centres", validateAreaQuery, discoveryController.getHawkerCentres);
-app.get("/hawker-centres/:id/stalls", validateHawkerCentreId, discoveryController.getStallsByHawkerCentre);
 
 app.use((req, res) => {
     res.status(404).json({
