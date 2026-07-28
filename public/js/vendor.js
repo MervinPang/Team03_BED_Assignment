@@ -196,13 +196,13 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     try {
-      const [
-        ordersResponse,
-        paymentsResponse
-      ] = await Promise.all([
-        apiRequest("/orders"),
-        apiRequest("/payments")
-      ]);
+      /*
+       * Requests are sent one at a time. Each model function closes the shared
+       * connection pool when it finishes, so two requests that overlap make the
+       * second one fail with ECONNCLOSED.
+       */
+      const ordersResponse = await apiRequest("/orders");
+      const paymentsResponse = await apiRequest("/payments");
 
       const orders =
         normaliseArray(ordersResponse);
@@ -236,24 +236,24 @@ document.addEventListener("DOMContentLoaded", async () => {
        GET /orders/:id to obtain the items the vendor has to prepare. A failed
        detail request never removes the order from the list.
        */
-      const detailedOrders = await Promise.all(
-        orders.map(async order => {
-          try {
-            const detail = await apiRequest(
-              `/orders/${order.OrderID}`
-            );
+      const detailedOrders = [];
 
-            return { ...order, ...unwrap(detail) };
-          } catch (error) {
-            console.error(
-              `Unable to load items for order ${order.OrderID}:`,
-              error
-            );
+      for (const order of orders) {
+        try {
+          const detail = await apiRequest(
+            `/orders/${order.OrderID}`
+          );
 
-            return order;
-          }
-        })
-      );
+          detailedOrders.push({ ...order, ...unwrap(detail) });
+        } catch (error) {
+          console.error(
+            `Unable to load items for order ${order.OrderID}:`,
+            error
+          );
+
+          detailedOrders.push(order);
+        }
+      }
 
       ordersList.innerHTML = detailedOrders.map(order => {
         const payment =
@@ -558,21 +558,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     try {
-      const [
-        revenueData,
-        orderData,
-        topItemData
-      ] = await Promise.all([
-        apiRequest(
-          `/analytics/revenue/${currentStallId}`
-        ),
-        apiRequest(
-          `/analytics/orders/${currentStallId}`
-        ),
-        apiRequest(
-          `/analytics/top-items/${currentStallId}`
-        )
-      ]);
+      // Read one endpoint at a time so the requests never overlap
+      const revenueData = await apiRequest(
+        `/analytics/revenue/${currentStallId}`
+      );
+
+      const orderData = await apiRequest(
+        `/analytics/orders/${currentStallId}`
+      );
+
+      const topItemData = await apiRequest(
+        `/analytics/top-items/${currentStallId}`
+      );
 
       const revenueRecord = firstRecord(revenueData);
       const orderRecord = firstRecord(orderData);
@@ -746,6 +743,716 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadAnalytics();
   }
 
+  /* Menu and stall management functions*/
+
+  const menuPanel = document.getElementById("vendorMenuPanel");
+  const menuList = document.getElementById("menuItemList");
+  const menuMessage = document.getElementById("menuMessage");
+  const menuStallName = document.getElementById("menuStallName");
+  const menuBackdrop = document.getElementById("menuItemBackdrop");
+  const menuForm = document.getElementById("menuItemForm");
+  const menuFormTitle = document.getElementById("menuItemFormTitle");
+  const menuItemId = document.getElementById("menuItemId");
+  const menuItemName = document.getElementById("menuItemName");
+  const menuItemDesc = document.getElementById("menuItemDesc");
+  const menuItemPrice = document.getElementById("menuItemPrice");
+  const menuItemCategory = document.getElementById("menuItemCategory");
+  const menuItemImage = document.getElementById("menuItemImage");
+  const menuItemAvailable = document.getElementById("menuItemAvailable");
+  const menuItemMessage = document.getElementById("menuItemMessage");
+
+  const stallSettingsForm = document.getElementById("stallSettingsForm");
+  const stallNameInput = document.getElementById("stallNameInput");
+  const stallDescInput = document.getElementById("stallDescInput");
+  const stallImageInput = document.getElementById("stallImageInput");
+  const stallActiveInput = document.getElementById("stallActiveInput");
+  const stallSettingsMessage = document.getElementById("stallSettingsMessage");
+  const tenancyPanel = document.getElementById("vendorTenancy");
+
+  // The menu is always managed for the stall chosen in the selector
+  function selectedStallId() {
+    const stallId = Number(stallSelect.value);
+
+    return Number.isInteger(stallId) && stallId > 0
+      ? stallId
+      : null;
+  }
+
+  function renderMenuItems(menuItems) {
+    if (!menuItems.length) {
+      menuList.innerHTML = `
+        <div class="empty premium-empty">
+          <div class="empty-state-icon">🍜</div>
+          <h3>No menu items yet</h3>
+          <p class="muted">
+            Add your first dish so customers can order from your stall.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    menuList.innerHTML = menuItems.map(item => {
+      const isAvailable =
+        item.IsAvailable === true ||
+        Number(item.IsAvailable) === 1;
+
+      const timesOrdered = Number(item.TimesOrdered || 0);
+
+      return `
+        <article class="menu-manage-row">
+          <div class="menu-manage-main">
+            <div class="row-between wrap">
+              <strong>${esc(item.ItemName)}</strong>
+              <span class="badge ${isAvailable ? "success" : "unavailable"}">
+                ${isAvailable ? "Available" : "Sold out"}
+              </span>
+            </div>
+
+            <p class="small muted">
+              ${esc(item.ItemCategory || "Uncategorised")}
+              · ${money(item.Price)}
+              ${timesOrdered
+          ? ` · ordered ${timesOrdered} ${timesOrdered === 1 ? "time" : "times"}`
+          : ""
+        }
+            </p>
+
+            ${item.ItemDesc
+          ? `<p class="small muted">${esc(item.ItemDesc)}</p>`
+          : ""
+        }
+          </div>
+
+          <div class="menu-manage-actions">
+            <button
+              class="button secondary"
+              type="button"
+              data-toggle-item="${item.MenuItemID}"
+              data-next-available="${isAvailable ? "false" : "true"}"
+            >
+              ${isAvailable ? "Mark sold out" : "Mark available"}
+            </button>
+
+            <button
+              class="button secondary"
+              type="button"
+              data-edit-item="${item.MenuItemID}"
+            >
+              Edit
+            </button>
+
+            <button
+              class="button danger"
+              type="button"
+              data-delete-item="${item.MenuItemID}"
+            >
+              Delete
+            </button>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    menuList.querySelectorAll("[data-edit-item]").forEach(button => {
+      button.addEventListener("click", () => {
+        const item = menuItems.find(
+          entry =>
+            Number(entry.MenuItemID) ===
+            Number(button.dataset.editItem)
+        );
+
+        openMenuItemEditor(item);
+      });
+    });
+
+    menuList.querySelectorAll("[data-toggle-item]").forEach(button => {
+      button.addEventListener("click", () =>
+        toggleAvailability(
+          button.dataset.toggleItem,
+          button.dataset.nextAvailable === "true"
+        )
+      );
+    });
+
+    menuList.querySelectorAll("[data-delete-item]").forEach(button => {
+      button.addEventListener("click", () =>
+        deleteMenuItem(button.dataset.deleteItem)
+      );
+    });
+  }
+
+  function fillStallSettings(stallId) {
+    const stall = vendorStalls.find(
+      entry => Number(entry.StallID) === Number(stallId)
+    );
+
+    if (!stall) {
+      return;
+    }
+
+    stallNameInput.value = stall.StallName || "";
+    stallDescInput.value = stall.Description || stall.StallDesc || "";
+    stallImageInput.value = stall.StallImage || "";
+
+    stallActiveInput.checked =
+      stall.IsAvailable === true ||
+      Number(stall.IsAvailable) === 1 ||
+      stall.IsActive === true ||
+      Number(stall.IsActive) === 1;
+  }
+
+  async function loadMenu() {
+    const stallId = selectedStallId();
+
+    if (!stallId) {
+      setMessage(
+        menuMessage,
+        "Select one of your stalls to manage its menu.",
+        "info"
+      );
+
+      return;
+    }
+
+    menuList.innerHTML = `
+      <div class="card empty">
+        <span class="page-spinner"></span>
+        <p>Loading menu items…</p>
+      </div>
+    `;
+
+    setMessage(menuMessage);
+
+    try {
+      const response = await apiRequest(
+        `/stalls/${stallId}/manage/menu-items`
+      );
+
+      menuStallName.textContent =
+        response?.stall || "Your menu";
+
+      renderMenuItems(normaliseArray(response?.menuItems));
+      fillStallSettings(stallId);
+    } catch (error) {
+      console.error("Unable to load menu items:", error);
+
+      setMessage(menuMessage, error.message, "error");
+      menuList.innerHTML = "";
+    }
+  }
+
+  function openMenuItemEditor(item = null) {
+    menuItemId.value = item?.MenuItemID || "";
+    menuItemName.value = item?.ItemName || "";
+    menuItemDesc.value = item?.ItemDesc || "";
+    menuItemPrice.value = item ? Number(item.Price) : "";
+    menuItemCategory.value = item?.ItemCategory || "";
+    menuItemImage.value = item?.ItemImage || "";
+
+    menuItemAvailable.checked = item
+      ? item.IsAvailable === true || Number(item.IsAvailable) === 1
+      : true;
+
+    menuFormTitle.textContent = item
+      ? "Edit menu item"
+      : "Add menu item";
+
+    setMessage(menuItemMessage);
+
+    menuBackdrop.hidden = false;
+    document.body.classList.add("modal-open");
+  }
+
+  function closeMenuItemEditor() {
+    menuBackdrop.hidden = true;
+    document.body.classList.remove("modal-open");
+  }
+
+  async function toggleAvailability(menuItemIdValue, nextAvailable) {
+    const stallId = selectedStallId();
+
+    try {
+      const response = await apiRequest(
+        `/stalls/${stallId}/menu-items/${menuItemIdValue}/availability`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ IsAvailable: nextAvailable })
+        }
+      );
+
+      showToast(response.message);
+      await loadMenu();
+    } catch (error) {
+      setMessage(menuMessage, error.message, "error");
+      showToast(error.message, "error");
+    }
+  }
+
+  async function deleteMenuItem(menuItemIdValue) {
+    if (!window.confirm("Delete this menu item?")) {
+      return;
+    }
+
+    const stallId = selectedStallId();
+
+    try {
+      await apiRequest(
+        `/stalls/${stallId}/menu-items/${menuItemIdValue}`,
+        { method: "DELETE" }
+      );
+
+      showToast("Menu item deleted.");
+      await loadMenu();
+    } catch (error) {
+      /*
+       * An item that belongs to a past order cannot be removed, so the
+       * suggested alternative is shown instead of a bare failure.
+       */
+      setMessage(menuMessage, error.message, "error");
+      showToast(error.message, "error");
+    }
+  }
+
+  menuForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    setMessage(menuItemMessage);
+
+    const stallId = selectedStallId();
+
+    if (!stallId) {
+      setMessage(
+        menuItemMessage,
+        "Select one of your stalls first.",
+        "error"
+      );
+
+      return;
+    }
+
+    const payload = {
+      ItemName: menuItemName.value.trim(),
+      ItemDesc: menuItemDesc.value.trim(),
+      ItemPrice: Number(menuItemPrice.value),
+      ItemCategory: menuItemCategory.value.trim(),
+      ItemImage: menuItemImage.value.trim(),
+      IsAvailable: menuItemAvailable.checked
+    };
+
+    const existingId = menuItemId.value;
+
+    try {
+      const response = await apiRequest(
+        existingId
+          ? `/stalls/${stallId}/menu-items/${existingId}`
+          : `/stalls/${stallId}/menu-items`,
+        {
+          method: existingId ? "PUT" : "POST",
+          body: JSON.stringify(payload)
+        }
+      );
+
+      closeMenuItemEditor();
+      showToast(response.message);
+      await loadMenu();
+    } catch (error) {
+      setMessage(menuItemMessage, error.message, "error");
+    }
+  });
+
+  stallSettingsForm.addEventListener("submit", async event => {
+    event.preventDefault();
+    setMessage(stallSettingsMessage);
+
+    const stallId = selectedStallId();
+
+    if (!stallId) {
+      setMessage(
+        stallSettingsMessage,
+        "Select one of your stalls first.",
+        "error"
+      );
+
+      return;
+    }
+
+    try {
+      const response = await apiRequest(`/stalls/${stallId}`, {
+        method: "PUT",
+        body: JSON.stringify({
+          StallName: stallNameInput.value.trim(),
+          StallDesc: stallDescInput.value.trim(),
+          StallImage: stallImageInput.value.trim(),
+          IsActive: stallActiveInput.checked
+        })
+      });
+
+      setMessage(
+        stallSettingsMessage,
+        response.message,
+        "success"
+      );
+
+      showToast(response.message);
+
+      // The stall list feeds the selector and the settings form
+      await loadVendorStalls();
+      stallSelect.value = String(stallId);
+      fillStallSettings(stallId);
+    } catch (error) {
+      setMessage(stallSettingsMessage, error.message, "error");
+    }
+  });
+
+  document
+    .getElementById("addMenuItemButton")
+    .addEventListener("click", () => openMenuItemEditor());
+
+  document
+    .getElementById("closeMenuItemButton")
+    .addEventListener("click", closeMenuItemEditor);
+
+  menuBackdrop.addEventListener("click", event => {
+    if (event.target === menuBackdrop) {
+      closeMenuItemEditor();
+    }
+  });
+
+  /* ---------------- Rental agreement ---------------- */
+
+  function agreementBadgeClass(status) {
+    if (status === "Active") return "success";
+    if (status === "Upcoming") return "warning";
+
+    return "unavailable";
+  }
+
+  /*
+   * Builds one entry per calendar month the vendor holds the stall. The rent of
+   * a month is taken from the agreement that covers it, so a renewal at a new
+   * price appears as a step instead of being averaged away.
+   */
+  function buildRentMonths(stallAgreements) {
+    const periods = stallAgreements
+      .map(agreement => ({
+        start: new Date(agreement.StartDate),
+        end: new Date(agreement.EndDate),
+        rent: Number(agreement.RentalPrice || 0)
+      }))
+      .filter(
+        period =>
+          !Number.isNaN(period.start.getTime()) &&
+          !Number.isNaN(period.end.getTime())
+      )
+      .sort((a, b) => a.start - b.start);
+
+    if (!periods.length) {
+      return [];
+    }
+
+    const firstMonth = new Date(
+      periods[0].start.getFullYear(),
+      periods[0].start.getMonth(),
+      1
+    );
+
+    const lastEnd = periods.reduce(
+      (latest, period) =>
+        period.end > latest ? period.end : latest,
+      periods[0].end
+    );
+
+    const months = [];
+    const cursor = new Date(firstMonth);
+
+    // A tenancy of a few years would produce too many bars to read
+    while (cursor <= lastEnd && months.length < 240) {
+      const monthStart = new Date(cursor);
+
+      const monthEnd = new Date(
+        cursor.getFullYear(),
+        cursor.getMonth() + 1,
+        0
+      );
+
+      // The latest agreement overlapping the month sets its rent
+      const covering = periods
+        .filter(
+          period =>
+            period.start <= monthEnd && period.end >= monthStart
+        )
+        .pop();
+
+      if (covering) {
+        months.push({
+          date: monthStart,
+          rent: covering.rent
+        });
+      }
+
+      cursor.setMonth(cursor.getMonth() + 1);
+    }
+
+    return months;
+  }
+
+  /*
+   * A column per month, with the current month in the accent colour and the
+   * remaining months in a lighter step of the same hue. Values are reachable
+   * from the bar labels and the table view, never from the tooltip alone.
+   */
+  function renderRentChart(months) {
+    /*
+     * A single month would draw one lonely bar that says no more than the
+     * monthly rent figure above it, so the chart only appears once there are
+     * months to compare.
+     */
+    if (months.length < 2) {
+      return "";
+    }
+
+    const now = new Date();
+
+    const currentIndex = months.findIndex(
+      month =>
+        month.date.getFullYear() === now.getFullYear() &&
+        month.date.getMonth() === now.getMonth()
+    );
+
+    // At most twelve columns stay readable in the card
+    const maxColumns = 12;
+    let visible = months;
+    let truncated = false;
+
+    if (months.length > maxColumns) {
+      const start = Math.min(
+        Math.max(currentIndex === -1 ? 0 : currentIndex - 2, 0),
+        months.length - maxColumns
+      );
+
+      visible = months.slice(start, start + maxColumns);
+      truncated = true;
+    }
+
+    const highestRent = Math.max(
+      ...visible.map(month => month.rent)
+    );
+
+    const rents = [...new Set(months.map(month => month.rent))];
+
+    const monthName = date =>
+      new Intl.DateTimeFormat("en-SG", { month: "short" }).format(date);
+
+    const fullMonthName = date =>
+      new Intl.DateTimeFormat("en-SG", {
+        month: "long",
+        year: "numeric"
+      }).format(date);
+
+    // The axis shows month names only, so the caption carries the years
+    const monthYear = date =>
+      new Intl.DateTimeFormat("en-SG", {
+        month: "short",
+        year: "numeric"
+      }).format(date);
+
+    const isCurrent = date =>
+      date.getFullYear() === now.getFullYear() &&
+      date.getMonth() === now.getMonth();
+
+    const columns = visible
+      .map(month => {
+        const height = highestRent
+          ? Math.max((month.rent / highestRent) * 100, 4)
+          : 4;
+
+        const current = isCurrent(month.date);
+
+        return `
+          <div
+            class="rent-column${current ? " is-current" : ""}"
+            role="listitem"
+            tabindex="0"
+            aria-label="${esc(fullMonthName(month.date))}: ${esc(money(month.rent))}"
+          >
+            <span class="rent-tip">
+              ${esc(monthName(month.date))}
+              ${month.date.getFullYear()}
+              · ${esc(money(month.rent))}
+            </span>
+
+            <div class="rent-bar-track">
+              <div class="rent-bar" style="height:${height.toFixed(1)}%"></div>
+            </div>
+
+            <span class="rent-month">
+              ${esc(monthName(month.date))}
+            </span>
+          </div>
+        `;
+      })
+      .join("");
+
+    const currentMonth =
+      currentIndex === -1 ? null : months[currentIndex];
+
+    return `
+      <figure class="rent-chart">
+        <figcaption class="rent-chart-head">
+          <span class="small muted">Rent by month</span>
+
+          <span class="small rent-chart-value">
+            ${currentMonth
+        ? `This month · ${esc(money(currentMonth.rent))}`
+        : `${esc(money(rents[0]))} per month`
+      }
+          </span>
+        </figcaption>
+
+        <div class="rent-bars" role="list">
+          ${columns}
+        </div>
+
+        <p class="small muted rent-caption">
+          ${truncated
+        ? `Showing ${maxColumns} of ${months.length} months`
+        : `${months.length} ${months.length === 1 ? "month" : "months"}`
+      }
+          · ${esc(monthYear(visible[0].date))}
+          to ${esc(monthYear(visible[visible.length - 1].date))}
+          · ${rents.length === 1
+        ? `${esc(money(rents[0]))} each`
+        : `${esc(money(Math.min(...rents)))} to ${esc(money(Math.max(...rents)))}`
+      }
+        </p>
+
+        <details class="rent-table">
+          <summary class="small muted">
+            View as table
+          </summary>
+
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Month</th>
+                <th scope="col">Rent</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${months
+        .map(
+          month => `
+                    <tr${isCurrent(month.date) ? ` class="is-current"` : ""}>
+                      <td>${esc(fullMonthName(month.date))}</td>
+                      <td>${esc(money(month.rent))}</td>
+                    </tr>
+                  `
+        )
+        .join("")}
+            </tbody>
+          </table>
+        </details>
+      </figure>
+    `;
+  }
+
+  async function loadTenancy() {
+    tenancyPanel.innerHTML = `
+      <p class="small muted">Loading your agreement…</p>
+    `;
+
+    try {
+      const response = await apiRequest("/rental-agreements");
+      const agreements = normaliseArray(response?.agreements);
+
+      if (!agreements.length) {
+        tenancyPanel.innerHTML = `
+          <p class="small muted">
+            No rental agreement is recorded for your account.
+            The hawker centre operator creates one when your
+            tenancy begins.
+          </p>
+        `;
+
+        return;
+      }
+
+      const stallId = selectedStallId();
+
+      // The agreement of the selected stall is the relevant one
+      const relevant =
+        agreements.find(
+          agreement =>
+            Number(agreement.StallID) === Number(stallId)
+        ) || agreements[0];
+
+      const daysRemaining = Number(relevant.DaysRemaining || 0);
+
+      // Every agreement of this stall, so a renewal shows as a rent change
+      const stallAgreements = agreements.filter(
+        agreement =>
+          Number(agreement.StallID) === Number(relevant.StallID)
+      );
+
+      const rentChart = renderRentChart(
+        buildRentMonths(stallAgreements)
+      );
+
+      tenancyPanel.innerHTML = `
+        <div class="row-between wrap">
+          <strong>${esc(relevant.StallName)}</strong>
+          <span class="badge ${agreementBadgeClass(relevant.AgreementStatus)}">
+            ${esc(relevant.AgreementStatus)}
+          </span>
+        </div>
+
+        <div class="tenancy-figures">
+          <div>
+            <span class="small muted">Monthly rent</span>
+            <strong>${money(relevant.RentalPrice)}</strong>
+          </div>
+          <div>
+            <span class="small muted">Ends</span>
+            <strong>${formatDate(relevant.EndDate).split(",")[0]}</strong>
+          </div>
+          <div>
+            <span class="small muted">Days left</span>
+            <strong>${daysRemaining > 0 ? daysRemaining : 0}</strong>
+          </div>
+        </div>
+
+        ${rentChart}
+
+        ${daysRemaining >= 0 && daysRemaining <= 30
+          ? `
+            <div class="cash-warning">
+              <strong>Renewal due soon</strong>
+              <p>
+                Contact the hawker centre operator to renew before
+                ${formatDate(relevant.EndDate).split(",")[0]}.
+              </p>
+            </div>
+          `
+          : ""
+        }
+
+        ${relevant.TermCondition
+          ? `<p class="small muted">${esc(relevant.TermCondition)}</p>`
+          : ""
+        }
+      `;
+    } catch (error) {
+      console.error("Unable to load rental agreement:", error);
+
+      tenancyPanel.innerHTML = `
+        <p class="small muted">
+          Unable to load your rental agreement.
+        </p>
+      `;
+    }
+  }
+
   form.addEventListener("submit", async event => {
     event.preventDefault();
     setMessage(message);
@@ -810,8 +1517,11 @@ document.addEventListener("DOMContentLoaded", async () => {
             );
           });
 
-        const showAnalytics =
-          tab.dataset.vendorTab === "analytics";
+        const activeTab = tab.dataset.vendorTab;
+
+        const showAnalytics = activeTab === "analytics";
+        const showOrders = activeTab === "orders";
+        const showMenu = activeTab === "menu";
 
         document.querySelector(".metrics").hidden =
           !showAnalytics;
@@ -820,12 +1530,27 @@ document.addEventListener("DOMContentLoaded", async () => {
           .closest(".card").hidden =
           !showAnalytics;
 
-        ordersPanel.hidden = showAnalytics;
+        ordersPanel.hidden = !showOrders;
+        menuPanel.hidden = !showMenu;
 
         // Returning to the analytics tab always shows current figures.
         if (showAnalytics) {
           refreshAnalytics();
         }
+
+        // The menu and tenancy are read when the tab is opened
+        if (showMenu) {
+          loadMenu();
+          loadTenancy();
+        }
       });
     });
+
+  // Changing the selected stall reloads whatever the menu tab is showing
+  stallSelect.addEventListener("change", () => {
+    if (!menuPanel.hidden) {
+      loadMenu();
+      loadTenancy();
+    }
+  });
 });

@@ -12,6 +12,156 @@
   gap: 24px;
 }
 
+/* --- Area, price and hygiene grade filters --- */
+.stall-filters {
+  display: grid;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.stall-filter-row {
+  display: flex;
+  align-items: end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.stall-filter-row .field {
+  min-width: 170px;
+  flex: 1;
+}
+
+.stall-filter-bottom {
+  align-items: center;
+  justify-content: space-between;
+  border-top: 1px solid var(--line);
+  padding-top: 16px;
+}
+
+.grade-filter {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  flex-wrap: wrap;
+}
+
+.grade-filter legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 8px;
+}
+
+.grade-option {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: #fff;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.grade-option:has(input:checked) {
+  border-color: var(--brand);
+  color: var(--brand);
+  background: var(--bg2);
+}
+
+.grade-option input {
+  accent-color: var(--brand);
+}
+
+.stall-filter-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-left: auto;
+}
+
+/* --- Hawker centre comparison for the selected area --- */
+.area-compare {
+  margin-bottom: 26px;
+}
+
+.area-compare[hidden] {
+  display: none;
+}
+
+.area-compare-title {
+  font-size: 1.3rem;
+  margin: 0 0 16px;
+}
+
+.centre-card {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.centre-figures {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+}
+
+.centre-figures div {
+  display: grid;
+  gap: 2px;
+}
+
+.centre-figures strong {
+  font-size: 1.05rem;
+}
+
+.centre-grades {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* --- Grade and price facts on each stall card --- */
+.stall-facts {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.stall-location {
+  margin: 0;
+}
+
+.stall-match {
+  margin: 0;
+  color: var(--brand);
+  font-weight: 700;
+}
+
+@media (max-width: 760px) {
+  .stall-filter-row .field {
+    min-width: 100%;
+  }
+
+  .stall-filter-bottom {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .stall-filter-actions {
+    margin-left: 0;
+    justify-content: space-between;
+  }
+}
+
 .stall-card {
   overflow: hidden;
   height: 100%;
@@ -91,6 +241,10 @@
 
 .grid-3 {
   grid-template-columns: repeat(3, minmax(0, 1fr))
+}
+
+.card-pad {
+  padding: 24px
 }
 
 .stack {

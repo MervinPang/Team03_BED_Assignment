@@ -14,30 +14,13 @@ const userController = require("./controllers/userController");
 const inspectionController = require("./controllers/inspectionController");
 const complaintController = require("./controllers/complaintController");
 
-const {
-    validateOrder,
-    validateOrderStatus,
-    validateOrderId,
-    validateGuestOrderCancellation,
-} = require("./middlewares/orderValidation"); // Import Order Validation Middleware
+const { validateOrder, validateOrderStatus, validateOrderId, validateGuestOrderCancellation } = require("./middlewares/orderValidation"); // Import Order Validation Middleware
 
-const {
-    validateOrderHistoryId,
-    validateGuestOrderHistory,
-} = require("./middlewares/orderHistoryValidation"); // Import Order History Validation Middlware
+const { validateOrderHistoryId, validateGuestOrderHistory } = require("./middlewares/orderHistoryValidation"); // Import Order History Validation Middlware
 
-const {
-    validatePayment,
-    validatePaymentStatus,
-    validatePaymentMethodUpdate,
-    validatePaymentId,
-    validateOrderIdParam,
-} = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
+const { validatePayment, validatePaymentStatus, validatePaymentMethodUpdate, validatePaymentId, validateOrderIdParam } = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
 
-const {
-    validateRegistration,
-    validateLogin,
-} = require("./middlewares/userValidation"); // Import User Validation Middleware
+const {validateRegistration, validateLogin} = require("./middlewares/userValidation"); // Import User Validation Middleware
 
 const { verifyJWT, optionalJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
@@ -53,6 +36,18 @@ const analyticsController = require("./controllers/analyticsController");
 
 const { validateStallOwnership } = require("./middlewares/analyticsValidation");
 
+const vendorMenuController = require("./controllers/vendorMenuController");
+
+const { validateMenuItem, validateAvailability, validateStallUpdate, requireStallOwnership, requireMenuItemInStall} = require("./middlewares/vendorMenuValidation"); // Import Vendor Menu Validation Middleware
+
+const rentalController = require("./controllers/rentalController");
+
+const { validateAgreement, validateRenewal, validateAgreementQuery, validateExpiryWindow, validateAgreementId } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
+
+const discoveryController = require("./controllers/discoveryController");
+
+const { validateStallSearch, validateAreaQuery, validateHawkerCentreId } = require("./middlewares/discoveryValidation"); // Import Discovery Validation Middleware
+
 // Create Express app
 const app = express();
 const port = process.env.PORT || 3000;
@@ -66,9 +61,28 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Food Stalls and Menu Items
 app.get("/stalls", stallController.getAllStalls);
+// Registered before /stalls/:id so "search" is not read as a stall ID
+app.get("/stalls/search", validateStallSearch, discoveryController.searchStalls);
 app.get("/stalls/:id", stallController.getStallById);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
 app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);
+
+// Routes for Vendor Menu and Stall Management
+// Every route confirms that the signed in vendor owns the stall in the URL
+app.get("/stalls/:stallId/manage/menu-items", verifyJWT, requireStallOwnership, vendorMenuController.getMenuItems);
+app.post("/stalls/:stallId/menu-items", verifyJWT, requireStallOwnership, validateMenuItem, vendorMenuController.createMenuItem);
+app.put("/stalls/:stallId/menu-items/:itemId", verifyJWT, requireStallOwnership, requireMenuItemInStall, validateMenuItem, vendorMenuController.updateMenuItem);
+app.patch("/stalls/:stallId/menu-items/:itemId/availability", verifyJWT, requireStallOwnership, requireMenuItemInStall, validateAvailability, vendorMenuController.updateMenuItemAvailability);
+app.delete("/stalls/:stallId/menu-items/:itemId", verifyJWT, requireStallOwnership, requireMenuItemInStall, vendorMenuController.deleteMenuItem);
+app.put("/stalls/:stallId", verifyJWT, requireStallOwnership, validateStallUpdate, vendorMenuController.updateStall);
+
+// Routes for Stall Rental Agreements
+// The expiry report is registered before the agreement ID route
+app.get("/rental-agreements", verifyJWT, validateAgreementQuery, rentalController.getAgreements);
+app.get("/rental-agreements/expiring", verifyJWT, validateExpiryWindow, rentalController.getExpiringAgreements);
+app.get("/rental-agreements/:id", verifyJWT, validateAgreementId, rentalController.getAgreementById);
+app.post("/rental-agreements", verifyJWT, validateAgreement, rentalController.createAgreement);
+app.put("/rental-agreements/:id/renew", verifyJWT, validateAgreementId, validateRenewal, rentalController.renewAgreement);
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);
@@ -117,6 +131,11 @@ app.get("/feedback/stall/:stallId", feedbackController.getReviewsByStall);
 app.get("/analytics/revenue/:stallId", verifyJWT, validateStallOwnership, analyticsController.getRevenueAnalytics);
 app.get("/analytics/orders/:stallId", verifyJWT, validateStallOwnership, analyticsController.getOrderVolumeAnalytics);
 app.get("/analytics/top-items/:stallId", verifyJWT, validateStallOwnership, analyticsController.getTopSellingItems);
+
+// Routes for Searching Hawker Centres by Area
+app.get("/areas", discoveryController.getAreas);
+app.get("/hawker-centres", validateAreaQuery, discoveryController.getHawkerCentres);
+app.get("/hawker-centres/:id/stalls", validateHawkerCentreId, discoveryController.getStallsByHawkerCentre);
 
 app.use((req, res) => {
     res.status(404).json({
