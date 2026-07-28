@@ -614,25 +614,47 @@
 /* =========================================================
    OPTIONAL GUEST ACCOUNT REGISTRATION
    ========================================================= */
-
 .guest-registration {
-  margin: 24px 0;
-  border: 1px solid #d8dee8;
-  border-radius: 16px;
-  background-color: #f8fafc;
+  margin: 28px 0;
+  border: 1px solid #cbd8d1;
+  border-radius: 18px;
+  background-color: #ffffff;
   overflow: hidden;
+}
+
+.guest-registration-heading {
+  margin-bottom: 24px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.18);
+}
+
+.guest-registration-heading span {
+  display: block;
+  margin-bottom: 6px;
+  color: #ffffff;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.guest-registration-heading p {
+  margin: 0;
+  color: #c7d8cf;
+  font-size: 14px;
+  line-height: 1.6;
 }
 
 .guest-registration-option {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
-  padding: 20px;
+  gap: 16px;
+  padding: 24px 26px;
   cursor: pointer;
+  transition: background-color 0.2s ease;
 }
 
 .guest-registration-option:hover {
-  background-color: #f1f5f9;
+  background-color: #edf5f1;
 }
 
 .guest-registration-option input {
@@ -648,15 +670,15 @@
   height: 21px;
   flex-shrink: 0;
   margin-top: 2px;
-  border: 2px solid #64748b;
+  border: 2px solid #527064;
   border-radius: 6px;
   background-color: #ffffff;
   position: relative;
 }
 
 .guest-registration-option input:checked+.guest-registration-checkbox {
-  border-color: #111827;
-  background-color: #111827;
+  border-color: #0f3d2e;
+  background-color: #0f3d2e;
 }
 
 .guest-registration-option input:checked+.guest-registration-checkbox::after {
@@ -672,55 +694,79 @@
 }
 
 .guest-registration-option input:focus-visible+.guest-registration-checkbox {
-  outline: 3px solid rgba(17, 24, 39, 0.2);
+  outline: 3px solid rgba(15, 61, 46, 0.22);
   outline-offset: 3px;
 }
 
 .guest-registration-copy {
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .guest-registration-copy strong {
-  color: #111827;
-  font-size: 16px;
+  color: #000000;
+  font-size: 17px;
+  font-weight: 700;
   line-height: 1.4;
 }
 
 .guest-registration-copy small {
-  color: #64748b;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #53675e;
   font-size: 13px;
-  line-height: 1.55;
+  line-height: 1.6;
 }
 
 .guest-registration-fields {
-  padding: 22px 20px;
-  border-top: 1px solid #d8dee8;
-  background-color: #ffffff;
+  padding: 30px;
+  border-top: 1px solid #0a2d22;
+  background-color: #0f3d2e;
 }
 
 .guest-registration-fields[hidden] {
   display: none;
 }
 
+.guest-registration-fields .field {
+  margin-bottom: 22px;
+}
+
+.guest-registration-fields .grid-2 {
+  gap: 24px;
+}
+
+.guest-registration-fields label {
+  color: #ffffff;
+}
+
 .field-help {
   display: block;
   margin-top: 7px;
-  color: #64748b;
+  color: #c7d8cf;
   font-size: 12px;
   line-height: 1.45;
 }
 
 .guest-registration-notice {
-  margin: 4px 0 0;
-  padding: 13px 15px;
-  border-left: 3px solid #334155;
-  border-radius: 6px;
-  background-color: #f8fafc;
-  color: #475569;
+  margin-top: 28px;
+  padding: 18px 20px;
+  border-left: 4px solid #80c9a4;
+  border-radius: 10px;
+  background-color: #174f3d;
+  color: #e3f0e9;
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.guest-registration-notice strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #a9dfc2;
   font-size: 13px;
-  line-height: 1.55;
+  font-weight: 700;
 }
 
 /* =========================================================
