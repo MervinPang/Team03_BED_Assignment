@@ -129,6 +129,14 @@ document.addEventListener("DOMContentLoaded", () => {
         title: "Inspection Workspace",
         description: "Submit inspections and review regulatory information."
       }
+    ],
+    operator: [
+      {
+        href: "/operator-dashboard.html",
+        icon: "⌂",
+        title: "Operator Portal",
+        description: "Record and renew tenancies for the stalls you manage."
+      }
     ]
   };
 

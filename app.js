@@ -42,7 +42,7 @@ const { validateMenuItem, validateAvailability, validateStallUpdate, requireStal
 
 const rentalController = require("./controllers/rentalController");
 
-const { validateAgreement, validateRenewal, validateAgreementQuery, validateExpiryWindow, validateAgreementId } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
+const { validateAgreement, validateRenewal, validateTenancyEnd, validateAgreementQuery, validateExpiryWindow, validateAgreementId } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
 
 // Create Express app
 const app = express();
@@ -61,6 +61,9 @@ app.get("/stalls/filter-options", stallController.getStallFilterOptions);
 app.get("/stalls/:id", stallController.getStallById);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
 app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);
+app.get("/vendors", verifyJWT, rentalController.getVendorAccounts);
+app.get("/operators/me/stalls", verifyJWT, rentalController.getManagedStalls);
+app.get("/operators/me/centres", verifyJWT, rentalController.getManagedCentres);
 
 // Routes for Vendor Menu and Stall Management
 // Every route confirms that the signed in vendor owns the stall in the URL
@@ -78,6 +81,7 @@ app.get("/rental-agreements/expiring", verifyJWT, validateExpiryWindow, rentalCo
 app.get("/rental-agreements/:id", verifyJWT, validateAgreementId, rentalController.getAgreementById);
 app.post("/rental-agreements", verifyJWT, validateAgreement, rentalController.createAgreement);
 app.put("/rental-agreements/:id/renew", verifyJWT, validateAgreementId, validateRenewal, rentalController.renewAgreement);
+app.put("/rental-agreements/:id/end", verifyJWT, validateAgreementId, validateTenancyEnd, rentalController.endAgreement);
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);

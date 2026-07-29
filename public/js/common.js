@@ -535,6 +535,10 @@ function setupNav() {
     element.hidden = currentRole !== "nea_officer";
   });
 
+  document.querySelectorAll("[data-operator-only]").forEach(element => {
+    element.hidden = currentRole !== "operator";
+  });
+
   document.querySelectorAll("[data-user-name]").forEach(element => {
     element.textContent = user?.username || "";
   });
@@ -600,6 +604,18 @@ function requireNeaOfficer() {
   if (!user || role(user.role) !== "nea_officer") {
     window.location.href =
       "/login.html?next=/inspection-reports.html";
+    return null;
+  }
+
+  return user;
+}
+
+function requireOperator() {
+  const user = getCurrentUser();
+
+  if (!user || role(user.role) !== "operator") {
+    window.location.href =
+      "/login.html?next=/operator-dashboard.html";
     return null;
   }
 
@@ -714,6 +730,10 @@ function getRoleHomePath(user = getCurrentUser()) {
     return "/inspection-reports.html";
   }
 
+  if (userRole === "operator") {
+    return "/operator-dashboard.html";
+  }
+
   return "/index.html";
 }
 
@@ -726,7 +746,7 @@ function redirectNonCustomerFromOrdering() {
 
   const userRole = role(user.role || user.Role);
 
-  if (userRole === "vendor" || userRole === "nea_officer") {
+  if (["vendor", "nea_officer", "operator"].includes(userRole)) {
     window.location.replace(getRoleHomePath(user));
     return true;
   }
@@ -739,7 +759,7 @@ function hideHomeForStaffRoles() {
   const user = getCurrentUser();
   const currentRole = role(user?.role || user?.Role);
 
-  if (!["vendor", "nea_officer"].includes(currentRole)) {
+  if (!["vendor", "nea_officer", "operator"].includes(currentRole)) {
     return;
   }
 

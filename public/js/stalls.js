@@ -17,7 +17,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     grid.innerHTML =
       filteredStalls
         .map((stall) => {
-          const isAvailable = Boolean(stall.IsAvailable);
+          /*
+           * A stall is open when its vendor has it switched on. The column is
+           * IsActive, which is what the vendor's own stall settings write to.
+           * The older IsAvailable name is still read so the card keeps working
+           * whichever of the two the endpoint sends.
+           */
+          const isAvailable = Boolean(
+            stall.IsActive ?? stall.IsAvailable
+          );
 
           const availabilityClass = isAvailable
             ? "success"
@@ -58,6 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
                                     <p class="muted">
                                         ${esc(
+            stall.StallDesc ||
             stall.Description ||
             "No description available."
           )}

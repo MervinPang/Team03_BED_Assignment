@@ -69,10 +69,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function loadStalls() {
+        /*
+         * A vendor picks from their own stalls and an operator from the stalls
+         * inside the hawker centres they run. Everyone else sees every stall.
+         */
         const endpoint =
             currentRole === "vendor"
                 ? "/vendors/me/stalls"
-                : "/stalls";
+                : currentRole === "operator"
+                    ? "/operators/me/stalls"
+                    : "/stalls";
 
         const selects = [trackerStallId];
 
@@ -97,7 +103,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const response = await apiRequest(endpoint);
 
-            stalls = Array.isArray(response) ? response : [];
+            // The operator endpoint wraps its rows, the other two return a list
+            stalls = Array.isArray(response)
+                ? response
+                : Array.isArray(response?.stalls)
+                    ? response.stalls
+                    : [];
 
             if (!stalls.length) {
                 selects.forEach(select => {
@@ -112,7 +123,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     trackerMessage,
                     currentRole === "vendor"
                         ? "No food stall is assigned to your vendor account."
-                        : "No food stalls are available at the moment.",
+                        : currentRole === "operator"
+                            ? "No stall is under your management yet."
+                            : "No food stalls are available at the moment.",
                     "info"
                 );
 
@@ -359,11 +372,17 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             applyFilters();
 
-            // Explains to the vendor why no status control is on the cases
+            // Explains why the cases carry no status control for these roles
             if (currentRole === "vendor") {
                 setMessage(
                     trackerMessage,
                     "You can view every complaint about your stall here. The outcome of a case is decided by the NEA officer.",
+                    "info"
+                );
+            } else if (currentRole === "operator") {
+                setMessage(
+                    trackerMessage,
+                    "You can view every complaint about the stalls you manage. The outcome of a case is decided by the NEA officer.",
                     "info"
                 );
             }
