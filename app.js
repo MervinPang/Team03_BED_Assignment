@@ -57,6 +57,7 @@ app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Food Stalls and Menu Items
 app.get("/stalls", stallController.getAllStalls);
+app.get("/stalls/filter-options", stallController.getStallFilterOptions);
 app.get("/stalls/:id", stallController.getStallById);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
 app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);

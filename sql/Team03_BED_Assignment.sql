@@ -24,7 +24,7 @@ CREATE TABLE UserAccount
     CONSTRAINT      PK_UserAccount          PRIMARY KEY (UserID),
     CONSTRAINT      UQ_UserAccount_Username UNIQUE (Username),
     CONSTRAINT      UQ_UserAccount_Email    UNIQUE (Email),
-    CONSTRAINT      CHK_UserAccount_Role    CHECK (Role IN ('customer', 'vendor', 'nea_officer'))
+    CONSTRAINT      CHK_UserAccount_Role    CHECK (Role IN ('customer', 'vendor', 'nea_officer', 'admin'))
 );
 
 /* Table: Operator */
@@ -337,7 +337,8 @@ VALUES
 ('rayne_nea', 'rayne.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
 ('nigel_customer', 'nigel.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
 ('ming_li_customer', 'mingli.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
-('callula_nea', 'callula.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer');
+('callula_nea', 'callula.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
+('admin_user', 'admin@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'admin');
 
 INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
 VALUES
