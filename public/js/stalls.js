@@ -74,12 +74,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (gradeFilter.value) {
-      selectedFilters.push(`Grade: ${gradeFilter.value}`);
+      selectedFilters.push(`Hygiene Grade: ${gradeFilter.value}`);
     }
 
     activeFiltersMessage.textContent = selectedFilters.length
       ? selectedFilters.join(" | ")
-      : "Showing all stalls";
+      : "Showing all available stalls";
   }
 
   function getAveragePrice(stall) {
@@ -97,9 +97,13 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function render(stalls) {
-    stallResultsMessage.textContent = stalls.length === 1
-      ? "1 stall found"
-      : `${stalls.length} stalls found`;
+    if (stalls.length === 0) {
+      stallResultsMessage.textContent = "No stalls found";
+    } else if (stalls.length === 1) {
+      stallResultsMessage.textContent = "1 stall found";
+    } else {
+      stallResultsMessage.textContent = `${stalls.length} stalls found`;
+    }
 
     updateActiveFiltersMessage();
 
@@ -190,10 +194,10 @@ document.addEventListener("DOMContentLoaded", async () => {
         .join("") ||
       `
         <div class="card empty">
-          <h3>No Stalls Found</h3>
+          <h3>No Matching Stalls</h3>
 
           <p class="muted">
-            No stalls match your current search and filters.
+            No stalls match your selected filters. Try adjusting your search or clear the filters to view all stalls.
           </p>
 
           <button
