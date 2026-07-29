@@ -2,50 +2,136 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-// Retrieve all active food stalls
-async function getAllStalls() {
+// Retrieve all active food stalls with optional filters
+async function getAllStalls(filters = {}) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        const result = await connection.request().query(`
+        const request = connection.request();
+        request.input("Name", sql.VarChar(80), filters.name || null);
+        request.input("Cuisine", sql.VarChar(50), filters.cuisine || null);
+        request.input("Area", sql.VarChar(50), filters.area || null);
+        request.input("Grade", sql.Char(1), filters.grade || null);
+
+        const result = await request.query(`
             SELECT
                 fs.StallID,
                 fs.StallName,
-                fs.StallDesc AS Description,
+                fs.StallDesc,
                 fs.StallImage,
-                fs.IsActive AS IsAvailable,
                 fs.StallUnitNo,
+                fs.IsActive,
                 hc.HCName,
                 hc.HCAddress,
-                cuisineData.Cuisine
+                hc.Area,
+
+                (
+                    SELECT TOP 1 HygieneGrade
+                    FROM Inspection
+                    WHERE StallID = fs.StallID
+                    ORDER BY InspectionDate DESC
+                ) AS HygieneGrade,
+
+                (
+                    SELECT AVG(ItemPrice)
+                    FROM MenuItem
+                    WHERE StallID = fs.StallID
+                    AND IsAvailable = 1
+                ) AS AveragePrice
+
             FROM FoodStall fs
-            JOIN HawkerCentre hc
+            INNER JOIN HawkerCentre hc
                 ON fs.HawkerCentreID = hc.HawkerCentreID
-            OUTER APPLY (
-                SELECT STRING_AGG(CuisineName, ', ') AS Cuisine
-                FROM (
-                    SELECT DISTINCT c.CuisineName
+
+            WHERE fs.IsActive = 1
+
+            AND (
+                @Name IS NULL
+                OR fs.StallName LIKE '%' + @Name + '%'
+            )
+
+            AND (
+                @Cuisine IS NULL
+                OR EXISTS (
+                    SELECT 1
                     FROM MenuItem mi
-                    JOIN MenuItemCuisine mic
+                    INNER JOIN MenuItemCuisine mic
                         ON mi.MenuItemID = mic.MenuItemID
-                    JOIN Cuisine c
+                    INNER JOIN Cuisine c
                         ON mic.CuisineID = c.CuisineID
                     WHERE mi.StallID = fs.StallID
-                ) distinctCuisines
-            ) cuisineData
-            WHERE fs.IsActive = 1
-            ORDER BY fs.StallName;
+                    AND c.CuisineName = @Cuisine
+                )
+            )
+
+            AND (
+                @Area IS NULL
+                OR hc.Area = @Area
+            )
+
+            AND (
+                @Grade IS NULL
+                OR (
+                    SELECT TOP 1 HygieneGrade
+                    FROM Inspection
+                    WHERE StallID = fs.StallID
+                    ORDER BY InspectionDate DESC
+                ) = @Grade
+            )
+
+            ORDER BY
+                hc.Area,
+                fs.StallName;
         `);
 
         return result.recordset;
     } catch (error) {
-        console.error("Database error (getAllStalls):", error);
+        console.error(
+            "Database error (getAllStalls):",
+            error
+        );
+
         throw error;
     } finally {
         if (connection) {
             await connection.close();
+        }
+    }
+}
+
+// Retrieve available filter options
+async function getStallFilterOptions() {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const areas = await connection.request().query(`
+            SELECT DISTINCT Area
+            FROM HawkerCentre
+            ORDER BY Area
+        `);
+
+        const cuisines = await connection.request().query(`
+            SELECT DISTINCT CuisineName
+            FROM Cuisine
+            ORDER BY CuisineName
+        `);
+
+        return {
+            areas: areas.recordset.map(area => area.Area),
+            cuisines: cuisines.recordset.map(cuisine => cuisine.CuisineName),
+            hygieneGrades: ["A", "B", "C", "D"]
+        };
+
+    } catch (error) {
+        console.error("Database error:", error);
+        throw error;
+    } finally {
+        if (connection) {
+            connection.close();
         }
     }
 }
@@ -232,6 +318,7 @@ async function getStallsByVendorId(vendorUserId) {
 
 module.exports = {
     getAllStalls,
+    getStallFilterOptions,
     getStallById,
     getMenuItemsByStallId,
     getStallsByVendorId,
