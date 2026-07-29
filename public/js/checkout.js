@@ -596,7 +596,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   form.addEventListener(
     "submit",
-    event => {
+    async event => {
       event.preventDefault();
 
       setMessage(messageContainer);
@@ -606,7 +606,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         return;
       }
 
-      handleNormalCheckoutSubmission();
+      await handleNormalCheckoutSubmission();
     }
   );
 
@@ -761,7 +761,72 @@ document.addEventListener("DOMContentLoaded", async () => {
     return null;
   }
 
-  function handleNormalCheckoutSubmission() {
+  async function checkGuestAccountAvailability() {
+    if (
+      isMember ||
+      !createAccountInput?.checked
+    ) {
+      return true;
+    }
+
+    const username = accountUsernameInput?.value.trim() || "";
+
+    const email = guestEmailInput?.value.trim() || "";
+
+    try {
+      const availability = await apiRequest(
+        "/payments/check-account-availability",
+        {
+          method: "POST",
+
+          body: JSON.stringify({
+            Username: username,
+            Email: email
+          })
+        }
+      );
+
+      if (!availability.UsernameAvailable) {
+        accountUsernameInput?.focus();
+
+        setMessage(
+          messageContainer,
+          "Username is already registered. " +
+          "Please choose another username.",
+          "error"
+        );
+
+        return false;
+      }
+
+      if (!availability.EmailAvailable) {
+        guestEmailInput?.focus();
+
+        setMessage(
+          messageContainer,
+          "Email is already registered. " +
+          "Please use another email address.",
+          "error"
+        );
+
+        return false;
+      }
+
+      return true;
+    } catch (error) {
+      setMessage(
+        messageContainer,
+        error?.message ||
+        "Unable to check account availability. " +
+        "Please try again.",
+        "error"
+      );
+
+      return false;
+    }
+  }
+
+  async function handleNormalCheckoutSubmission() {
     const cart = checkoutCart || getCart();
 
     const cartValidation = validateCheckoutCart(cart);
@@ -807,6 +872,21 @@ document.addEventListener("DOMContentLoaded", async () => {
     if (!paymentMethod) {
       return setMessage(
         messageContainer, "Please select a payment method.", "error");
+    }
+
+    const originalButtonText = submitButton.textContent;
+
+    submitButton.disabled = true;
+    submitButton.textContent = "Checking account details…";
+
+    const accountIsAvailable = await checkGuestAccountAvailability();
+
+    if (!accountIsAvailable) {
+      submitButton.disabled = false;
+
+      submitButton.textContent = originalButtonText;
+
+      return;
     }
 
     const orderPayload = {
