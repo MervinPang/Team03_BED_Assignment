@@ -368,6 +368,18 @@
   overflow-wrap: anywhere;
 }
 
+.stall-unavailable-button {
+  width: 100%;
+  border: 1px solid #b7c8bd;
+  background-color: #dfe8e2;
+  color: #607268;
+  cursor: not-allowed;
+}
+
+.stall-unavailable-button:hover {
+  background-color: #dfe8e2;
+}
+
 @media (max-width: 1100px) {
   .stall-filter-controls {
     grid-template-columns: 1fr 1fr;
