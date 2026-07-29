@@ -163,37 +163,6 @@
   filter: grayscale(.15)
 }
 
-@media (max-width:980px) {
-.grid-3 {
-    grid-template-columns: 1fr 1fr
-  }
-}
-
-@media (max-width:760px) {
-.grid-3,
-  .grid-2,
-  .metrics {
-    grid-template-columns: 1fr
-  }
-
-.page-head {
-    padding-top: 44px
-  }
-}
-
-@media (max-width:480px) {
-.floating-card.one {
-    left: 0;
-    bottom: 28px
-  }
-}
-
-@media (max-width:620px) {
-.order-card-top>.badge {
-    grid-column: 2
-  }
-}
-
 .contact-icon {
   width: 18px;
   height: 18px;
@@ -203,4 +172,220 @@
 
 .payment-strip .badge {
   flex-shrink: 0;
+}
+
+.stall-filter-banner {
+  margin-bottom: 28px;
+  padding: 30px;
+  border-radius: 24px;
+  background-color: #1d5c49;
+  box-shadow: 0 18px 36px rgba(17, 97, 61, 0.16);
+}
+
+.stall-filter-heading {
+  margin-bottom: 24px;
+}
+
+.stall-filter-label {
+  display: inline-block;
+  margin-bottom: 14px;
+  padding: 7px 12px;
+  border-radius: 20px;
+  background-color: #3d7665;
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.stall-filter-label::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 6px;
+  border-radius: 50%;
+  background-color: #f0c45c;
+}
+
+.stall-filter-heading h2 {
+  margin: 0 0 8px;
+  color: #ffffff;
+  font-size: 28px;
+}
+
+.stall-filter-heading p {
+  margin: 0;
+  color: #e4f0ea;
+  line-height: 24px;
+}
+
+.stall-filter-controls {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr auto;
+  align-items: end;
+  gap: 14px;
+}
+
+.stall-search-filter,
+.stall-filter-field {
+  display: grid;
+  gap: 8px;
+}
+
+.stall-search-filter label,
+.stall-filter-field label {
+  color: #ffffff;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 1px;
+}
+
+.stall-search-filter .input,
+.stall-filter-field .input {
+  width: 100%;
+  height: 48px;
+  border: 1px solid #dce5dd;
+  border-radius: 12px;
+  background-color: #ffffff;
+  color: #142019;
+}
+
+.stall-filter-field .input {
+  padding: 0 12px;
+  cursor: pointer;
+}
+
+.stall-clear-filter {
+  min-width: 130px;
+  height: 48px;
+  border-color: #ffffff;
+  background-color: #ffffff;
+  color: #1d5c49;
+  white-space: nowrap;
+}
+
+.stall-clear-filter:hover {
+  background-color: #eef5f1;
+}
+
+.stall-filter-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 20px;
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid #4e7c6e;
+}
+
+.stall-filter-summary p {
+  margin: 0;
+  color: #e4f0ea;
+  font-size: 13px;
+}
+
+.stall-information {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.stall-information-row {
+  display: grid;
+  align-content: start;
+  gap: 4px;
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 12px;
+  background-color: #f4f7f3;
+}
+
+.stall-information-row span {
+  color: #6b776f;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.stall-information-row strong {
+  display: block;
+  min-height: 36px;
+  color: #142019;
+  font-size: 13px;
+  line-height: 18px;
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 1100px) {
+  .stall-filter-controls {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .stall-search-filter {
+    grid-column: 1 / -1;
+  }
+
+  .stall-clear-filter {
+    width: 100%;
+  }
+}
+
+@media (max-width:980px) {
+  .grid-3 {
+    grid-template-columns: 1fr 1fr
+  }
+}
+
+@media (max-width:760px) {
+
+  .grid-3,
+  .grid-2,
+  .metrics {
+    grid-template-columns: 1fr
+  }
+
+  .page-head {
+    padding-top: 44px
+  }
+}
+
+@media (max-width: 700px) {
+  .stall-filter-banner {
+    padding: 22px;
+  }
+
+  .stall-filter-controls {
+    grid-template-columns: 1fr;
+  }
+
+  .stall-search-filter {
+    grid-column: auto;
+  }
+
+  .stall-filter-summary {
+    align-items: start;
+    flex-direction: column;
+    gap: 5px;
+  }
+}
+
+@media (max-width:620px) {
+  .order-card-top>.badge {
+    grid-column: 2
+  }
+}
+
+@media (max-width:480px) {
+  .floating-card.one {
+    left: 0;
+    bottom: 28px
+  }
+
+  .stall-filter-heading h2 {
+    font-size: 24px;
+  }
+
+  .stall-information {
+    grid-template-columns: 1fr;
+  }
 }

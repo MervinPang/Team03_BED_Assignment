@@ -57,9 +57,58 @@
                         Choose a stall to explore its menu. Each order can include items from one stall only.
                   </p>
             </div>
-            <div class="search-shell" style="margin-bottom:24px">
-                  <input class="input" id="stallSearch" placeholder="Search by stall name or cuisine" />
-            </div>
+            <section class="stall-filter-banner">
+                  <div class="stall-filter-heading">
+                        <span class="stall-filter-label">Find Your Stall</span>
+                        <h2>SEARCH HAWKER STALLS</h2>
+
+                        <p>Search and compare stalls by name, cuisine, location and hygiene grade.</p>
+                  </div>
+
+                  <div class="stall-filter-controls">
+                        <div class="stall-search-filter">
+                              <label for="stallSearch">STALL NAME</label>
+
+                              <div class="search-shell">
+                                    <input class="input" id="stallSearch" maxlength="80"
+                                          placeholder="Search by stall name" type="search" />
+                              </div>
+                        </div>
+
+                        <div class="stall-filter-field">
+                              <label for="cuisineFilter">CUISINE</label>
+
+                              <select class="input" id="cuisineFilter">
+                                    <option value="">All cuisines</option>
+                              </select>
+                        </div>
+
+                        <div class="stall-filter-field">
+                              <label for="areaFilter">LOCATION</label>
+
+                              <select class="input" id="areaFilter">
+                                    <option value="">All locations</option>
+                              </select>
+                        </div>
+
+                        <div class="stall-filter-field">
+                              <label for="gradeFilter">HYGIENE GRADE</label>
+
+                              <select class="input" id="gradeFilter">
+                                    <option value="">All grades</option>
+                              </select>
+                        </div>
+
+                        <button class="button secondary stall-clear-filter" id="clearFiltersButton" type="button">
+                              Clear Filters
+                        </button>
+                  </div>
+
+                  <div class="stall-filter-summary">
+                        <p id="stallResultsMessage">Loading stalls...</p>
+                        <p id="activeFiltersMessage">Showing all stalls</p>
+                  </div>
+            </section>
             <section class="grid grid-3" id="stallGrid">
             </section>
       </section>
