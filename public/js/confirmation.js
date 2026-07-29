@@ -34,7 +34,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "confirmationTransactionReference"
   ).textContent =
     confirmation.transactionReference ||
-    "Not applicable";
+    "Cash Payment";
 
   document.getElementById(
     "confirmationEyebrow"
