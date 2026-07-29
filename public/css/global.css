@@ -357,11 +357,6 @@ button {
   background: #e7ece8
 }
 
-.menu-card.disabled {
-  opacity: .58;
-  filter: saturate(.75)
-}
-
 .price {
   font: 800 1.06rem Manrope;
   color: var(--brand)
