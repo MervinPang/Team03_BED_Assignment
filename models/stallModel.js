@@ -3,13 +3,20 @@ const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
 // Retrieve all active food stalls
-async function getAllStalls() {
+async function getAllStalls(filters = {}) {
     let connection;
 
     try {
         connection = await sql.connect(dbConfig);
 
-        const result = await connection.request().query(`
+        const request = connection.request();
+
+        request.input("Name", sql.VarChar(80), filters.name || null);
+        request.input("Cuisine", sql.VarChar(50), filters.cuisine || null);
+        request.input("Area", sql.VarChar(50), filters.area || null);
+        request.input("Grade",sql.Char(1),filters.grade || null);
+
+        const result = await request.query(`
             SELECT
                 fs.StallID,
                 fs.StallName,
@@ -19,10 +26,25 @@ async function getAllStalls() {
                 fs.StallUnitNo,
                 hc.HCName,
                 hc.HCAddress,
+                hc.Area,
+                (
+                    SELECT TOP 1 i.HygieneGrade
+                    FROM Inspection i
+                    WHERE i.StallID = fs.StallID
+                    ORDER BY i.InspectionDate DESC
+                ) AS HygieneGrade,
+                (
+                    SELECT AVG(mi.ItemPrice)
+                    FROM MenuItem mi
+                    WHERE mi.StallID = fs.StallID
+                ) AS AveragePrice,
+
                 cuisineData.Cuisine
             FROM FoodStall fs
+
             JOIN HawkerCentre hc
                 ON fs.HawkerCentreID = hc.HawkerCentreID
+            
             OUTER APPLY (
                 SELECT STRING_AGG(CuisineName, ', ') AS Cuisine
                 FROM (
@@ -36,6 +58,36 @@ async function getAllStalls() {
                 ) distinctCuisines
             ) cuisineData
             WHERE fs.IsActive = 1
+              AND (
+                    @Name IS NULL
+                    OR fs.StallName LIKE '%' + @Name + '%'
+              )
+              AND (
+                    @Cuisine IS NULL
+                    OR EXISTS (
+                        SELECT 1
+                        FROM MenuItem mi
+                        JOIN MenuItemCuisine mic
+                            ON mi.MenuItemID = mic.MenuItemID
+                        JOIN Cuisine c
+                            ON mic.CuisineID = c.CuisineID
+                        WHERE mi.StallID = fs.StallID
+                          AND c.CuisineName = @Cuisine
+                    )
+              )
+              AND (
+                    @Area IS NULL
+                    OR hc.Area = @Area
+              )
+              AND (
+                    @Grade IS NULL
+                    OR (
+                        SELECT TOP 1 i.HygieneGrade
+                        FROM Inspection i
+                        WHERE i.StallID = fs.StallID
+                        ORDER BY i.InspectionDate DESC
+                    ) = @Grade
+              )
             ORDER BY fs.StallName;
         `);
 
