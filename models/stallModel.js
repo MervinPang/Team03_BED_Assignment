@@ -2,11 +2,7 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-<<<<<<< HEAD
-// Retrieve all active food stalls with optional filters
-=======
-// Retrieve all active food stalls
->>>>>>> Mervin's-branch
+// Retrieve all active food stalls with optional changes
 async function getAllStalls(filters = {}) {
     let connection;
 
@@ -14,62 +10,23 @@ async function getAllStalls(filters = {}) {
         connection = await sql.connect(dbConfig);
 
         const request = connection.request();
-<<<<<<< HEAD
-        request.input("Name", sql.VarChar(80), filters.name || null);
-        request.input("Cuisine", sql.VarChar(50), filters.cuisine || null);
-        request.input("Area", sql.VarChar(50), filters.area || null);
-        request.input("Grade", sql.Char(1), filters.grade || null);
-=======
 
         request.input("Name", sql.VarChar(80), filters.name || null);
         request.input("Cuisine", sql.VarChar(50), filters.cuisine || null);
         request.input("Area", sql.VarChar(50), filters.area || null);
-        request.input("Grade",sql.Char(1),filters.grade || null);
->>>>>>> Mervin's-branch
+        request.input("Grade", sql.Char(1), filters.grade || null);
 
         const result = await request.query(`
             SELECT
                 fs.StallID,
                 fs.StallName,
-                fs.StallDesc,
+                fs.StallDesc AS Description,
                 fs.StallImage,
+                fs.IsActive AS IsAvailable,
                 fs.StallUnitNo,
-                fs.IsActive,
                 hc.HCName,
                 hc.HCAddress,
                 hc.Area,
-<<<<<<< HEAD
-
-                (
-                    SELECT TOP 1 HygieneGrade
-                    FROM Inspection
-                    WHERE StallID = fs.StallID
-                    ORDER BY InspectionDate DESC
-                ) AS HygieneGrade,
-
-                (
-                    SELECT AVG(ItemPrice)
-                    FROM MenuItem
-                    WHERE StallID = fs.StallID
-                    AND IsAvailable = 1
-                ) AS AveragePrice
-
-            FROM FoodStall fs
-            INNER JOIN HawkerCentre hc
-                ON fs.HawkerCentreID = hc.HawkerCentreID
-
-            WHERE fs.IsActive = 1
-
-            AND (
-                @Name IS NULL
-                OR fs.StallName LIKE '%' + @Name + '%'
-            )
-
-            AND (
-                @Cuisine IS NULL
-                OR EXISTS (
-                    SELECT 1
-=======
                 (
                     SELECT TOP 1 i.HygieneGrade
                     FROM Inspection i
@@ -81,51 +38,25 @@ async function getAllStalls(filters = {}) {
                     FROM MenuItem mi
                     WHERE mi.StallID = fs.StallID
                 ) AS AveragePrice,
-
                 cuisineData.Cuisine
             FROM FoodStall fs
 
             JOIN HawkerCentre hc
                 ON fs.HawkerCentreID = hc.HawkerCentreID
-            
             OUTER APPLY (
                 SELECT STRING_AGG(CuisineName, ', ') AS Cuisine
                 FROM (
                     SELECT DISTINCT c.CuisineName
->>>>>>> Mervin's-branch
                     FROM MenuItem mi
-                    INNER JOIN MenuItemCuisine mic
+                    JOIN MenuItemCuisine mic
                         ON mi.MenuItemID = mic.MenuItemID
-                    INNER JOIN Cuisine c
+                    JOIN Cuisine c
                         ON mic.CuisineID = c.CuisineID
                     WHERE mi.StallID = fs.StallID
-<<<<<<< HEAD
-                    AND c.CuisineName = @Cuisine
-                )
-            )
-
-            AND (
-                @Area IS NULL
-                OR hc.Area = @Area
-            )
-
-            AND (
-                @Grade IS NULL
-                OR (
-                    SELECT TOP 1 HygieneGrade
-                    FROM Inspection
-                    WHERE StallID = fs.StallID
-                    ORDER BY InspectionDate DESC
-                ) = @Grade
-            )
-
-            ORDER BY
-                hc.Area,
-                fs.StallName;
-=======
                 ) distinctCuisines
             ) cuisineData
             WHERE fs.IsActive = 1
+
               AND (
                     @Name IS NULL
                     OR fs.StallName LIKE '%' + @Name + '%'
@@ -157,7 +88,6 @@ async function getAllStalls(filters = {}) {
                     ) = @Grade
               )
             ORDER BY fs.StallName;
->>>>>>> Mervin's-branch
         `);
 
         return result.recordset;
