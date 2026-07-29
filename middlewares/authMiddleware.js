@@ -56,9 +56,11 @@ function verifyJWT(req, res, next) {
             "GET /inspections/[0-9]+": ["customer", "vendor", "nea_officer"],
 
             // Complaints
+            // Vendors read complaints about their stall but cannot close them.
+            // Only an NEA officer decides the outcome of a case.
             "POST /complaints": ["customer"],
             "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer"],
-            "PUT /complaints/[0-9]+/status": ["vendor", "nea_officer"],
+            "PUT /complaints/[0-9]+/status": ["nea_officer"],
 
             //Analytics
             "GET /analytics/revenue/[0-9]+": ["vendor"],

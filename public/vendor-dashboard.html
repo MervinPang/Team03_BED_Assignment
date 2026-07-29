@@ -176,6 +176,72 @@
                         </div>
                   </section>
                   <section hidden="" id="vendorOrdersPanel" style="margin-top:20px">
+                        <div class="card card-pad order-filter-bar">
+                              <div class="row-between wrap">
+                                    <div>
+                                          <span class="small muted" id="orderQueueStall">
+                                                Order queue
+                                          </span>
+                                          <h3 id="orderFilterHeading">
+                                                Orders to prepare
+                                          </h3>
+                                    </div>
+                                    <span class="small muted" id="orderFilterCount">
+                                    </span>
+                              </div>
+                              <div aria-label="Filter orders by status" class="order-filter-chips" id="orderFilters"
+                                    role="group">
+                                    <button aria-pressed="true" class="order-chip is-active" data-order-filter="active"
+                                          type="button">
+                                          To prepare
+                                          <span class="order-chip-count" data-count-for="active">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="Pending"
+                                          type="button">
+                                          Pending
+                                          <span class="order-chip-count" data-count-for="Pending">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="Preparing"
+                                          type="button">
+                                          Preparing
+                                          <span class="order-chip-count" data-count-for="Preparing">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="Ready"
+                                          type="button">
+                                          Ready
+                                          <span class="order-chip-count" data-count-for="Ready">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="Completed"
+                                          type="button">
+                                          Completed
+                                          <span class="order-chip-count" data-count-for="Completed">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="Cancelled"
+                                          type="button">
+                                          Cancelled
+                                          <span class="order-chip-count" data-count-for="Cancelled">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-order-filter="all"
+                                          type="button">
+                                          All orders
+                                          <span class="order-chip-count" data-count-for="all">
+                                                0
+                                          </span>
+                                    </button>
+                              </div>
+                        </div>
                         <div class="grid grid-2" id="vendorOrdersList">
                         </div>
                   </section>

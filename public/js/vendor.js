@@ -187,6 +187,130 @@ document.addEventListener("DOMContentLoaded", async () => {
     return 0;
   }
 
+  /*
+   The order queue is filtered on the page rather than at the API, so the
+   vendor can switch between statuses without waiting for another request.
+   The orders that were read last are kept here for that reason.
+   */
+  let vendorOrders = [];
+  let paymentByOrder = new Map();
+  let orderStatusFilter = "active";
+  let ordersLoaded = false;
+
+  // Statuses that still need something done by the vendor
+  const activeOrderStatuses = ["Pending", "Preparing", "Ready"];
+
+  const orderFilters = document.getElementById("orderFilters");
+  const orderFilterHeading = document.getElementById("orderFilterHeading");
+  const orderFilterCount = document.getElementById("orderFilterCount");
+  const orderQueueStall = document.getElementById("orderQueueStall");
+
+  /*
+   GET /orders returns every order for every stall the vendor owns, so a vendor
+   with two stalls would otherwise see both queues mixed together. Each order is
+   placed with one stall only, so the stall name carried by the order items is
+   what decides which queue the order belongs to.
+   */
+  function orderStallName(order) {
+    const items = normaliseArray(order.items);
+
+    const named = items.find(item => item.StallName);
+
+    return named ? named.StallName : null;
+  }
+
+  function selectedStallName() {
+    const stall = vendorStalls.find(
+      entry => Number(entry.StallID) === Number(stallSelect.value)
+    );
+
+    return stall?.StallName || null;
+  }
+
+  /*
+   An order whose items could not be read has no stall name to compare. It stays
+   on the list rather than disappearing, and its card already says that the item
+   details were unavailable.
+   */
+  function belongsToSelectedStall(order) {
+    const stallName = selectedStallName();
+
+    if (!stallName) return true;
+
+    const orderStall = orderStallName(order);
+
+    return orderStall === null || orderStall === stallName;
+  }
+
+  const orderFilterHeadings = {
+    active: "Orders to prepare",
+    Pending: "Pending orders",
+    Preparing: "Orders being prepared",
+    Ready: "Orders ready for collection",
+    Completed: "Completed orders",
+    Cancelled: "Cancelled orders",
+    all: "All orders"
+  };
+
+  // Wording used when a status has nothing to show
+  const orderFilterLabels = {
+    active: "waiting to be prepared",
+    Pending: "pending",
+    Preparing: "being prepared",
+    Ready: "ready for collection",
+    Completed: "completed",
+    Cancelled: "cancelled",
+    all: "in this status"
+  };
+
+  function matchesOrderFilter(order, filter) {
+    if (filter === "all") return true;
+
+    if (filter === "active") {
+      return activeOrderStatuses.includes(order.OrderStatus);
+    }
+
+    return order.OrderStatus === filter;
+  }
+
+  // Each chip shows how many orders it would display when clicked
+  function updateOrderFilterCounts(stallOrders) {
+    if (!orderFilters) return;
+
+    orderFilters
+      .querySelectorAll("[data-count-for]")
+      .forEach(counter => {
+        const matching = stallOrders.filter(order =>
+          matchesOrderFilter(order, counter.dataset.countFor)
+        );
+
+        counter.textContent = matching.length;
+      });
+  }
+
+  function setOrderFilter(filter) {
+    orderStatusFilter = filter;
+
+    if (orderFilters) {
+      orderFilters
+        .querySelectorAll("[data-order-filter]")
+        .forEach(chip => {
+          const isChosen =
+            chip.dataset.orderFilter === filter;
+
+          chip.classList.toggle("is-active", isChosen);
+          chip.setAttribute("aria-pressed", String(isChosen));
+        });
+    }
+
+    if (orderFilterHeading) {
+      orderFilterHeading.textContent =
+        orderFilterHeadings[filter] || "Orders";
+    }
+
+    renderOrders();
+  }
+
   async function loadOrders() {
     ordersList.innerHTML = `
       <div class="card empty">
@@ -210,7 +334,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       const payments =
         normaliseArray(paymentsResponse);
 
-      const paymentByOrder =
+      paymentByOrder =
         new Map(
           payments.map(payment => [
             Number(payment.OrderID),
@@ -219,15 +343,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         );
 
       if (!orders.length) {
-        ordersList.innerHTML = `
-          <div class="card empty premium-empty">
-            <div class="empty-state-icon">📦</div>
-            <h3>No authorised orders</h3>
-            <p class="muted">
-              New orders for your stall will appear here.
-            </p>
-          </div>
-        `;
+        vendorOrders = [];
+        ordersLoaded = true;
+        renderOrders();
         return;
       }
 
@@ -255,285 +373,11 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
       }
 
-      ordersList.innerHTML = detailedOrders.map(order => {
-        const payment =
-          paymentByOrder.get(Number(order.OrderID));
+      vendorOrders = detailedOrders;
+      ordersLoaded = true;
 
-        const paymentStatus =
-          payment?.PaymentStatus || "Not recorded";
-
-        const isCancelled =
-          order.OrderStatus === "Cancelled";
-
-        const isCompleted =
-          order.OrderStatus === "Completed";
-
-        const cashAwaitingPayment =
-          !isCancelled &&
-          !isCompleted &&
-          payment?.PaymentMethod === "Cash" &&
-          paymentStatus === "Pending";
-
-        const canPrepare =
-          !isCancelled &&
-          paymentStatus === "Successful" &&
-          order.OrderStatus === "Pending";
-
-        const canMarkReady =
-          order.OrderStatus === "Preparing";
-
-        const canComplete =
-          order.OrderStatus === "Ready";
-
-        const items = normaliseArray(order.items);
-
-        const itemCount = items.reduce(
-          (total, item) =>
-            total + Number(item.Quantity || 0),
-          0
-        );
-
-        return `
-          <article class="card vendor-order-card">
-            <div class="row-between wrap">
-              <div>
-                <span class="small muted">
-                  Order #${order.OrderID}
-                </span>
-                <h3>
-                  ${esc(order.CustomerName || "Customer")}
-                </h3>
-              </div>
-
-              <span class="badge ${order.OrderStatus === "Cancelled"
-            ? "unavailable"
-            : "warning"
-          }">
-                ${esc(order.OrderStatus)}
-              </span>
-            </div>
-
-            <div class="payment-strip">
-              <span>
-                ${esc(payment?.PaymentMethod || "No payment")}
-              </span>
-              <span class="badge ${paymentBadgeClass(paymentStatus)}">
-                ${esc(paymentLabel(paymentStatus))}
-              </span>
-            </div>
-
-            <div class="vendor-order-items">
-              <div class="row-between">
-                <span class="small muted">
-                  Items to prepare
-                </span>
-                <span class="small muted">
-                  ${itemCount}
-                  ${itemCount === 1 ? "item" : "items"}
-                </span>
-              </div>
-
-              ${items.length
-            ? items.map(item => `
-                      <div class="vendor-order-item">
-                        <span class="vendor-order-qty">
-                          ${Number(item.Quantity || 0)}×
-                        </span>
-                        <span class="vendor-order-item-name">
-                          ${esc(item.ItemName || "Menu item")}
-                        </span>
-                        <span class="vendor-order-item-price">
-                          ${money(item.Subtotal)}
-                        </span>
-                      </div>
-                    `).join("")
-            : `
-                    <p class="small muted">
-                      No item details were returned for this order.
-                    </p>
-                  `
-          }
-
-              <div class="row-between vendor-order-total">
-                <strong>Order total</strong>
-                <strong>${money(order.TotalAmount)}</strong>
-              </div>
-            </div>
-
-            ${order.SpecialInstructions
-            ? `
-                  <div class="vendor-order-note">
-                    <strong>Special instructions</strong>
-                    <p>${esc(order.SpecialInstructions)}</p>
-                  </div>
-                `
-            : ""
-          }
-
-            ${cashAwaitingPayment
-            ? `
-                  <div class="cash-warning">
-                    <strong>Awaiting cash payment</strong>
-                    <p>
-                      Confirm payment before beginning preparation.
-                    </p>
-                  </div>
-
-                  <button
-                    class="button primary"
-                    type="button"
-                    data-confirm-payment="${payment.PaymentID}"
-                  >
-                    Confirm cash received
-                  </button>
-                `
-            : ""
-          }
-
-            ${!isCancelled && !isCompleted && !cashAwaitingPayment && paymentStatus !== "Successful"
-            ? `
-                  <div class="cash-warning">
-                    <strong>Payment not successful</strong>
-                    <p>Preparation is disabled until payment is successful.</p>
-                  </div>
-                `
-            : ""
-          }
-
-            <div class="vendor-order-actions">
-              ${canPrepare
-            ? `
-                    <button
-                      class="button secondary"
-                      type="button"
-                      data-status-order="${order.OrderID}"
-                      data-next-status="Preparing"
-                    >
-                      Start preparing
-                    </button>
-                  `
-            : ""
-          }
-
-              ${canMarkReady
-            ? `
-                    <button
-                      class="button secondary"
-                      type="button"
-                      data-status-order="${order.OrderID}"
-                      data-next-status="Ready"
-                    >
-                      Mark ready
-                    </button>
-                  `
-            : ""
-          }
-
-              ${canComplete
-            ? `
-                    <button
-                      class="button primary"
-                      type="button"
-                      data-status-order="${order.OrderID}"
-                      data-next-status="Completed"
-                    >
-                      Complete order
-                    </button>
-                  `
-            : ""
-          }
-
-              ${order.OrderStatus === "Pending"
-            ? `
-                    <button
-                      class="button danger"
-                      type="button"
-                      data-status-order="${order.OrderID}"
-                      data-next-status="Cancelled"
-                    >
-                      Cancel order
-                    </button>
-                  `
-            : ""
-          }
-            </div>
-          </article>
-        `;
-      }).join("");
-
-      ordersList
-        .querySelectorAll("[data-confirm-payment]")
-        .forEach(button => {
-          button.addEventListener("click", async () => {
-            button.disabled = true;
-            button.textContent = "Confirming…";
-
-            try {
-              await apiRequest(
-                `/payments/${button.dataset.confirmPayment}/status`,
-                {
-                  method: "PUT",
-                  body: JSON.stringify({
-                    PaymentStatus: "Successful"
-                  })
-                }
-              );
-
-              showToast("Cash payment confirmed.");
-              await loadOrders();
-              await refreshAnalytics();
-            } catch (error) {
-              showToast(error.message, "error");
-              button.disabled = false;
-              button.textContent = "Confirm cash received";
-            }
-          });
-        });
-
-      ordersList
-        .querySelectorAll("[data-status-order]")
-        .forEach(button => {
-          button.addEventListener("click", async () => {
-            const nextStatus =
-              button.dataset.nextStatus;
-
-            const question =
-              nextStatus === "Cancelled"
-                ? "Cancel this order?"
-                : `Change this order to ${nextStatus}?`;
-
-            if (!window.confirm(question)) return;
-
-            button.disabled = true;
-
-            try {
-              await apiRequest(
-                `/orders/${button.dataset.statusOrder}/status`,
-                {
-                  method: "PUT",
-                  body: JSON.stringify({
-                    OrderStatus: nextStatus
-                  })
-                }
-              );
-
-              showToast(
-                `Order updated to ${nextStatus}.`
-              );
-
-              await loadOrders();
-
-              /*
-               A completed order adds its items to the top-selling
-               totals, so the analytics panel is re-read here.
-               */
-              await refreshAnalytics();
-            } catch (error) {
-              showToast(error.message, "error");
-              button.disabled = false;
-            }
-          });
-        });
+      // Re-applies whichever status chip the vendor is currently on
+      setOrderFilter(orderStatusFilter);
     } catch (error) {
       ordersList.innerHTML = `
         <div class="form-message error">
@@ -541,6 +385,360 @@ document.addEventListener("DOMContentLoaded", async () => {
         </div>
       `;
     }
+  }
+
+  function renderOrders() {
+    // Nothing to filter until the first read of the orders has finished
+    if (!ordersLoaded) return;
+
+    const stallName = selectedStallName();
+
+    // Only the stall chosen in the selector is queued up
+    const stallOrders = vendorOrders.filter(belongsToSelectedStall);
+
+    const visibleOrders = stallOrders.filter(order =>
+      matchesOrderFilter(order, orderStatusFilter)
+    );
+
+    updateOrderFilterCounts(stallOrders);
+
+    if (orderQueueStall) {
+      orderQueueStall.textContent = stallName
+        ? `Order queue · ${stallName}`
+        : "Order queue";
+    }
+
+    if (orderFilterCount) {
+      orderFilterCount.textContent = stallOrders.length
+        ? `Showing ${visibleOrders.length} of ${stallOrders.length} ${stallOrders.length === 1 ? "order" : "orders"}`
+        : "";
+    }
+
+    if (!stallOrders.length) {
+      ordersList.innerHTML = `
+        <div class="card empty premium-empty">
+          <div class="empty-state-icon">📦</div>
+          <h3>No orders yet</h3>
+          <p class="muted">
+            New orders for
+            ${stallName ? esc(stallName) : "your stall"}
+            will appear here.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    /*
+     An empty result here means the orders exist but are hidden by the chosen
+     status, so the vendor is told how to see the rest of them.
+     */
+    if (!visibleOrders.length) {
+      ordersList.innerHTML = `
+        <div class="card empty premium-empty">
+          <div class="empty-state-icon">📦</div>
+          <h3>Nothing under this status</h3>
+          <p class="muted">
+            ${stallOrders.length === 1
+          ? `The order for ${esc(stallName || "this stall")} is not`
+          : `None of the ${stallOrders.length} orders for ${esc(stallName || "this stall")} are`
+        }
+            ${esc(orderFilterLabels[orderStatusFilter] || "in this status")}
+            right now.
+          </p>
+          <button class="button secondary" type="button" data-show-all-orders>
+            View all orders
+          </button>
+        </div>
+      `;
+
+      ordersList
+        .querySelector("[data-show-all-orders]")
+        ?.addEventListener("click", () => setOrderFilter("all"));
+
+      return;
+    }
+
+    ordersList.innerHTML = visibleOrders.map(order => {
+      const payment =
+        paymentByOrder.get(Number(order.OrderID));
+
+      const paymentStatus =
+        payment?.PaymentStatus || "Not recorded";
+
+      const isCancelled =
+        order.OrderStatus === "Cancelled";
+
+      const isCompleted =
+        order.OrderStatus === "Completed";
+
+      const cashAwaitingPayment =
+        !isCancelled &&
+        !isCompleted &&
+        payment?.PaymentMethod === "Cash" &&
+        paymentStatus === "Pending";
+
+      const canPrepare =
+        !isCancelled &&
+        paymentStatus === "Successful" &&
+        order.OrderStatus === "Pending";
+
+      const canMarkReady =
+        order.OrderStatus === "Preparing";
+
+      const canComplete =
+        order.OrderStatus === "Ready";
+
+      const items = normaliseArray(order.items);
+
+      const itemCount = items.reduce(
+        (total, item) =>
+          total + Number(item.Quantity || 0),
+        0
+      );
+
+      return `
+        <article class="card vendor-order-card">
+          <div class="row-between wrap">
+            <div>
+              <span class="small muted">
+                Order #${order.OrderID}
+              </span>
+              <h3>
+                ${esc(order.CustomerName || "Customer")}
+              </h3>
+            </div>
+
+            <span class="badge ${order.OrderStatus === "Cancelled"
+          ? "unavailable"
+          : "warning"
+        }">
+              ${esc(order.OrderStatus)}
+            </span>
+          </div>
+
+          <div class="payment-strip">
+            <span>
+              ${esc(payment?.PaymentMethod || "No payment")}
+            </span>
+            <span class="badge ${paymentBadgeClass(paymentStatus)}">
+              ${esc(paymentLabel(paymentStatus))}
+            </span>
+          </div>
+
+          <div class="vendor-order-items">
+            <div class="row-between">
+              <span class="small muted">
+                Items to prepare
+              </span>
+              <span class="small muted">
+                ${itemCount}
+                ${itemCount === 1 ? "item" : "items"}
+              </span>
+            </div>
+
+            ${items.length
+          ? items.map(item => `
+                    <div class="vendor-order-item">
+                      <span class="vendor-order-qty">
+                        ${Number(item.Quantity || 0)}×
+                      </span>
+                      <span class="vendor-order-item-name">
+                        ${esc(item.ItemName || "Menu item")}
+                      </span>
+                      <span class="vendor-order-item-price">
+                        ${money(item.Subtotal)}
+                      </span>
+                    </div>
+                  `).join("")
+          : `
+                  <p class="small muted">
+                    No item details were returned for this order.
+                  </p>
+                `
+        }
+
+            <div class="row-between vendor-order-total">
+              <strong>Order total</strong>
+              <strong>${money(order.TotalAmount)}</strong>
+            </div>
+          </div>
+
+          ${order.SpecialInstructions
+          ? `
+                <div class="vendor-order-note">
+                  <strong>Special instructions</strong>
+                  <p>${esc(order.SpecialInstructions)}</p>
+                </div>
+              `
+          : ""
+        }
+
+          ${cashAwaitingPayment
+          ? `
+                <div class="cash-warning">
+                  <strong>Awaiting cash payment</strong>
+                  <p>
+                    Confirm payment before beginning preparation.
+                  </p>
+                </div>
+
+                <button
+                  class="button primary"
+                  type="button"
+                  data-confirm-payment="${payment.PaymentID}"
+                >
+                  Confirm cash received
+                </button>
+              `
+          : ""
+        }
+
+          ${!isCancelled && !isCompleted && !cashAwaitingPayment && paymentStatus !== "Successful"
+          ? `
+                <div class="cash-warning">
+                  <strong>Payment not successful</strong>
+                  <p>Preparation is disabled until payment is successful.</p>
+                </div>
+              `
+          : ""
+        }
+
+          <div class="vendor-order-actions">
+            ${canPrepare
+          ? `
+                  <button
+                    class="button secondary"
+                    type="button"
+                    data-status-order="${order.OrderID}"
+                    data-next-status="Preparing"
+                  >
+                    Start preparing
+                  </button>
+                `
+          : ""
+        }
+
+            ${canMarkReady
+          ? `
+                  <button
+                    class="button secondary"
+                    type="button"
+                    data-status-order="${order.OrderID}"
+                    data-next-status="Ready"
+                  >
+                    Mark ready
+                  </button>
+                `
+          : ""
+        }
+
+            ${canComplete
+          ? `
+                  <button
+                    class="button primary"
+                    type="button"
+                    data-status-order="${order.OrderID}"
+                    data-next-status="Completed"
+                  >
+                    Complete order
+                  </button>
+                `
+          : ""
+        }
+
+            ${order.OrderStatus === "Pending"
+          ? `
+                  <button
+                    class="button danger"
+                    type="button"
+                    data-status-order="${order.OrderID}"
+                    data-next-status="Cancelled"
+                  >
+                    Cancel order
+                  </button>
+                `
+          : ""
+        }
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    ordersList
+      .querySelectorAll("[data-confirm-payment]")
+      .forEach(button => {
+        button.addEventListener("click", async () => {
+          button.disabled = true;
+          button.textContent = "Confirming…";
+
+          try {
+            await apiRequest(
+              `/payments/${button.dataset.confirmPayment}/status`,
+              {
+                method: "PUT",
+                body: JSON.stringify({
+                  PaymentStatus: "Successful"
+                })
+              }
+            );
+
+            showToast("Cash payment confirmed.");
+            await loadOrders();
+            await refreshAnalytics();
+          } catch (error) {
+            showToast(error.message, "error");
+            button.disabled = false;
+            button.textContent = "Confirm cash received";
+          }
+        });
+      });
+
+    ordersList
+      .querySelectorAll("[data-status-order]")
+      .forEach(button => {
+        button.addEventListener("click", async () => {
+          const nextStatus =
+            button.dataset.nextStatus;
+
+          const question =
+            nextStatus === "Cancelled"
+              ? "Cancel this order?"
+              : `Change this order to ${nextStatus}?`;
+
+          if (!window.confirm(question)) return;
+
+          button.disabled = true;
+
+          try {
+            await apiRequest(
+              `/orders/${button.dataset.statusOrder}/status`,
+              {
+                method: "PUT",
+                body: JSON.stringify({
+                  OrderStatus: nextStatus
+                })
+              }
+            );
+
+            showToast(
+              `Order updated to ${nextStatus}.`
+            );
+
+            await loadOrders();
+
+            /*
+             A completed order adds its items to the top-selling
+             totals, so the analytics panel is re-read here.
+             */
+            await refreshAnalytics();
+          } catch (error) {
+            showToast(error.message, "error");
+            button.disabled = false;
+          }
+        });
+      });
   }
 
   /*
@@ -1496,6 +1694,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   });
 
+  // The chips only change what is already on the page, so no request is made
+  if (orderFilters) {
+    orderFilters
+      .querySelectorAll("[data-order-filter]")
+      .forEach(chip => {
+        chip.addEventListener("click", () =>
+          setOrderFilter(chip.dataset.orderFilter)
+        );
+      });
+  }
+
   const stallsLoaded = await loadVendorStalls();
 
   if (stallsLoaded) {
@@ -1548,6 +1757,12 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Changing the selected stall reloads whatever the menu tab is showing
   stallSelect.addEventListener("change", () => {
+    /*
+     The orders are already in the browser, so switching stall only re-runs the
+     filter instead of asking the API for the list again.
+     */
+    renderOrders();
+
     if (!menuPanel.hidden) {
       loadMenu();
       loadTenancy();

@@ -12,9 +12,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const currentRole = role(currentUser.role);
     const isCustomer = currentRole === "customer";
-    const canManageStatus =
-        currentRole === "vendor" ||
-        currentRole === "nea_officer";
+
+    // A complaint is decided by the NEA officer, not by the stall it is about
+    const canManageStatus = currentRole === "nea_officer";
 
     const STATUSES = ["Pending", "In Review", "Resolved"];
 
@@ -358,6 +358,15 @@ document.addEventListener("DOMContentLoaded", async () => {
             loadedStallName = stallName(stallId);
 
             applyFilters();
+
+            // Explains to the vendor why no status control is on the cases
+            if (currentRole === "vendor") {
+                setMessage(
+                    trackerMessage,
+                    "You can view every complaint about your stall here. The outcome of a case is decided by the NEA officer.",
+                    "info"
+                );
+            }
         } catch (error) {
             setMessage(trackerMessage, error.message, "error");
             showToast(error.message, "error");
