@@ -75,7 +75,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         setMessage(
           message,
-          "No food stall is assigned to your vendor account. Please check FoodStall.VendorUserID in the database.",
+          "No food stall is assigned to your vendor account yet. Please contact the hawker centre operator.",
           "warning"
         );
 
@@ -681,10 +681,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           }).join("")
           : `
             <div class="analytics-empty">
-              <strong>No top-item records returned</strong>
+              <strong>No best-selling items yet</strong>
               <p class="muted">
-                The frontend successfully contacted the endpoint, but the
-                backend returned no item rows for this stall.
+                Your top items will appear here once orders for this
+                stall have been completed.
               </p>
             </div>
           `;
@@ -695,7 +695,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (totalRevenue === 0 && totalOrders > 0) {
           setMessage(
             message,
-            "Orders were found, but the revenue endpoint returned $0.00. Check whether your analytics SQL counts only Successful payments or Completed orders.",
+            "Your stall has orders, but no revenue yet. Revenue is counted once an order is marked as completed.",
             "warning"
           );
         } else {
@@ -723,7 +723,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       setMessage(
         message,
         error.status === 403
-          ? `${error.message} The selected stall is not assigned to ${currentVendor?.username || "this vendor"}. Check FoodStall.VendorUserID in SQL.`
+          ? "You can only view analytics for a stall assigned to your account."
           : error.message,
         "error"
       );
