@@ -205,12 +205,10 @@ document.addEventListener("DOMContentLoaded", async () => {
   const orderFilterCount = document.getElementById("orderFilterCount");
   const orderQueueStall = document.getElementById("orderQueueStall");
 
-  /*
-   GET /orders returns every order for every stall the vendor owns, so a vendor
-   with two stalls would otherwise see both queues mixed together. Each order is
-   placed with one stall only, so the stall name carried by the order items is
-   what decides which queue the order belongs to.
-   */
+  /*GET /orders returns every order for every stall the vendor owns, 
+  so a vendor with two stalls would otherwise see both queues mixed together. 
+  Each order is placed with one stall only, so the stall name carried by the order items is
+  what decides which queue the order belongs to.*/
   function orderStallName(order) {
     const items = normaliseArray(order.items);
 
@@ -227,11 +225,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return stall?.StallName || null;
   }
 
-  /*
-   An order whose items could not be read has no stall name to compare. It stays
+   /*An order whose items could not be read has no stall name to compare. It stays
    on the list rather than disappearing, and its card already says that the item
-   details were unavailable.
-   */
+   details were unavailable.*/
   function belongsToSelectedStall(order) {
     const stallName = selectedStallName();
 
@@ -320,11 +316,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     `;
 
     try {
-      /*
-       * Requests are sent one at a time. Each model function closes the shared
-       * connection pool when it finishes, so two requests that overlap make the
-       * second one fail with ECONNCLOSED.
-       */
+      /* Requests are sent one at a time. Each model function closes the shared
+      connection pool when it finishes, so two requests that overlap make the 
+      second one fail with ECONNCLOSED. */
       const ordersResponse = await apiRequest("/orders");
       const paymentsResponse = await apiRequest("/payments");
 
@@ -1326,11 +1320,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     return "unavailable";
   }
 
-  /*
-   * Builds one entry per calendar month the vendor holds the stall. The rent of
-   * a month is taken from the agreement that covers it, so a renewal at a new
-   * price appears as a step instead of being averaged away.
-   */
+  /* Builds one entry per calendar month the vendor holds the stall. 
+  The rent ofa month is taken from the agreement that covers it, so a renewal at a new
+   price appears as a step instead of being averaged away.*/
   function buildRentMonths(stallAgreements) {
     const periods = stallAgreements
       .map(agreement => ({
@@ -1395,17 +1387,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     return months;
   }
 
-  /*
-   * A column per month, with the current month in the accent colour and the
-   * remaining months in a lighter step of the same hue. Values are reachable
-   * from the bar labels and the table view, never from the tooltip alone.
-   */
+  /* A column per month, with the current month in the accent colour and the remaining months in a lighter step of the same hue.
+  Values are reachable from the bar labels and the table view, never from the tooltip alone.*/
   function renderRentChart(months) {
-    /*
-     * A single month would draw one lonely bar that says no more than the
-     * monthly rent figure above it, so the chart only appears once there are
-     * months to compare.
-     */
+    //A single month would draw one lonely bar that says no more than themonthly rent figure above it, 
+    //so the chart only appears once there are months to compare.
     if (months.length < 2) {
       return "";
     }
@@ -1757,10 +1743,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Changing the selected stall reloads whatever the menu tab is showing
   stallSelect.addEventListener("change", () => {
-    /*
-     The orders are already in the browser, so switching stall only re-runs the
-     filter instead of asking the API for the list again.
-     */
+    /*The orders are already in the browser, so switching stall only re-runs the
+     filter instead of asking the API for the list again.*/
     renderOrders();
 
     if (!menuPanel.hidden) {
