@@ -21,6 +21,26 @@ const accountRegistrationSchema = Joi.object({
     }),
 }).unknown(false);
 
+// Validation schema for checking whether guest account details
+// are already registered before proceeding to payment
+const accountAvailabilitySchema = Joi.object({
+    Username: Joi.string().trim().min(3).max(50).required().messages({
+        "string.base": "Username must be a string",
+        "string.empty": "Username is required",
+        "string.min": "Username must be at least 3 characters",
+        "string.max": "Username cannot exceed 50 characters",
+        "any.required": "Username is required",
+    }),
+
+    Email: Joi.string().trim().email().max(100).required().messages({
+        "string.base": "Email must be a string",
+        "string.empty": "Email is required",
+        "string.email": "Email must be a valid email address",
+        "string.max": "Email cannot exceed 100 characters",
+        "any.required": "Email is required",
+    }),
+}).unknown(false);
+
 // Validates payment requests before business logic executes
 // Validation protects the application from malformed, incomplete and unexpected client input while ensuring
 // required payment information is supplied
@@ -132,6 +152,25 @@ function validatePayment(req, res, next) {
     next();
 }
 
+// Validates guest account details before checking the database
+function validateAccountAvailability(req, res, next) {
+    const { error, value } =
+        accountAvailabilitySchema.validate(req.body, {
+            abortEarly: false,
+        });
+
+    if (error) {
+        const errorMessage = error.details
+            .map((detail) => detail.message)
+            .join(", ");
+
+        return res.status(400).json({ error: errorMessage, });
+    }
+
+    req.body = value;
+    next();
+}
+
 // Middleware to validate payment status for PUT
 function validatePaymentStatus(req, res, next) {
     const { error, value } = paymentStatusSchema.validate(req.body, {
@@ -204,6 +243,7 @@ function validateOrderIdParam(req, res, next) {
 // Export validation middleware for use in app.js
 module.exports = {
     validatePayment,
+    validateAccountAvailability,
     validatePaymentStatus,
     validatePaymentMethodUpdate,
     validatePaymentId,

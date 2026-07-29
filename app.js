@@ -18,9 +18,9 @@ const { validateOrder, validateOrderStatus, validateOrderId, validateGuestOrderC
 
 const { validateOrderHistoryId, validateGuestOrderHistory } = require("./middlewares/orderHistoryValidation"); // Import Order History Validation Middlware
 
-const { validatePayment, validatePaymentStatus, validatePaymentMethodUpdate, validatePaymentId, validateOrderIdParam } = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
+const { validatePayment, validateAccountAvailability, validatePaymentStatus, validatePaymentMethodUpdate, validatePaymentId, validateOrderIdParam } = require("./middlewares/paymentValidation"); // Import Payment Validation Middleware
 
-const {validateRegistration, validateLogin} = require("./middlewares/userValidation"); // Import User Validation Middleware
+const { validateRegistration, validateLogin } = require("./middlewares/userValidation"); // Import User Validation Middleware
 
 const { verifyJWT, optionalJWT } = require("./middlewares/authMiddleware"); // Import JWT Authorization Middleware
 
@@ -38,7 +38,7 @@ const { validateStallOwnership } = require("./middlewares/analyticsValidation");
 
 const vendorMenuController = require("./controllers/vendorMenuController");
 
-const { validateMenuItem, validateAvailability, validateStallUpdate, requireStallOwnership, requireMenuItemInStall} = require("./middlewares/vendorMenuValidation"); // Import Vendor Menu Validation Middleware
+const { validateMenuItem, validateAvailability, validateStallUpdate, requireStallOwnership, requireMenuItemInStall } = require("./middlewares/vendorMenuValidation"); // Import Vendor Menu Validation Middleware
 
 const rentalController = require("./controllers/rentalController");
 
@@ -88,15 +88,16 @@ app.put("/orders/:id/guest-cancel", validateOrderId, validateGuestOrderCancellat
 
 // Routes for Order History
 app.get("/order-history/active", verifyJWT, orderHistoryController.getActiveOrderHistory);
-app.get("/order-history/previous",verifyJWT,orderHistoryController.getPreviousOrderHistory);
+app.get("/order-history/previous", verifyJWT, orderHistoryController.getPreviousOrderHistory);
 app.get("/order-history/most-frequent", verifyJWT, orderHistoryController.getMostFrequentOrders);
-app.post("/order-history/guest",validateGuestOrderHistory,orderHistoryController.getGuestOrderHistory);
-app.get("/order-history/:id",verifyJWT,validateOrderHistoryId,orderHistoryController.getOrderHistoryById);
+app.post("/order-history/guest", validateGuestOrderHistory, orderHistoryController.getGuestOrderHistory);
+app.get("/order-history/:id", verifyJWT, validateOrderHistoryId, orderHistoryController.getOrderHistoryById);
 
 // Routes for Checkout and Payment
 app.get("/payments", verifyJWT, paymentController.getAllPayments);
 app.get("/payments/:id", verifyJWT, validatePaymentId, paymentController.getPaymentById);
 app.get("/payments/order/:orderId", verifyJWT, validateOrderIdParam, paymentController.getPaymentByOrderId);
+app.post("/payments/check-account-availability", validateAccountAvailability, paymentController.checkAccountAvailability);
 app.post("/payments", optionalJWT, validatePayment, paymentController.createPayment);
 app.put("/payments/:id/status", verifyJWT, validatePaymentId, validatePaymentStatus, paymentController.updatePaymentStatus);
 app.put("/payments/:id/method", optionalJWT, validatePaymentId, validatePaymentMethodUpdate, paymentController.updatePaymentMethod);

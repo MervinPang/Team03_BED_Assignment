@@ -204,6 +204,62 @@ async function getPaymentByOrderId(orderId, user) {
     }
 }
 
+// Checks whether the guest username or email is already registered
+// before the guest proceeds from checkout to the payment page
+async function checkAccountAvailability(username, email) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+
+        request.input("Username", sql.VarChar(50), username);
+        request.input("Email", sql.VarChar(100), email);
+
+        const result = await request.query(`
+            SELECT
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM UserAccount
+                        WHERE LOWER(Username) = LOWER(@Username)
+                    )
+                    THEN CAST(1 AS BIT)
+                    ELSE CAST(0 AS BIT)
+                END AS UsernameExists,
+
+                CASE
+                    WHEN EXISTS (
+                        SELECT 1
+                        FROM UserAccount
+                        WHERE LOWER(Email) = LOWER(@Email)
+                    )
+                    THEN CAST(1 AS BIT)
+                    ELSE CAST(0 AS BIT)
+                END AS EmailExists;
+        `);
+
+        return {
+            UsernameExists: Boolean(result.recordset[0].UsernameExists),
+
+            EmailExists: Boolean(result.recordset[0].EmailExists),
+        };
+    } catch (error) {
+        console.error(
+            "Database error " +
+            "(checkAccountAvailability):",
+            error
+        );
+
+        throw error;
+    } finally {
+        if (connection) {
+            await connection.close();
+        }
+    }
+}
+
 // Creates a payment using a database transaction to
 // ensure all related database operations succeed together
 // If any step fails, the transaction is rolled back
@@ -948,6 +1004,7 @@ async function deletePayment(paymentId, user) {
 // Export model functions for use in PaymentController
 module.exports = {
     createPayment,
+    checkAccountAvailability,
     getAllPayments,
     getPaymentById,
     getPaymentByOrderId,

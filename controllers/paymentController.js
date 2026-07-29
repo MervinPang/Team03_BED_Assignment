@@ -69,6 +69,32 @@ async function getPaymentByOrderId(req, res) {
     }
 }
 
+// Checks guest account availability before the guest
+// proceeds from checkout to payment
+async function checkAccountAvailability(req, res) {
+    try {
+        const { Username, Email } = req.body;
+
+        const availability =
+            await paymentModel.checkAccountAvailability(Username, Email);
+
+        return res.status(200).json({
+            UsernameAvailable: !availability.UsernameExists,
+            EmailAvailable: !availability.EmailExists,
+        });
+    } catch (error) {
+        console.error(
+            "Controller error " +
+            "(checkAccountAvailability):",
+            error
+        );
+
+        return res.status(500).json({
+            error: "Unable to check account availability",
+        });
+    }
+}
+
 // Creates a payment request by delegating all payment processing and business rules to the model layer
 // The controller is responsible for translating business exceptions into appropriate HTTP responses
 async function createPayment(req, res) {
@@ -274,6 +300,7 @@ async function deletePayment(req, res) {
 // Export controller functions for use in payment routes
 module.exports = {
     createPayment,
+    checkAccountAvailability,
     getAllPayments,
     getPaymentById,
     getPaymentByOrderId,
