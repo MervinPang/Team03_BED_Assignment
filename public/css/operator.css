@@ -1,0 +1,321 @@
+/*
+ * OPERATOR PORTAL
+ * Stall rental agreements, managed by the hawker centre operator.
+ * The shared foundations live in global.css.
+ */
+
+.page-head {
+  padding: 58px 0 28px;
+  position: relative
+}
+
+.page-head h1 {
+  font: 800 clamp(2.5rem, 5.4vw, 5rem)/1.02 Manrope, sans-serif;
+  margin: 10px 0 14px;
+  letter-spacing: -.055em
+}
+
+.page-head.compact h1 {
+  font-size: clamp(2.3rem, 4.5vw, 4rem)
+}
+
+.lead {
+  color: var(--muted);
+  line-height: 1.75;
+  max-width: 730px;
+  font-size: 1.08rem
+}
+
+.grid {
+  display: grid;
+  gap: 20px
+}
+
+.grid-2 {
+  grid-template-columns: repeat(2, minmax(0, 1fr))
+}
+
+.card-pad {
+  padding: 24px
+}
+
+.stack {
+  display: grid;
+  gap: 14px
+}
+
+.row-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px
+}
+
+.wrap {
+  flex-wrap: wrap
+}
+
+.empty {
+  text-align: center;
+  padding: 46px 20px;
+  color: var(--muted)
+}
+
+.empty .empty-state-icon {
+  font-size: 2.15rem;
+  margin-bottom: 10px;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px
+}
+
+.metric {
+  padding: 23px;
+  background: linear-gradient(145deg, #fff, #f4f8f4)
+}
+
+.metric strong {
+  font: 800 2rem Manrope;
+  display: block;
+  margin-top: 8px
+}
+
+/* --- Panel cards, matching the inspection portal's card treatment --- */
+.panel-card {
+  padding: 28px;
+  background: linear-gradient(150deg, #fff, #fbfdfb);
+}
+
+.panel-heading {
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  margin-bottom: 24px;
+}
+
+.panel-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 17px;
+  background: linear-gradient(145deg, var(--brand), #35a474);
+  color: #fff;
+  font-size: 1.3rem;
+  font-weight: 900;
+  box-shadow: 0 12px 26px rgba(23, 107, 69, .22);
+  flex: 0 0 auto;
+}
+
+.panel-heading h2 {
+  margin: 2px 0 0;
+  font: 800 1.5rem/1.15 Manrope, sans-serif;
+  letter-spacing: -.03em;
+}
+
+/* --- Hawker centres this operator runs --- */
+.centre-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 13px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-sm);
+  background: var(--surface2);
+}
+
+.centre-row p {
+  margin: 0;
+}
+
+.centre-occupancy {
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* --- Stall and occupancy table --- */
+.stall-table-wrap {
+  overflow-x: auto;
+  margin-top: 16px;
+}
+
+.stall-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: .9rem;
+  min-width: 720px;
+}
+
+.stall-table caption {
+  caption-side: top;
+  text-align: left;
+  padding-bottom: 12px;
+}
+
+.stall-table th,
+.stall-table td {
+  padding: 11px 12px;
+  border-bottom: 1px solid var(--line);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.stall-table th {
+  font-size: .78rem;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stall-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.stall-table td.numeric {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.stall-table .stall-name {
+  font-weight: 800;
+}
+
+/* A vacant unit earns nothing, so it is the row that has to stand out */
+.stall-table tr.is-vacant td {
+  background: #fff7e0;
+}
+
+.tenancy-vacant {
+  color: var(--warn);
+  font-weight: 800;
+}
+
+.grade-pill {
+  display: inline-grid;
+  place-items: center;
+  min-width: 30px;
+  padding: 3px 8px;
+  border-radius: 9px;
+  font-weight: 900;
+}
+
+.grade-pill.grade-A { background: #dcf5e7; color: #14603e; }
+.grade-pill.grade-B { background: #edf6dc; color: #547126; }
+.grade-pill.grade-C { background: #fff0c9; color: #8b570b; }
+.grade-pill.grade-D { background: #ffe2e2; color: #992f2f; }
+.grade-pill.grade-none { background: var(--bg2); color: var(--muted); font-weight: 700; }
+
+/* --- Tenancy register --- */
+.rental-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr);
+  gap: 22px;
+  align-items: start;
+}
+
+.agreement-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.agreement-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.agreement-main {
+  display: grid;
+  gap: 4px;
+  min-width: 230px;
+  flex: 1;
+}
+
+.agreement-main p {
+  margin: 0;
+}
+
+.agreement-warning {
+  color: var(--warn);
+  font-weight: 700;
+}
+
+/* --- Renewal dialog, matching the other dialogs on the site --- */
+.modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(5, 14, 8, .62);
+  display: grid;
+  place-items: center;
+  z-index: 1000;
+  padding: 104px 20px 20px;
+  backdrop-filter: blur(7px);
+}
+
+.modal-backdrop[hidden] {
+  display: none;
+}
+
+.modal {
+  position: relative;
+  z-index: 1001;
+  background: white;
+  border-radius: 25px;
+  padding: 26px;
+  width: min(540px, 100%);
+  max-height: 90vh;
+  overflow: auto;
+  box-shadow: 0 35px 90px rgba(0, 0, 0, .25);
+  animation: modalIn .2s ease;
+}
+
+.contact-icon {
+  width: 18px;
+  height: 18px;
+  object-fit: contain;
+  flex: 0 0 auto
+}
+
+@media (max-width: 980px) {
+  .rental-dashboard {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 760px) {
+
+  .grid-2,
+  .metrics {
+    grid-template-columns: 1fr
+  }
+
+  .page-head {
+    padding-top: 44px
+  }
+}
+
+@media (max-width: 680px) {
+  .panel-card {
+    padding: 20px;
+  }
+
+  .modal-backdrop {
+    padding: 76px 8px 8px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card-pad {
+    padding: 20px
+  }
+}

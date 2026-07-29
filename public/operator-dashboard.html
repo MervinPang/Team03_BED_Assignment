@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+      <meta charset="utf-8" />
+      <meta content="width=device-width,initial-scale=1" name="viewport" />
+      <title>Operator Portal | Singapore Hawker Centre Management System</title>
+      <link href="/css/operator.css" rel="stylesheet" />
+      <link href="css/global.css" rel="stylesheet" />
+      <link href="css/navigation-footer.css" rel="stylesheet" />
+</head>
+
+<body>
+      <header class="site-header">
+            <div class="shell nav nav-premium">
+                  <a aria-label="HawkerHub home" class="brand brand-premium" href="/index.html">
+                        <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                        <span class="brand-copy">
+                              <strong>
+                                    HawkerHubSG
+                              </strong>
+                              <small>
+                                    Discover | Order | Collect
+                              </small>
+                        </span>
+                  </a>
+                  <button aria-expanded="false" aria-label="Open navigation" class="mobile-toggle" data-mobile-toggle=""
+                        type="button">
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                        <span>
+                        </span>
+                  </button>
+                  <nav aria-label="Main navigation" class="nav-links">
+                        <a class="nav-link" href="/index.html">
+                              Home
+                        </a>
+                        <a class="nav-link" href="/stalls.html">
+                              Place Order
+                        </a>
+                        <a class="nav-link" data-customer-only="" href="/order-history.html">
+                              Your Orders
+                        </a>
+                        <a class="nav-link" data-auth-only="" href="/profile.html">
+                              Profile
+                        </a>
+                        <a class="nav-link" data-guest-only="" href="/guest-order-tracking.html">
+                              Track Order
+                        </a>
+                        <a class="nav-link" href="/reviews.html">
+                              Reviews
+                        </a>
+                        <a class="nav-link" data-auth-only="" href="/complaints.html">
+                              Complaints
+                        </a>
+                        <a class="nav-link" data-vendor-only="" href="/vendor-dashboard.html">
+                              Vendor dashboard
+                        </a>
+                        <a class="nav-link" data-nea-only="" href="/inspection-reports.html">
+                              Inspections
+                        </a>
+                        <a class="nav-link" data-operator-only="" href="/operator-dashboard.html">
+                              Tenancies
+                        </a>
+                  </nav>
+                  <div class="nav-actions">
+                        <a aria-label="View cart" class="cart-pill cart-pill-premium" href="/checkout.html">
+                              <img alt="" class="nav-icon" src="/images/takeaway-black.svg" />
+                              <span>
+                                    Cart
+                              </span>
+                              <strong data-cart-count="">
+                                    0
+                              </strong>
+                        </a>
+                        <a class="button secondary nav-sign-in" data-guest-only="" href="/login.html">
+                              Sign In
+                        </a>
+                        <button class="button primary nav-logout" data-auth-only="" data-logout="" type="button">
+                              Log Out
+                        </button>
+                  </div>
+            </div>
+      </header>
+      <main>
+            <section class="shell">
+                  <div class="page-head">
+                        <div>
+                              <span class="eyebrow">
+                                    Tenancy management
+                              </span>
+                              <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">
+                                    Stall rental agreements
+                              </h1>
+                              <p class="lead" id="operatorLead">
+                                    Record a tenancy, review who rents each stall and renew agreements before they
+                                    expire.
+                              </p>
+                        </div>
+                  </div>
+                  <div class="metrics" id="operatorMetrics">
+                        <article class="card metric">
+                              <span class="muted">
+                                    Stalls managed
+                              </span>
+                              <strong id="metricStalls">
+                                    —
+                              </strong>
+                        </article>
+                        <article class="card metric">
+                              <span class="muted">
+                                    Vacant units
+                              </span>
+                              <strong id="metricVacant">
+                                    —
+                              </strong>
+                        </article>
+                        <article class="card metric">
+                              <span class="muted">
+                                    Monthly rent
+                              </span>
+                              <strong id="metricRent">
+                                    —
+                              </strong>
+                        </article>
+                  </div>
+                  <section class="card panel-card" style="margin-top:22px">
+                        <div class="panel-heading">
+                              <div class="panel-icon">
+                                    ▦
+                              </div>
+                              <div>
+                                    <span class="small muted">
+                                          Your premises
+                                    </span>
+                                    <h2>
+                                          Stalls and occupancy
+                                    </h2>
+                              </div>
+                        </div>
+                        <div class="stack" id="centreList">
+                        </div>
+                        <div class="form-message" id="stallMessage">
+                        </div>
+                        <div class="stall-table-wrap">
+                              <table class="stall-table" id="stallTable">
+                                    <caption class="small muted">
+                                          Every stall in the hawker centres you manage, with the tenancy in force
+                                          today and the grade of its last inspection.
+                                    </caption>
+                                    <thead>
+                                          <tr>
+                                                <th scope="col">Stall</th>
+                                                <th scope="col">Hawker centre</th>
+                                                <th scope="col">Tenancy</th>
+                                                <th scope="col">Rent</th>
+                                                <th scope="col">Grade</th>
+                                                <th scope="col">Action</th>
+                                          </tr>
+                                    </thead>
+                                    <tbody id="stallTableBody">
+                                    </tbody>
+                              </table>
+                        </div>
+                  </section>
+                  <div class="rental-dashboard" style="margin-top:22px">
+                        <section class="card panel-card">
+                              <div class="panel-heading">
+                                    <div class="panel-icon">
+                                          ⌂
+                                    </div>
+                                    <div>
+                                          <span class="small muted">
+                                                New agreement
+                                          </span>
+                                          <h2>
+                                                Record a tenancy
+                                          </h2>
+                                    </div>
+                              </div>
+                              <form class="stack" id="agreementForm">
+                                    <div class="grid grid-2">
+                                          <div class="field">
+                                                <label for="agreementStallId">
+                                                      Stall
+                                                </label>
+                                                <select class="select" id="agreementStallId" required="">
+                                                </select>
+                                                <small class="muted">
+                                                      Only stalls in the hawker centres you manage are listed.
+                                                </small>
+                                          </div>
+                                          <div class="field">
+                                                <label for="agreementVendorId">
+                                                      Vendor account
+                                                </label>
+                                                <select class="select" id="agreementVendorId" required="">
+                                                </select>
+                                          </div>
+                                    </div>
+                                    <div class="grid grid-2">
+                                          <div class="field">
+                                                <label for="agreementStartDate">
+                                                      Start date
+                                                </label>
+                                                <input class="input" id="agreementStartDate" required="" type="date" />
+                                          </div>
+                                          <div class="field">
+                                                <label for="agreementEndDate">
+                                                      End date
+                                                </label>
+                                                <input class="input" id="agreementEndDate" required="" type="date" />
+                                          </div>
+                                    </div>
+                                    <div class="field">
+                                          <label for="agreementPrice">
+                                                Monthly rental price
+                                          </label>
+                                          <input class="input" id="agreementPrice" min="0.01" required="" step="0.01"
+                                                type="number" />
+                                    </div>
+                                    <div class="field">
+                                          <label for="agreementTerms">
+                                                Terms and conditions
+                                          </label>
+                                          <textarea class="textarea" id="agreementTerms" maxlength="800"></textarea>
+                                    </div>
+                                    <div class="form-message" id="agreementMessage">
+                                    </div>
+                                    <button class="button primary" id="agreementSubmitButton" type="submit">
+                                          Create agreement
+                                    </button>
+                              </form>
+                        </section>
+                        <section class="card panel-card">
+                              <div class="panel-heading">
+                                    <div class="panel-icon">
+                                          ⏱
+                                    </div>
+                                    <div>
+                                          <span class="small muted">
+                                                Tenancy register
+                                          </span>
+                                          <h2>
+                                                Agreements
+                                          </h2>
+                                    </div>
+                              </div>
+                              <div class="row-between wrap" style="margin-bottom:16px">
+                                    <div class="field">
+                                          <label for="agreementFilter">
+                                                Show
+                                          </label>
+                                          <select class="select" id="agreementFilter">
+                                                <option value="">
+                                                      All agreements
+                                                </option>
+                                                <option value="Active">
+                                                      Active
+                                                </option>
+                                                <option value="Upcoming">
+                                                      Upcoming
+                                                </option>
+                                                <option value="Expired">
+                                                      Expired
+                                                </option>
+                                                <option value="Ended">
+                                                      Ended early
+                                                </option>
+                                                <option value="expiring">
+                                                      Expiring within 30 days
+                                                </option>
+                                          </select>
+                                    </div>
+                                    <span class="small muted" id="agreementCount">
+                                    </span>
+                              </div>
+                              <div class="stack" id="agreementList">
+                              </div>
+                        </section>
+                  </div>
+            </section>
+      </main>
+      <div class="modal-backdrop" hidden="" id="renewBackdrop">
+            <form class="modal stack" id="renewForm">
+                  <header class="row-between">
+                        <div>
+                              <span class="small muted">
+                                    Tenancy renewal
+                              </span>
+                              <h2>
+                                    Renew agreement
+                              </h2>
+                        </div>
+                        <button class="button ghost" id="closeRenewButton" type="button">
+                              Close
+                        </button>
+                  </header>
+                  <input id="renewAgreementId" type="hidden" />
+                  <p class="small muted" id="renewSummary">
+                  </p>
+                  <div class="field">
+                        <label for="renewEndDate">
+                              New end date
+                        </label>
+                        <input class="input" id="renewEndDate" required="" type="date" />
+                  </div>
+                  <div class="field">
+                        <label for="renewPrice">
+                              Monthly rental price
+                        </label>
+                        <input class="input" id="renewPrice" min="0.01" step="0.01" type="number" />
+                  </div>
+                  <div class="form-message" id="renewMessage">
+                  </div>
+                  <button class="button primary" type="submit">
+                        Renew agreement
+                  </button>
+            </form>
+      </div>
+      <footer class="site-footer">
+            <div class="footer-social-band">
+                  <div class="shell footer-social-row">
+                        <p>
+                              Stay connected with HawkerHubSG
+                        </p>
+                        <div aria-label="Social media links" class="social-links">
+                              <a aria-label="LinkedIn" href="#" title="LinkedIn">
+                                    <img alt="" src="/images/linkedin.svg" />
+                              </a>
+                              <a aria-label="Instagram" href="#" title="Instagram">
+                                    <img alt="" src="/images/instagram.svg" />
+                              </a>
+                              <a aria-label="X" href="#" title="X">
+                                    <img alt="" src="/images/twitter.svg" />
+                              </a>
+                        </div>
+                  </div>
+            </div>
+            <div class="footer-main">
+                  <div class="shell footer-grid">
+                        <section class="footer-brand-column">
+                              <a class="footer-logo" href="/index.html">
+                                    <img alt="HawkerHubSG logo" class="brand-image" src="/images/hawkerhub-logo.png" />
+                                    <span>
+                                          <strong>
+                                                HawkerHubSG
+                                          </strong>
+                                          <small>
+                                                Singapore's Digital Hawker Ordering Platform
+                                          </small>
+                                    </span>
+                              </a>
+                              <p>
+                                    Providing a seamless digital ordering experience for customers, vendors, and NEA
+                                    officers across Singapore's hawker centres.
+                              </p>
+                              <span class="footer-team">
+                                    Developed by Team 03 | BED Assignment 2026
+                              </span>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Explore
+                              </h3>
+                              <a href="/index.html">
+                                    Home
+                              </a>
+                              <a href="/stalls.html">
+                                    Place Order
+                              </a>
+                              <a href="/reviews.html">
+                                    Stall Reviews
+                              </a>
+                              <a data-auth-only="" href="/complaints.html">
+                                    Complaints
+                              </a>
+                        </section>
+                        <section class="footer-column">
+                              <h3>
+                                    Account &amp; orders
+                              </h3>
+                              <a data-guest-only="" href="/login.html">
+                                    Sign In
+                              </a>
+                              <a data-guest-only="" href="/register.html">
+                                    Create Account
+                              </a>
+                              <a data-customer-only="" href="/order-history.html">
+                                    Your Orders
+                              </a>
+                              <a data-auth-only="" href="/profile.html">
+                                    Profile
+                              </a>
+                              <a data-guest-only="" href="/guest-order-tracking.html">
+                                    Track Guest Order
+                              </a>
+                              <a data-vendor-only="" href="/vendor-dashboard.html">
+                                    Vendor Dashboard
+                              </a>
+                              <a data-nea-only="" href="/inspection-reports.html">
+                                    Inspection Portal
+                              </a>
+                              <a data-operator-only="" href="/operator-dashboard.html">
+                                    Operator Portal
+                              </a>
+                        </section>
+                        <section class="footer-column footer-contact">
+                              <h3>
+                                    Contact
+                              </h3>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/location.svg" />
+                                    Singapore
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/mail.svg" />
+                                    HawkerHubSG@gmail.com
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon" src="/images/phone.svg" />
+                                    +65 9120 0844
+                              </p>
+                              <p>
+                                    <img alt="" class="contact-icon footer-clock-icon" src="/images/clock.svg" />
+                                    Daily, 8:00 AM - 10:00 PM
+                              </p>
+                        </section>
+                  </div>
+            </div>
+            <div class="footer-bottom">
+                  <div class="shell footer-bottom-row">
+                        <span>
+                              &copy; 2026 HawkerHubSG | Team 03 BED Assignment
+                        </span>
+                  </div>
+            </div>
+      </footer>
+      <div aria-live="polite" class="toast-region">
+      </div>
+      <script src="/js/common.js">
+      </script>
+      <script src="/js/rentals.js">
+      </script>
+</body>
+
+</html>
