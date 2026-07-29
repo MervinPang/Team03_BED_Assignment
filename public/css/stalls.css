@@ -292,7 +292,9 @@
 
 .stall-information-row {
   display: grid;
+  align-content: start;
   gap: 4px;
+  min-height: 76px;
   padding: 12px;
   border-radius: 12px;
   background-color: #f4f7f3;
@@ -306,8 +308,11 @@
 }
 
 .stall-information-row strong {
+  display: block;
+  min-height: 36px;
   color: #142019;
   font-size: 13px;
+  line-height: 18px;
   overflow-wrap: anywhere;
 }
 
