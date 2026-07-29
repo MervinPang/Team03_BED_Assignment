@@ -12,9 +12,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const currentRole = role(currentUser.role);
     const isCustomer = currentRole === "customer";
-    const canManageStatus =
-        currentRole === "vendor" ||
-        currentRole === "nea_officer";
+
+    // A complaint is decided by the NEA officer, not by the stall it is about
+    const canManageStatus = currentRole === "nea_officer";
 
     const STATUSES = ["Pending", "In Review", "Resolved"];
 
@@ -69,10 +69,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     async function loadStalls() {
+        /*
+         * A vendor picks from their own stalls and an operator from the stalls
+         * inside the hawker centres they run. Everyone else sees every stall.
+         */
         const endpoint =
             currentRole === "vendor"
                 ? "/vendors/me/stalls"
-                : "/stalls";
+                : currentRole === "operator"
+                    ? "/operators/me/stalls"
+                    : "/stalls";
 
         const selects = [trackerStallId];
 
@@ -97,7 +103,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         try {
             const response = await apiRequest(endpoint);
 
-            stalls = Array.isArray(response) ? response : [];
+            // The operator endpoint wraps its rows, the other two return a list
+            stalls = Array.isArray(response)
+                ? response
+                : Array.isArray(response?.stalls)
+                    ? response.stalls
+                    : [];
 
             if (!stalls.length) {
                 selects.forEach(select => {
@@ -112,7 +123,9 @@ document.addEventListener("DOMContentLoaded", async () => {
                     trackerMessage,
                     currentRole === "vendor"
                         ? "No food stall is assigned to your vendor account."
-                        : "No food stalls are available at the moment.",
+                        : currentRole === "operator"
+                            ? "No stall is under your management yet."
+                            : "No food stalls are available at the moment.",
                     "info"
                 );
 
@@ -358,6 +371,21 @@ document.addEventListener("DOMContentLoaded", async () => {
             loadedStallName = stallName(stallId);
 
             applyFilters();
+
+            // Explains why the cases carry no status control for these roles
+            if (currentRole === "vendor") {
+                setMessage(
+                    trackerMessage,
+                    "You can view every complaint about your stall here. The outcome of a case is decided by the NEA officer.",
+                    "info"
+                );
+            } else if (currentRole === "operator") {
+                setMessage(
+                    trackerMessage,
+                    "You can view every complaint about the stalls you manage. The outcome of a case is decided by the NEA officer.",
+                    "info"
+                );
+            }
         } catch (error) {
             setMessage(trackerMessage, error.message, "error");
             showToast(error.message, "error");

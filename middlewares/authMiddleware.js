@@ -31,6 +31,13 @@ function verifyJWT(req, res, next) {
             // Vendor
             "GET /vendors/me/stalls": ["vendor"],
 
+            // Operator
+            // The tenancy form needs the vendors to choose from and the stalls
+            // inside the hawker centres this operator is responsible for
+            "GET /vendors": ["operator"],
+            "GET /operators/me/stalls": ["operator"],
+            "GET /operators/me/centres": ["operator"],
+
             // Orders
             "GET /orders": ["customer", "vendor", "nea_officer"],
             "GET /orders/[0-9]+": ["customer", "vendor", "nea_officer"],
@@ -52,13 +59,16 @@ function verifyJWT(req, res, next) {
             "DELETE /payments/[0-9]+": ["customer"],
 
             // Inspections
+            // An operator reads the grades of the stalls in its own centres
             "POST /inspections": ["nea_officer"],
-            "GET /inspections/[0-9]+": ["customer", "vendor", "nea_officer"],
+            "GET /inspections/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
 
             // Complaints
+            // Vendors and operators read the complaints about a stall but
+            // cannot close them. Only an NEA officer decides the outcome.
             "POST /complaints": ["customer"],
-            "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer"],
-            "PUT /complaints/[0-9]+/status": ["vendor", "nea_officer"],
+            "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
+            "PUT /complaints/[0-9]+/status": ["nea_officer"],
 
             //Analytics
             "GET /analytics/revenue/[0-9]+": ["vendor"],
@@ -74,11 +84,14 @@ function verifyJWT(req, res, next) {
             "PUT /stalls/[0-9]+": ["vendor"],
 
             // Rental agreements
-            "GET /rental-agreements": ["vendor", "nea_officer"],
-            "GET /rental-agreements/expiring": ["nea_officer"],
-            "GET /rental-agreements/[0-9]+": ["vendor", "nea_officer"],
-            "POST /rental-agreements": ["nea_officer"],
-            "PUT /rental-agreements/[0-9]+/renew": ["nea_officer"]
+            // The hawker centre operator owns the tenancy of its own stalls.
+            // A vendor may read the agreement it holds but never change one.
+            "GET /rental-agreements": ["vendor", "operator"],
+            "GET /rental-agreements/expiring": ["operator"],
+            "GET /rental-agreements/[0-9]+": ["vendor", "operator"],
+            "POST /rental-agreements": ["operator"],
+            "PUT /rental-agreements/[0-9]+/renew": ["operator"],
+            "PUT /rental-agreements/[0-9]+/end": ["operator"]
         };
 
         const requestedEndpoint = `${req.method} ${req.path}`;

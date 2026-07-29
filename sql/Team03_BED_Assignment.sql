@@ -11,23 +11,8 @@ GO
 USE HawkerManagementDB;
 GO
 
-/* Table: Users */
-CREATE TABLE UserAccount
-(
-    UserID          INT IDENTITY(1,1)       NOT NULL,
-    Username        VARCHAR(50)             NOT NULL,
-    Email           VARCHAR(100)            NOT NULL,
-    PasswordHash    VARCHAR(255)            NOT NULL,
-    Role            VARCHAR(20)             NOT NULL,
-    CreatedAt       DATETIME                NOT NULL DEFAULT GETDATE(),
-
-    CONSTRAINT      PK_UserAccount          PRIMARY KEY (UserID),
-    CONSTRAINT      UQ_UserAccount_Username UNIQUE (Username),
-    CONSTRAINT      UQ_UserAccount_Email    UNIQUE (Email),
-    CONSTRAINT      CHK_UserAccount_Role    CHECK (Role IN ('customer', 'vendor', 'nea_officer', 'admin'))
-);
-
 /* Table: Operator */
+/* Declared before UserAccount because an operator staff account refers to it */
 CREATE TABLE Operator
 (
     OperatorID      INT IDENTITY(1,1)       NOT NULL,
@@ -36,6 +21,31 @@ CREATE TABLE Operator
     ContactNo       VARCHAR(15)             NULL,
 
     CONSTRAINT      PK_Operator             PRIMARY KEY (OperatorID)
+);
+
+/* Table: Users */
+/* OperatorID is filled in for operator accounts only and stays NULL for the
+   customer, vendor and NEA officer roles. It is the column that decides
+   which hawker centres an operator is allowed to manage. */
+CREATE TABLE UserAccount
+(
+    UserID          INT IDENTITY(1,1)       NOT NULL,
+    Username        VARCHAR(50)             NOT NULL,
+    Email           VARCHAR(100)            NOT NULL,
+    PasswordHash    VARCHAR(255)            NOT NULL,
+    Role            VARCHAR(20)             NOT NULL,
+    OperatorID      INT                     NULL,
+    CreatedAt       DATETIME                NOT NULL DEFAULT GETDATE(),
+
+    CONSTRAINT      PK_UserAccount          PRIMARY KEY (UserID),
+    CONSTRAINT      UQ_UserAccount_Username UNIQUE (Username),
+    CONSTRAINT      UQ_UserAccount_Email    UNIQUE (Email),
+    CONSTRAINT      CHK_UserAccount_Role    CHECK (Role IN ('customer', 'vendor', 'nea_officer', 'operator')),
+    CONSTRAINT      CHK_UserAccount_Operator
+        CHECK ((Role = 'operator' AND OperatorID IS NOT NULL)
+            OR (Role <> 'operator' AND OperatorID IS NULL)),
+    CONSTRAINT      FK_UserAccount_Operator
+        FOREIGN KEY (OperatorID) REFERENCES Operator(OperatorID)
 );
 
 /* Table: HawkerCentre */
@@ -306,6 +316,7 @@ CREATE TABLE RentalAgreement
     EndDate           DATE                  NOT NULL,
     RentalPrice       DECIMAL(8,2)          NOT NULL,
     TermCondition     VARCHAR(800)          NULL,
+    TerminatedOn      DATE                  NULL,
 
     CONSTRAINT        PK_RentalAgreement    PRIMARY KEY (AgreementID),
     CONSTRAINT        FK_RentalAgreement_FoodStall
@@ -337,13 +348,19 @@ VALUES
 ('rayne_nea', 'rayne.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
 ('nigel_customer', 'nigel.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
 ('ming_li_customer', 'mingli.customer@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'customer'),
-('callula_nea', 'callula.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer'),
-('admin_user', 'admin@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'admin');
+('callula_nea', 'callula.nea@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'nea_officer');
 
 INSERT INTO Operator (OperatorName, ContactPerson, ContactNo)
 VALUES
 ('Pang Food Operations', 'Adrian Chua', '81234567'),
 ('Singapore Hawker Group', 'Benjamin Koh', '82345678');
+
+-- The login account of each operator's contact person. These are added after
+-- the Operator rows because OperatorID has to point at an operator that exists.
+INSERT INTO UserAccount (Username, Email, PasswordHash, Role, OperatorID)
+VALUES
+('adrian_operator', 'adrian.operator@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'operator', 1),
+('benjamin_operator', 'benjamin.operator@example.com', '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G', 'operator', 2);
 
 INSERT INTO HawkerCentre (HCName, HCAddress, Area, OperatorID)
 VALUES
@@ -432,11 +449,37 @@ VALUES
 (2, 'Cash', 'Pending', 5.20, NULL, NULL),
 (3, 'Card', 'Successful', 4.80, 'CARD-20260726-000003', DATEADD(MINUTE, -110, GETDATE()));
 
+-- Every stall carries a few reviews so the ratings on the reviews page differ
+-- from one stall to the next. Only customer accounts leave reviews.
 INSERT INTO Review (UserID, StallID, Rating, ReviewComment)
 VALUES
 (1, 1, 5, 'Chicken rice was delicious and affordable.'),
+(5, 1, 4, 'Roasted chicken was tender but the queue moved slowly.'),
+(6, 1, 5, 'The chilli sauce here is the best in the centre.'),
+
 (2, 2, 4, 'Prata was crispy and served quickly.'),
-(1, 3, 5, 'Nasi lemak was tasty and filling.');
+(1, 2, 3, 'Curry was a bit thin for my liking. The prata itself was fine.'),
+(6, 2, 4, 'Good value for breakfast and it comes straight off the griddle.'),
+
+(1, 3, 5, 'Nasi lemak was tasty and filling.'),
+(2, 3, 5, 'Sambal has a proper kick and the rice smells of coconut.'),
+(5, 3, 4, 'Chicken wing was crispy, though I waited a while for it.'),
+
+(2, 4, 4, 'Fishballs are handmade and you can taste the difference.'),
+(5, 4, 5, 'Springy noodles and the chilli is not too sweet. Will come back.'),
+(6, 4, 3, 'Portion was smaller than I expected for the price.'),
+
+(1, 5, 5, 'Gravy is rich without being too heavy and the cockles were fresh.'),
+(5, 5, 4, 'Solid bowl of laksa. They were generous with the prawns.'),
+(2, 5, 4, 'Tasty, but I asked for less spicy and it still came quite hot.'),
+
+(6, 6, 3, 'White carrot cake was alright, nothing special.'),
+(1, 6, 2, 'Came out oily and lukewarm. Disappointed after queueing.'),
+(2, 6, 4, 'The black version is much better than the white one. Good wok hei.'),
+
+(5, 7, 4, 'Noodles are hand torn and the broth tastes of real anchovies.'),
+(6, 7, 3, 'Broth was slightly salty for me but the egg was done right.'),
+(1, 7, 5, 'Comforting bowl on a rainy day. Generous with the ikan bilis.');
 
 INSERT INTO Complaint (UserID, StallID, ComplaintTitle, ComplaintDesc, ComplaintStatus)
 VALUES
@@ -500,6 +543,21 @@ GROUP BY hc.Area, hc.HCName, fs.StallName, fs.StallUnitNo, grade.HygieneGrade
 ORDER BY hc.Area, fs.StallName;
 
 ------------------------------------------------------------
+-- Operator Portfolio Query
+-- The stalls an operator account is allowed to manage, found by following
+-- the operator to its hawker centres and then to the stalls in them
+------------------------------------------------------------
+SELECT staff.Username AS OperatorAccount, o.OperatorName,
+hc.HCName, fs.StallID, fs.StallName, ra.EndDate AS TenancyEnds
+FROM Operator o
+JOIN UserAccount staff ON staff.OperatorID = o.OperatorID AND staff.Role = 'operator'
+JOIN HawkerCentre hc ON hc.OperatorID = o.OperatorID
+JOIN FoodStall fs ON fs.HawkerCentreID = hc.HawkerCentreID
+LEFT JOIN RentalAgreement ra ON ra.StallID = fs.StallID
+AND CAST(GETDATE() AS DATE) BETWEEN ra.StartDate AND ra.EndDate
+ORDER BY o.OperatorID, hc.HCName, fs.StallID;
+
+------------------------------------------------------------
 -- Stall Tenancy Query
 -- The vendor of a stall should match the vendor on its current agreement
 ------------------------------------------------------------
@@ -539,3 +597,112 @@ WHERE OrderStatus IN ('Pending', 'Preparing', 'Ready');
 
 SELECT * FROM CustomerOrder
 WHERE OrderStatus IN ('Completed', 'Cancelled');
+
+------------------------------------------------------------
+-- Operator Accounts on a Database That Already Exists
+--
+-- Everything below is already part of the tables above, so a database built
+-- from this script from the top does not need it and running it changes
+-- nothing. It is here for a database that was created before operators could
+-- sign in: highlight this section in SSMS and execute it on its own.
+--
+-- The Operator table has always existed but nobody could sign in as one, so
+-- rental agreements were handled by the NEA officer instead. These steps give
+-- an operator its own login and tie that login to the operator it works for,
+-- which is what decides the stalls it is allowed to manage.
+------------------------------------------------------------
+
+USE HawkerManagementDB;
+GO
+
+-- Allow the operator role.
+-- The old rule only permitted customer, vendor and nea_officer, so an
+-- operator account would be rejected on insert. The rule is replaced rather
+-- than removed, so the other four roles stay protected.
+IF EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_UserAccount_Role')
+BEGIN
+    ALTER TABLE UserAccount DROP CONSTRAINT CHK_UserAccount_Role;
+END
+GO
+
+ALTER TABLE UserAccount
+ADD CONSTRAINT CHK_UserAccount_Role
+    CHECK (Role IN ('customer', 'vendor', 'nea_officer', 'operator'));
+GO
+
+-- Link a user account to the operator it works for.
+-- The column stays NULL for every other role. It is the only thing the
+-- application trusts when deciding which hawker centres an operator manages,
+-- so it is never accepted from the browser.
+IF COL_LENGTH('UserAccount', 'OperatorID') IS NULL
+BEGIN
+    ALTER TABLE UserAccount ADD OperatorID INT NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.foreign_keys WHERE name = 'FK_UserAccount_Operator')
+BEGIN
+    ALTER TABLE UserAccount
+    ADD CONSTRAINT FK_UserAccount_Operator
+        FOREIGN KEY (OperatorID) REFERENCES Operator(OperatorID);
+END
+GO
+
+-- An operator account must name its operator.
+-- Without this rule an operator could exist with no operator attached, and the
+-- application would have no hawker centres to scope that account to.
+IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE name = 'CHK_UserAccount_Operator')
+BEGIN
+    ALTER TABLE UserAccount
+    ADD CONSTRAINT CHK_UserAccount_Operator
+        CHECK ((Role = 'operator' AND OperatorID IS NOT NULL)
+            OR (Role <> 'operator' AND OperatorID IS NULL));
+END
+GO
+
+-- Create a login for each operator's contact person.
+-- Password: Password123!, the same as every other seeded account.
+INSERT INTO UserAccount (Username, Email, PasswordHash, Role, OperatorID)
+SELECT
+    contact.Username,
+    contact.Email,
+    '$2b$10$T4yh/Yap6UdkV/jXYYItTuYU3UsfjPpaG7jrAD8Af8mJtHpiD4Y/G',
+    'operator',
+    o.OperatorID
+FROM Operator o
+JOIN (VALUES
+    ('Pang Food Operations',   'adrian_operator',   'adrian.operator@example.com'),
+    ('Singapore Hawker Group', 'benjamin_operator', 'benjamin.operator@example.com')
+) AS contact(OperatorName, Username, Email)
+    ON contact.OperatorName = o.OperatorName
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM UserAccount existing
+    WHERE existing.Username = contact.Username
+       OR existing.Email = contact.Email
+);
+GO
+
+-- Record when a tenancy is ended early.
+-- Whether a tenancy is still running used to be worked out from its dates
+-- alone, which cannot describe a tenancy that is ended on the same day it
+-- begins: no end date is both on or after the start date and already past.
+-- The date the operator ended it is therefore stored on the agreement, and
+-- the agreed end date is left as it was signed.
+IF COL_LENGTH('RentalAgreement', 'TerminatedOn') IS NULL
+BEGIN
+    ALTER TABLE RentalAgreement ADD TerminatedOn DATE NULL;
+    PRINT 'Added RentalAgreement.TerminatedOn.';
+END
+GO
+
+-- Each operator account and the stalls it now manages
+SELECT staff.UserID, staff.Username, staff.Email, o.OperatorName,
+COUNT(DISTINCT hc.HawkerCentreID) AS Centres, COUNT(fs.StallID) AS Stalls
+FROM UserAccount staff
+JOIN Operator o ON staff.OperatorID = o.OperatorID
+LEFT JOIN HawkerCentre hc ON hc.OperatorID = o.OperatorID
+LEFT JOIN FoodStall fs ON fs.HawkerCentreID = hc.HawkerCentreID
+WHERE staff.Role = 'operator'
+GROUP BY staff.UserID, staff.Username, staff.Email, o.OperatorName
+ORDER BY staff.UserID;

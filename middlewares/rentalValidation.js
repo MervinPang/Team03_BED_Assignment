@@ -1,6 +1,7 @@
 const Joi = require("joi"); // Import Joi for validation
 
-const AGREEMENT_STATUSES = ["Active", "Upcoming", "Expired"];
+// Ended means the operator closed the tenancy before its agreed end date
+const AGREEMENT_STATUSES = ["Active", "Upcoming", "Expired", "Ended"];
 
 // Validation schema for creating a rental agreement
 const agreementSchema = Joi.object({
@@ -58,6 +59,17 @@ const renewalSchema = Joi.object({
         "number.base": "Rental price must be a number",
         "number.min": "Rental price must be at least 0.01",
         "number.max": "Rental price cannot exceed 999999.99",
+    }),
+});
+
+/*
+ * Validation schema for ending a tenancy. The end date may be left out, in
+ * which case the tenancy closes today, which is what a handover normally means.
+ */
+const tenancyEndSchema = Joi.object({
+    EndDate: Joi.date().iso().messages({
+        "date.base": "End date must be a valid date",
+        "date.format": "End date must use the YYYY-MM-DD format",
     }),
 });
 
@@ -124,6 +136,7 @@ function validateAgreementId(req, res, next) {
 module.exports = {
     validateAgreement: validateWith(agreementSchema),
     validateRenewal: validateWith(renewalSchema),
+    validateTenancyEnd: validateWith(tenancyEndSchema),
     validateAgreementQuery,
     validateExpiryWindow,
     validateAgreementId,

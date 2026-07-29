@@ -8,7 +8,9 @@ document.addEventListener("DOMContentLoaded", () => {
         ? "/vendor-dashboard.html"
         : currentRole === "nea_officer"
           ? "/inspection-reports.html"
-          : "/stalls.html";
+          : currentRole === "operator"
+            ? "/operator-dashboard.html"
+            : "/stalls.html";
 
     window.location.replace(destination);
     return;
@@ -63,7 +65,9 @@ document.addEventListener("DOMContentLoaded", () => {
             ? "/vendor-dashboard.html"
             : currentRole === "nea_officer"
               ? "/inspection-reports.html"
-              : "/stalls.html");
+              : currentRole === "operator"
+                ? "/operator-dashboard.html"
+                : "/stalls.html");
 
         window.location.replace(destination);
       } catch (error) {
