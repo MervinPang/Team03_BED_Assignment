@@ -375,7 +375,7 @@ VALUES
 (3, '#01-01', 'Ah Tan Chicken Rice', 'Enjoy classic steamed or roasted chicken rice, served with fragrant rice and traditional sauces.', '/images/Stall 01 Banner.jpg', 1, 1),
 (3, '#01-02', 'Muthu Prata House', 'Discover freshly prepared prata served with flavourful curries and popular local favourites.', '/images/Stall 02 Banner.jpg', 1, 1),
 (3, '#02-01', 'Selera Nasi Lemak', 'Enjoy nasi lemak served with a crispy chicken wing, fragrant coconut rice, and sambal.', '/images/Stall 03 Banner.jpg', 1, 2),
-(NULL, '#01-05', 'Bedok Fishball Noodles', 'Handmade fishballs served with springy noodles and house-made chilli.', '/images/Stall 04 banner.jpg', 1, 3),
+(NULL, '#01-05', 'Bedok Fishball Noodles', 'Handmade fishballs served with springy noodles and house-made chilli.', '/images/Stall 04 banner.jpg', 0, 3),
 (NULL, '#01-08', 'Changi Road Laksa', 'Rich coconut laksa gravy simmered daily with fresh cockles and prawns.', '/images/Stall 05 banner.jpg', 1, 3),
 (NULL, '#02-11', 'Tampines Carrot Cake', 'Black and white carrot cake fried to order over high heat.', '/images/Stall 06 banner.jpg', 1, 4),
 (NULL, '#02-14', 'Round Market Ban Mian', 'Hand-torn noodles in anchovy broth topped with a soft egg.', '/images/Stall 07 banner.jpg', 1, 4);
@@ -391,7 +391,7 @@ INSERT INTO MenuItem (StallID, ItemName, ItemDesc, ItemPrice, ItemCategory, Item
 VALUES
 (1, 'Steamed Chicken Rice', 'Tender steamed chicken served with fragrant rice and house-made chilli sauce.', 4.50, 'Main Dish', '/images/Steamed Chicken Rice.jpg', 1),
 (1, 'Roasted Chicken Rice', 'Juicy roasted chicken served with fragrant rice and traditional dipping sauces.', 5.00, 'Main Dish', '/images/Roasted Chicken Rice.jpg', 1),
-(1, 'Chicken Soup', 'A comforting chicken soup prepared with tender chicken and a flavourful broth.', 1.20, 'Side', '/images/Chicken Soup.png', 1),
+(1, 'Chicken Soup', 'A comforting chicken soup prepared with tender chicken and a flavourful broth.', 1.20, 'Side', '/images/Chicken Soup.png', 0),
 (2, 'Plain Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 1.50, 'Main Dish', '/images/Plain Prata.jpg', 1),
 (2, 'Egg Prata', 'Freshly prepared crispy prata served with aromatic curry for a classic local favourite.', 2.20, 'Main Dish', '/images/Egg Prata.jpg', 1),
 (3, 'Nasi Lemak Chicken Wing', 'Fragrant coconut rice served with a crispy chicken wing, egg, peanuts, cucumber, and homemade sambal.', 4.80, 'Main Dish', '/images/Nasi Lemak.jpg', 1),
