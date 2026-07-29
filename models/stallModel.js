@@ -2,7 +2,7 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-// Retrieve all active food stalls with optional changes
+// Retrieve all food stalls with optional filters
 async function getAllStalls(filters = {}) {
     let connection;
 
@@ -55,13 +55,11 @@ async function getAllStalls(filters = {}) {
                     WHERE mi.StallID = fs.StallID
                 ) distinctCuisines
             ) cuisineData
-            WHERE fs.IsActive = 1
-
-              AND (
+            WHERE (
                     @Name IS NULL
                     OR fs.StallName LIKE '%' + @Name + '%'
-              )
-              AND (
+                )
+            AND (
                     @Cuisine IS NULL
                     OR EXISTS (
                         SELECT 1
@@ -71,14 +69,14 @@ async function getAllStalls(filters = {}) {
                         JOIN Cuisine c
                             ON mic.CuisineID = c.CuisineID
                         WHERE mi.StallID = fs.StallID
-                          AND c.CuisineName = @Cuisine
+                        AND c.CuisineName = @Cuisine
                     )
-              )
-              AND (
+                )
+            AND (
                     @Area IS NULL
                     OR hc.Area = @Area
-              )
-              AND (
+                )
+            AND (
                     @Grade IS NULL
                     OR (
                         SELECT TOP 1 i.HygieneGrade
@@ -86,7 +84,7 @@ async function getAllStalls(filters = {}) {
                         WHERE i.StallID = fs.StallID
                         ORDER BY i.InspectionDate DESC
                     ) = @Grade
-              )
+                )
             ORDER BY fs.StallName;
         `);
 

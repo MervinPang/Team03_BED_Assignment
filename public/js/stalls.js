@@ -79,7 +79,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     activeFiltersMessage.textContent = selectedFilters.length
       ? `Active Filters: ${selectedFilters.join(" | ")}`
-      : "Showing all available stalls";
+      : "Showing all hawker stalls";
   }
 
   function getAveragePrice(stall) {
@@ -110,17 +110,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     grid.innerHTML =
       stalls
         .map((stall) => {
-          const isAvailable = Boolean(stall.IsAvailable);
+          const isAvailable = stall.IsAvailable === true || Number(stall.IsAvailable) === 1;
           const availabilityClass = isAvailable ? "success" : "unavailable";
           const availabilityText = isAvailable ? "Open" : "Unavailable";
-
-          const menuLink = isAvailable
-            ? `/menu.html?stall=${stall.StallID}`
-            : "#";
-
-          const buttonText = isAvailable
-            ? "View Menu"
-            : "Currently Unavailable";
 
           const description =
             stall.StallDesc ||
@@ -184,13 +176,19 @@ document.addEventListener("DOMContentLoaded", async () => {
                   </div>
                 </div>
 
-                <a
-                  class="button primary"
-                  href="${menuLink}"
-                  ${isAvailable ? "" : 'aria-disabled="true"'}
-                >
-                  ${buttonText}
-                </a>
+                ${
+                  isAvailable
+                    ? `
+                      <a class="button primary" href="/menu.html?stall=${stall.StallID}">
+                        View Menu
+                      </a>
+                    `
+                    : `
+                      <button class="button stall-unavailable-button" type="button" disabled>
+                        Currently Unavailable
+                      </button>
+                    `
+                }
               </div>
             </article>
           `;
