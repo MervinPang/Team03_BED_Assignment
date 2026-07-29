@@ -66,19 +66,19 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     if (cuisineFilter.value) {
-      selectedFilters.push(`Cuisine: ${cuisineFilter.value}`);
+      selectedFilters.push(`${cuisineFilter.value}`);
     }
 
     if (areaFilter.value) {
-      selectedFilters.push(`Location: ${areaFilter.value}`);
+      selectedFilters.push(`${areaFilter.value}`);
     }
 
     if (gradeFilter.value) {
-      selectedFilters.push(`Hygiene Grade: ${gradeFilter.value}`);
+      selectedFilters.push(`${gradeFilter.value}`);
     }
 
     activeFiltersMessage.textContent = selectedFilters.length
-      ? selectedFilters.join(" | ")
+      ? `Active Filters: ${selectedFilters.join(" | ")}`
       : "Showing all available stalls";
   }
 
@@ -98,11 +98,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function render(stalls) {
     if (stalls.length === 0) {
-      stallResultsMessage.textContent = "No stalls found";
+      stallResultsMessage.textContent = "No Stalls Found";
     } else if (stalls.length === 1) {
-      stallResultsMessage.textContent = "1 stall found";
+      stallResultsMessage.textContent = "1 Stall Found";
     } else {
-      stallResultsMessage.textContent = `${stalls.length} stalls found`;
+      stallResultsMessage.textContent = `${stalls.length} Stalls Found`;
     }
 
     updateActiveFiltersMessage();
@@ -150,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
                   </span>
                 </div>
 
-                <div>
+                <div class="stall-description">
                   <h3>${esc(stall.StallName)}</h3>
 
                   <p class="muted">
@@ -159,6 +159,10 @@ document.addEventListener("DOMContentLoaded", async () => {
                 </div>
 
                 <div class="stall-information">
+                  <div class="stall-information-heading">
+                    Stall Details
+                  </div>
+
                   <div class="stall-information-row">
                     <span>Hawker Centre</span>
                     <strong>${esc(hawkerCentre)}</strong>
