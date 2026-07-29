@@ -751,7 +751,7 @@ body.modal-open {
 .frequent-orders-empty,
 .frequent-orders-error {
   grid-column: 1 / -1;
-  padding: 38px 24px;
+  padding: 32px 24px;
   border: 1px dashed #b9c9be;
   border-radius: 18px;
   background-color: #f8faf8;
@@ -770,7 +770,7 @@ body.modal-open {
 .frequent-orders-error strong {
   display: block;
   color: #243229;
-  font-size: 18px;
+  font-size: 26px;
   font-weight: 800;
 }
 
