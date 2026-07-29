@@ -56,10 +56,10 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.static(path.join(__dirname, "public")));
 
 // Routes for Food Stalls and Menu Items
-app.get("/stalls", stallController.getAllStalls);
 app.get("/stalls/filter-options", stallController.getStallFilterOptions);
-app.get("/stalls/:id", stallController.getStallById);
+app.get("/stalls", stallController.getAllStalls);
 app.get("/stalls/:id/menu-items", stallController.getMenuItemsByStallId);
+app.get("/stalls/:id", stallController.getStallById);
 app.get("/vendors/me/stalls", verifyJWT, stallController.getMyVendorStalls);
 app.get("/vendors", verifyJWT, rentalController.getVendorAccounts);
 app.get("/operators/me/stalls", verifyJWT, rentalController.getManagedStalls);
