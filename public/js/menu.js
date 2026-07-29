@@ -349,16 +349,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     async function loadMenu() {
         if (!Number.isInteger(stallId) || stallId <= 0) {
             showMenuError(
-                "Invalid Stall",
-                "Please return to the stalls page and select a valid stall."
+                "Menu Currently Unavailable",
+                "This stall is temporarily unavailable. Please browse another stall or try again later."
             );
 
             return;
         }
 
-        stallTitle.textContent = "Loading stall...";
+        stallTitle.textContent = "Loading Menu...";
         stallSubtitle.textContent =
-            "Please wait while the menu is being loaded.";
+            "Please wait while we prepare the menu for you.";
 
         grid.innerHTML = `
             <div class="card empty">
@@ -402,11 +402,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         } catch (error) {
             console.error("Unable to load menu:", error);
 
-            showMenuError(
-                "Unable to Load Menu",
-                error.message ||
-                "Please refresh the page or try again later."
-            );
+            pageTitle.textContent = "Menu Currently Unavailable";
+            pageDescription.textContent = "This stall is temporarily unavailable. Please browse another stall or try again later.";
         }
     }
 
