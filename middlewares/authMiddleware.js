@@ -64,11 +64,11 @@ function verifyJWT(req, res, next) {
             "GET /inspections/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
 
             // Complaints
-            // Vendors and operators read the complaints about a stall but
-            // cannot close them. Only an NEA officer decides the outcome.
+            // A case is decided by the operator of the hawker centre the stall
+            // stands in. Everyone else, the NEA officer included, only reads it.
             "POST /complaints": ["customer"],
             "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
-            "PUT /complaints/[0-9]+/status": ["nea_officer"],
+            "PUT /complaints/[0-9]+/status": ["operator"],
 
             //Analytics
             "GET /analytics/revenue/[0-9]+": ["vendor"],
