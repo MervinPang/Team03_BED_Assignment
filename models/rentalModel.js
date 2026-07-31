@@ -521,8 +521,72 @@ async function createAgreement(agreement) {
     }
 }
 
-// Extend an agreement to a later end date, optionally at a new rental price
-async function renewAgreement(agreementId, endDate, rentalPrice) {
+/*
+ * Every offer is returned with both the terms being proposed and the terms
+ * already in force, because the only thing a vendor really has to decide is
+ * what is changing between the two.
+ */
+const OFFER_COLUMNS = `
+    ao.OfferID,
+    ao.AgreementID,
+    ao.OfferedByUserID,
+    ao.ProposedEndDate,
+    ao.ProposedRentalPrice,
+    ao.OfferNote,
+    ao.OfferStatus,
+    ao.CreatedAt,
+    ao.RespondedAt,
+    ao.SignatureName,
+    ao.SignatureHash,
+    ao.ResponseNote,
+    ra.StallID,
+    ra.VendorUserID,
+    ra.StartDate,
+    ra.EndDate AS CurrentEndDate,
+    ra.RentalPrice AS CurrentRentalPrice,
+    ra.TermCondition,
+    ra.TerminatedOn,
+    fs.StallName,
+    fs.StallUnitNo,
+    hc.HCName,
+    hc.OperatorID,
+    o.OperatorName,
+    vendor.Username AS VendorName,
+    vendor.Email AS VendorEmail,
+    offeredBy.Username AS OfferedByName,
+    ao.ProposedRentalPrice - ra.RentalPrice AS PriceChange
+`;
+
+const OFFER_JOINS = `
+    FROM AgreementOffer ao
+    JOIN RentalAgreement ra
+        ON ao.AgreementID = ra.AgreementID
+    JOIN FoodStall fs
+        ON ra.StallID = fs.StallID
+    JOIN HawkerCentre hc
+        ON fs.HawkerCentreID = hc.HawkerCentreID
+    JOIN Operator o
+        ON hc.OperatorID = o.OperatorID
+    JOIN UserAccount vendor
+        ON ra.VendorUserID = vendor.UserID
+    JOIN UserAccount offeredBy
+        ON ao.OfferedByUserID = offeredBy.UserID
+`;
+
+/*
+ * Put new tenancy terms to the vendor of an agreement.
+ *
+ * Nothing on the agreement itself is touched. The offer only records what is
+ * being asked for, so a vendor who turns it down is left on exactly the terms
+ * they were already holding.
+ */
+async function createOffer({
+    agreementId,
+    offeredByUserId,
+    proposedEndDate,
+    proposedRentalPrice,
+    offerNote,
+}) {
     let connection;
 
     try {
@@ -530,24 +594,256 @@ async function renewAgreement(agreementId, endDate, rentalPrice) {
 
         const request = connection.request();
         request.input("AgreementID", sql.Int, agreementId);
-        request.input("EndDate", sql.Date, endDate);
-        request.input("RentalPrice", sql.Decimal(8, 2), rentalPrice ?? null);
+        request.input("OfferedByUserID", sql.Int, offeredByUserId);
+        request.input("ProposedEndDate", sql.Date, proposedEndDate);
+        request.input(
+            "ProposedRentalPrice",
+            sql.Decimal(8, 2),
+            proposedRentalPrice
+        );
+        request.input("OfferNote", sql.VarChar(500), offerNote ?? null);
 
         const result = await request.query(`
-            UPDATE RentalAgreement
-            SET
-                EndDate = @EndDate,
-                RentalPrice = ISNULL(@RentalPrice, RentalPrice)
-            OUTPUT INSERTED.AgreementID
-            WHERE AgreementID = @AgreementID;
+            INSERT INTO AgreementOffer
+                (AgreementID, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
+            OUTPUT INSERTED.OfferID
+            VALUES
+                (@AgreementID, @OfferedByUserID, @ProposedEndDate, @ProposedRentalPrice, @OfferNote);
         `);
 
-        return result.recordset[0] ? result.recordset[0].AgreementID : null;
+        return result.recordset[0].OfferID;
     } catch (error) {
-        console.error("Database error (renewAgreement):", error);
+        console.error("Database error (createOffer):", error);
         throw error;
     }
 }
+
+// Read one offer with the agreement, stall and operator behind it
+async function getOfferById(offerId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("OfferID", sql.Int, offerId);
+
+        const result = await request.query(`
+            SELECT ${OFFER_COLUMNS}
+            ${OFFER_JOINS}
+            WHERE ao.OfferID = @OfferID;
+        `);
+
+        return result.recordset[0] || null;
+    } catch (error) {
+        console.error("Database error (getOfferById):", error);
+        throw error;
+    }
+}
+
+/*
+ * The offers on one side of the table. A vendor is matched on the agreement
+ * they hold and an operator on the hawker centre the stall stands in, so
+ * neither ever receives terms that are none of their business.
+ */
+async function getOffers({ vendorUserId = null, operatorId = null, status = null }) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("VendorUserID", sql.Int, vendorUserId);
+        request.input("OperatorID", sql.Int, operatorId);
+        request.input("OfferStatus", sql.VarChar(30), status);
+
+        const result = await request.query(`
+            SELECT ${OFFER_COLUMNS}
+            ${OFFER_JOINS}
+            WHERE (@VendorUserID IS NULL OR ra.VendorUserID = @VendorUserID)
+              AND (@OperatorID IS NULL OR hc.OperatorID = @OperatorID)
+              AND (@OfferStatus IS NULL OR ao.OfferStatus = @OfferStatus)
+            ORDER BY ao.CreatedAt DESC, ao.OfferID DESC;
+        `);
+
+        return result.recordset;
+    } catch (error) {
+        console.error("Database error (getOffers):", error);
+        throw error;
+    }
+}
+
+/*
+ * Accept an offer on the vendor's signature.
+ *
+ * The signature and the change it authorises are written in one transaction. If
+ * the agreement could not be moved onto the new terms the signature is rolled
+ * back with it, because a signed offer that never took effect would tell the
+ * operator the vendor had agreed to terms they are not actually on.
+ *
+ * The offer is only signable while it is still pending, so a second click
+ * cannot apply the same rise twice.
+ */
+async function signOffer(offerId, signatureName, signatureHash) {
+    let connection;
+    let transaction;
+    let transactionStarted = false;
+
+    try {
+        connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
+
+        await transaction.begin();
+        transactionStarted = true;
+
+        const signRequest = new sql.Request(transaction);
+        signRequest.input("OfferID", sql.Int, offerId);
+        signRequest.input("SignatureName", sql.VarChar(80), signatureName);
+        signRequest.input("SignatureHash", sql.Char(64), signatureHash);
+
+        const signed = await signRequest.query(`
+            UPDATE AgreementOffer
+            SET OfferStatus = 'Signed',
+                RespondedAt = GETDATE(),
+                SignatureName = @SignatureName,
+                SignatureHash = @SignatureHash
+            OUTPUT
+                INSERTED.OfferID,
+                INSERTED.AgreementID,
+                INSERTED.ProposedEndDate,
+                INSERTED.ProposedRentalPrice
+            WHERE OfferID = @OfferID
+              AND OfferStatus = 'Pending Signature';
+        `);
+
+        if (!signed.recordset.length) {
+            await transaction.rollback();
+            transactionStarted = false;
+
+            return null;
+        }
+
+        const offer = signed.recordset[0];
+
+        // The signature is what moves the agreement onto the new terms
+        const applyRequest = new sql.Request(transaction);
+        applyRequest.input("AgreementID", sql.Int, offer.AgreementID);
+        applyRequest.input("EndDate", sql.Date, offer.ProposedEndDate);
+        applyRequest.input(
+            "RentalPrice",
+            sql.Decimal(8, 2),
+            offer.ProposedRentalPrice
+        );
+
+        await applyRequest.query(`
+            UPDATE RentalAgreement
+            SET EndDate = @EndDate,
+                RentalPrice = @RentalPrice
+            WHERE AgreementID = @AgreementID;
+        `);
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return offer.AgreementID;
+    } catch (error) {
+        console.error("Database error (signOffer):", error);
+
+        if (transactionStarted) {
+            await transaction.rollback();
+        }
+
+        throw error;
+    }
+}
+
+/*
+ * Turn an offer down. The agreement is deliberately left untouched, which is
+ * what keeps the vendor on the last set of terms both sides actually agreed to.
+ */
+async function rejectOffer(offerId, responseNote) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("OfferID", sql.Int, offerId);
+        request.input("ResponseNote", sql.VarChar(300), responseNote ?? null);
+
+        const result = await request.query(`
+            UPDATE AgreementOffer
+            SET OfferStatus = 'Rejected',
+                RespondedAt = GETDATE(),
+                ResponseNote = @ResponseNote
+            OUTPUT INSERTED.OfferID
+            WHERE OfferID = @OfferID
+              AND OfferStatus = 'Pending Signature';
+        `);
+
+        return result.recordset[0] ? result.recordset[0].OfferID : null;
+    } catch (error) {
+        console.error("Database error (rejectOffer):", error);
+        throw error;
+    }
+}
+
+// Withdraw an offer the operator no longer wants to stand behind
+async function withdrawOffer(offerId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("OfferID", sql.Int, offerId);
+
+        const result = await request.query(`
+            UPDATE AgreementOffer
+            SET OfferStatus = 'Withdrawn',
+                RespondedAt = GETDATE()
+            OUTPUT INSERTED.OfferID
+            WHERE OfferID = @OfferID
+              AND OfferStatus = 'Pending Signature';
+        `);
+
+        return result.recordset[0] ? result.recordset[0].OfferID : null;
+    } catch (error) {
+        console.error("Database error (withdrawOffer):", error);
+        throw error;
+    }
+}
+
+// The offer already waiting on this agreement, if there is one
+async function findOpenOffer(agreementId) {
+    let connection;
+
+    try {
+        connection = await sql.connect(dbConfig);
+
+        const request = connection.request();
+        request.input("AgreementID", sql.Int, agreementId);
+
+        const result = await request.query(`
+            SELECT ${OFFER_COLUMNS}
+            ${OFFER_JOINS}
+            WHERE ao.AgreementID = @AgreementID
+              AND ao.OfferStatus = 'Pending Signature';
+        `);
+
+        return result.recordset[0] || null;
+    } catch (error) {
+        console.error("Database error (findOpenOffer):", error);
+        throw error;
+    }
+}
+
+/*
+ * Nothing writes the new end date and price straight onto an agreement any
+ * more. A renewal is now put to the vendor as an offer and it is signOffer that
+ * moves the agreement, so that the terms and the vendor's signature for them
+ * are always written together.
+ */
 
 /*
  * End a tenancy and hand the stall back.
@@ -642,6 +938,12 @@ module.exports = {
     getManagedCentres,
     getOperatorIdForUser,
     createAgreement,
-    renewAgreement,
     endAgreement,
+    createOffer,
+    getOfferById,
+    getOffers,
+    signOffer,
+    rejectOffer,
+    withdrawOffer,
+    findOpenOffer,
 };

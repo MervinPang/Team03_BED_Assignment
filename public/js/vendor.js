@@ -1693,11 +1693,722 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const stallsLoaded = await loadVendorStalls();
 
+  /*
+   * Inbox
+   *
+   * Two things reach a vendor without them going looking for it: an order
+   * arriving at the stall, and the operator putting new tenancy terms to them.
+   * Both are rows of the same Notification table, so they are shown in one list
+   * and told apart by what the notification points at.
+   */
+  const inboxPanel = document.getElementById("vendorInboxPanel");
+  const inboxList = document.getElementById("inboxList");
+  const inboxMessage = document.getElementById("inboxMessage");
+  const inboxHeading = document.getElementById("inboxHeading");
+  const inboxTabBadge = document.getElementById("inboxTabBadge");
+  const inboxFilters = document.getElementById("inboxFilters");
+  const markAllReadButton = document.getElementById("markAllReadButton");
+
+  const offerBackdrop = document.getElementById("offerBackdrop");
+  const offerForm = document.getElementById("offerForm");
+  const offerIdInput = document.getElementById("offerId");
+  const offerStallName = document.getElementById("offerStallName");
+  const offerFrom = document.getElementById("offerFrom");
+  const offerTerms = document.getElementById("offerTerms");
+  const offerNote = document.getElementById("offerNote");
+  const offerSignature = document.getElementById("offerSignature");
+  const offerSignatureHint = document.getElementById("offerSignatureHint");
+  const offerAgree = document.getElementById("offerAgree");
+  const offerResponseNote = document.getElementById("offerResponseNote");
+  const offerMessage = document.getElementById("offerMessage");
+  const signOfferButton = document.getElementById("signOfferButton");
+  const rejectOfferButton = document.getElementById("rejectOfferButton");
+  const closeOfferButton = document.getElementById("closeOfferButton");
+
+  let notifications = [];
+  let inboxFilter = "all";
+  let activeOffer = null;
+
+  function isOfferNotification(notification) {
+    return notification.OfferID !== null && notification.OfferID !== undefined;
+  }
+
+  // An offer is only actionable while the vendor has not answered it
+  function isSignable(notification) {
+    return (
+      notification.NotificationType === "Agreement Offer" &&
+      notification.OfferStatus === "Pending Signature"
+    );
+  }
+
+  function offerBadgeClass(status) {
+    if (status === "Signed") return "success";
+    if (status === "Rejected" || status === "Withdrawn") return "unavailable";
+
+    return "badge-neutral";
+  }
+
+  function filterNotifications(filter) {
+    if (filter === "unread") {
+      return notifications.filter(item => !item.IsRead);
+    }
+
+    if (filter === "offers") {
+      return notifications.filter(isOfferNotification);
+    }
+
+    if (filter === "orders") {
+      return notifications.filter(item => !isOfferNotification(item));
+    }
+
+    return notifications;
+  }
+
+  function updateInboxCounts() {
+    const counts = {
+      all: notifications.length,
+      unread: filterNotifications("unread").length,
+      offers: filterNotifications("offers").length,
+      orders: filterNotifications("orders").length
+    };
+
+    Object.entries(counts).forEach(([key, total]) => {
+      const element = inboxFilters.querySelector(
+        `[data-inbox-count="${key}"]`
+      );
+
+      if (element) element.textContent = total;
+    });
+
+    inboxTabBadge.textContent = counts.unread;
+    inboxTabBadge.hidden = counts.unread === 0;
+
+    inboxHeading.textContent =
+      counts.unread === 0
+        ? "Your inbox"
+        : `Your inbox (${counts.unread} unread)`;
+
+    markAllReadButton.disabled = counts.unread === 0;
+  }
+
+  /*
+   * What the vendor is being asked to accept, set against what they already
+   * hold. The difference between the two is the whole of the decision, so it is
+   * spelled out rather than left for the vendor to work out.
+   */
+  function renderOfferSummary(notification) {
+    const priceChange =
+      Number(notification.ProposedRentalPrice) -
+      Number(notification.CurrentRentalPrice);
+
+    const changeLabel =
+      priceChange > 0
+        ? `<span class="offer-change up">+${money(priceChange)} a month</span>`
+        : priceChange < 0
+          ? `<span class="offer-change down">${money(priceChange)} a month</span>`
+          : `<span class="offer-change">Rent unchanged</span>`;
+
+    return `
+      <div class="offer-compare">
+        <div>
+          <span class="small muted">Now paying</span>
+          <strong>${money(notification.CurrentRentalPrice)}</strong>
+          <span class="small muted">
+            until ${formatDate(notification.CurrentEndDate).split(",")[0]}
+          </span>
+        </div>
+
+        <div class="offer-arrow" aria-hidden="true">→</div>
+
+        <div>
+          <span class="small muted">Proposed</span>
+          <strong>${money(notification.ProposedRentalPrice)}</strong>
+          <span class="small muted">
+            until ${formatDate(notification.ProposedEndDate).split(",")[0]}
+          </span>
+        </div>
+      </div>
+
+      ${changeLabel}
+    `;
+  }
+
+  function renderNotification(notification) {
+    const isOffer = isOfferNotification(notification);
+
+    const glyph = isOffer ? "✎" : "🧾";
+
+    const statusBadge = isOffer
+      ? `
+        <span class="badge ${offerBadgeClass(notification.OfferStatus)}">
+          ${esc(notification.OfferStatus)}
+        </span>
+      `
+      : `
+        <span class="badge badge-neutral">
+          ${esc(notification.OrderStatus || "Pending")}
+        </span>
+      `;
+
+    const detail = isOffer
+      ? renderOfferSummary(notification)
+      : `
+        <div class="inbox-order-figures">
+          <div>
+            <span class="small muted">Order total</span>
+            <strong>${money(notification.TotalAmount)}</strong>
+          </div>
+          <div>
+            <span class="small muted">Customer</span>
+            <strong>${esc(notification.CustomerName || "Guest")}</strong>
+          </div>
+        </div>
+      `;
+
+    const actions = isSignable(notification)
+      ? `
+        <button
+          class="button primary"
+          type="button"
+          data-open-offer="${esc(notification.NotificationID)}"
+        >
+          Review and sign
+        </button>
+      `
+      : "";
+
+    const readAction = notification.IsRead
+      ? ""
+      : `
+        <button
+          class="button ghost"
+          type="button"
+          data-mark-read="${esc(notification.NotificationID)}"
+        >
+          Mark as read
+        </button>
+      `;
+
+    return `
+      <article class="card card-pad inbox-item ${notification.IsRead ? "" : "is-unread"}">
+        <div class="inbox-orb ${isOffer ? "offer" : "order"}" aria-hidden="true">
+          ${glyph}
+        </div>
+
+        <div class="inbox-item-main">
+          <div class="row-between wrap">
+            <div>
+              <span class="small muted">
+                ${formatDate(notification.CreatedAt)}
+              </span>
+              <h3>${esc(notification.Title)}</h3>
+            </div>
+
+            ${statusBadge}
+          </div>
+
+          <p class="muted">${esc(notification.Message)}</p>
+
+          ${detail}
+
+          <div class="inbox-actions">
+            ${actions}
+            ${readAction}
+          </div>
+        </div>
+      </article>
+    `;
+  }
+
+  function renderInbox() {
+    updateInboxCounts();
+
+    const visible = filterNotifications(inboxFilter);
+
+    if (!visible.length) {
+      inboxList.innerHTML = `
+        <div class="card empty">
+          <div class="empty-state-icon">📭</div>
+          <h3>Nothing here yet</h3>
+          <p class="muted">
+            New orders and tenancy offers from your hawker centre
+            operator arrive in this inbox.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    inboxList.innerHTML = visible.map(renderNotification).join("");
+
+    inboxList.querySelectorAll("[data-mark-read]").forEach(button => {
+      button.addEventListener("click", () =>
+        markNotificationRead(Number(button.dataset.markRead))
+      );
+    });
+
+    inboxList.querySelectorAll("[data-open-offer]").forEach(button => {
+      button.addEventListener("click", () =>
+        openOfferModal(Number(button.dataset.openOffer))
+      );
+    });
+  }
+
+  async function loadInbox() {
+    inboxList.innerHTML = `
+      <div class="card empty">
+        <p class="muted">Loading your inbox…</p>
+      </div>
+    `;
+
+    try {
+      const response = await apiRequest("/notifications");
+
+      notifications = normaliseArray(response?.notifications);
+
+      setMessage(inboxMessage);
+      renderInbox();
+    } catch (error) {
+      console.error("Unable to load the inbox:", error);
+
+      setMessage(inboxMessage, error.message, "error");
+      notifications = [];
+
+      inboxList.innerHTML = `
+        <div class="card empty">
+          <h3>Unable to load your inbox</h3>
+          <p class="muted">Please refresh the page or try again later.</p>
+        </div>
+      `;
+    }
+  }
+
+  // Keeps the tab badge current without opening the panel
+  async function refreshUnreadBadge() {
+    try {
+      const response = await apiRequest("/notifications/unread-count");
+      const unread = Number(response?.unreadCount || 0);
+
+      inboxTabBadge.textContent = unread;
+      inboxTabBadge.hidden = unread === 0;
+    } catch (error) {
+      console.error("Unable to read the unread count:", error);
+    }
+  }
+
+  async function markNotificationRead(notificationId) {
+    try {
+      await apiRequest(`/notifications/${notificationId}/read`, {
+        method: "PUT"
+      });
+
+      const notification = notifications.find(
+        item => Number(item.NotificationID) === notificationId
+      );
+
+      if (notification) {
+        notification.IsRead = true;
+      }
+
+      renderInbox();
+    } catch (error) {
+      setMessage(inboxMessage, error.message, "error");
+      showToast(error.message, "error");
+    }
+  }
+
+  async function markAllRead() {
+    markAllReadButton.disabled = true;
+
+    try {
+      const response = await apiRequest("/notifications/read-all", {
+        method: "PUT"
+      });
+
+      notifications.forEach(item => {
+        item.IsRead = true;
+      });
+
+      showToast(response.message, "success");
+      renderInbox();
+    } catch (error) {
+      setMessage(inboxMessage, error.message, "error");
+      showToast(error.message, "error");
+
+      markAllReadButton.disabled = false;
+    }
+  }
+
+  function closeOfferModal() {
+    offerBackdrop.hidden = true;
+    activeOffer = null;
+
+    offerForm.reset();
+    setMessage(offerMessage);
+  }
+
+  /*
+   * The signing sheet. Everything shown here comes from the notification the
+   * vendor clicked, so the terms on the sheet are the terms the API will check
+   * the signature against.
+   */
+  function openOfferModal(notificationId) {
+    const notification = notifications.find(
+      item => Number(item.NotificationID) === notificationId
+    );
+
+    if (!notification) return;
+
+    activeOffer = notification;
+
+    offerIdInput.value = notification.OfferID;
+    offerStallName.textContent = `Renewal offer for ${notification.StallName}`;
+
+    offerFrom.textContent =
+      `Sent by ${notification.OperatorName} on ` +
+      `${formatDate(notification.CreatedAt)}.`;
+
+    offerTerms.innerHTML = renderOfferSummary(notification);
+
+    if (notification.OfferNote) {
+      offerNote.textContent = notification.OfferNote;
+      offerNote.hidden = false;
+    } else {
+      offerNote.hidden = true;
+    }
+
+    offerSignature.value = "";
+    offerSignatureHint.textContent =
+      `Type ${currentVendor.username} exactly as it appears on your account.`;
+
+    offerAgree.checked = false;
+    offerResponseNote.value = "";
+
+    setMessage(offerMessage);
+    offerBackdrop.hidden = false;
+    offerSignature.focus();
+  }
+
+  /*
+   * Signing accepts the terms and moves the tenancy onto them. Rejecting
+   * cancels the offer and leaves the agreement exactly as it was, so the vendor
+   * keeps the terms they are already on.
+   */
+  async function respondToOffer(action) {
+    if (!activeOffer) return;
+
+    const isSigning = action === "sign";
+    const button = isSigning ? signOfferButton : rejectOfferButton;
+    const originalLabel = button.textContent;
+
+    if (isSigning && !offerAgree.checked) {
+      setMessage(
+        offerMessage,
+        "Tick the box to confirm you agree to the proposed terms.",
+        "error"
+      );
+
+      return;
+    }
+
+    setMessage(offerMessage);
+
+    signOfferButton.disabled = true;
+    rejectOfferButton.disabled = true;
+    button.textContent = isSigning ? "Signing…" : "Rejecting…";
+
+    const body = isSigning
+      ? { SignatureName: offerSignature.value.trim(), Agree: true }
+      : { ResponseNote: offerResponseNote.value.trim() };
+
+    try {
+      const response = await apiRequest(
+        `/agreement-offers/${activeOffer.OfferID}/${action}`,
+        {
+          method: "PUT",
+          body: JSON.stringify(body)
+        }
+      );
+
+      showToast(response.message, isSigning ? "success" : "info");
+
+      closeOfferModal();
+
+      await loadInbox();
+
+      // A signed offer changes the rent and end date shown on the tenancy card
+      if (isSigning && !menuPanel.hidden) {
+        loadTenancy();
+      }
+    } catch (error) {
+      setMessage(offerMessage, error.message, "error");
+      showToast(error.message, "error");
+    } finally {
+      signOfferButton.disabled = false;
+      rejectOfferButton.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
+  inboxFilters.querySelectorAll("[data-inbox-filter]").forEach(chip => {
+    chip.addEventListener("click", () => {
+      inboxFilter = chip.dataset.inboxFilter;
+
+      inboxFilters.querySelectorAll("[data-inbox-filter]").forEach(item => {
+        const isActive = item === chip;
+
+        item.classList.toggle("is-active", isActive);
+        item.setAttribute("aria-pressed", String(isActive));
+      });
+
+      renderInbox();
+    });
+  });
+
+  markAllReadButton.addEventListener("click", markAllRead);
+  closeOfferButton.addEventListener("click", closeOfferModal);
+  rejectOfferButton.addEventListener("click", () => respondToOffer("reject"));
+
+  offerForm.addEventListener("submit", event => {
+    event.preventDefault();
+    respondToOffer("sign");
+  });
+
+  offerBackdrop.addEventListener("click", event => {
+    if (event.target === offerBackdrop) closeOfferModal();
+  });
+
+  /*
+   * Replies to customer reviews
+   *
+   * A review belongs to the customer who wrote it, so the vendor answers
+   * underneath it rather than editing it. Reviews without an answer are listed
+   * first because those are the ones still owed a response.
+   */
+  const reviewsPanel = document.getElementById("vendorReviewsPanel");
+  const reviewList = document.getElementById("vendorReviewList");
+  const reviewsMessage = document.getElementById("vendorReviewsMessage");
+  const reviewsCount = document.getElementById("vendorReviewsCount");
+
+  let stallReviews = [];
+
+  function renderStars(rating) {
+    const score = Number(rating) || 0;
+
+    return "★".repeat(score) + "☆".repeat(Math.max(0, 5 - score));
+  }
+
+  function renderReview(review) {
+    const hasReply = Boolean(review.ReplyID);
+
+    return `
+      <article class="card card-pad review-reply-item ${hasReply ? "" : "needs-reply"}">
+        <div class="row-between wrap">
+          <div>
+            <span class="small muted">
+              ${esc(review.StallName)} ·
+              ${formatDate(review.ReviewDateTime)}
+            </span>
+            <h3>${esc(review.CustomerName)}</h3>
+          </div>
+
+          <span class="review-stars" title="${esc(review.Rating)} out of 5">
+            ${renderStars(review.Rating)}
+          </span>
+        </div>
+
+        <p class="review-comment">
+          ${esc(review.ReviewComment || "No comment was left with this rating.")}
+        </p>
+
+        <div class="field">
+          <label for="reply-${esc(review.ReviewID)}">
+            ${hasReply ? "Your reply" : "Reply to this review"}
+          </label>
+
+          <textarea
+            class="textarea"
+            id="reply-${esc(review.ReviewID)}"
+            maxlength="500"
+            data-reply-input="${esc(review.ReviewID)}"
+            placeholder="Thank the customer, or explain what you have changed."
+          >${esc(review.ReplyText || "")}</textarea>
+
+          ${hasReply
+        ? `
+              <small class="muted">
+                Posted ${formatDate(review.ReplyCreatedAt)}${review.ReplyUpdatedAt
+          ? `, edited ${formatDate(review.ReplyUpdatedAt)}`
+          : ""
+        }
+              </small>
+            `
+        : ""
+      }
+        </div>
+
+        <div class="inbox-actions">
+          <button
+            class="button primary"
+            type="button"
+            data-save-reply="${esc(review.ReviewID)}"
+          >
+            ${hasReply ? "Update reply" : "Post reply"}
+          </button>
+
+          ${hasReply
+        ? `
+              <button
+                class="button ghost"
+                type="button"
+                data-delete-reply="${esc(review.ReviewID)}"
+              >
+                Remove reply
+              </button>
+            `
+        : ""
+      }
+        </div>
+      </article>
+    `;
+  }
+
+  function renderReviews() {
+    const unanswered = stallReviews.filter(review => !review.ReplyID).length;
+
+    reviewsCount.textContent = stallReviews.length
+      ? `${stallReviews.length} reviews · ${unanswered} awaiting a reply`
+      : "";
+
+    if (!stallReviews.length) {
+      reviewList.innerHTML = `
+        <div class="card empty">
+          <div class="empty-state-icon">★</div>
+          <h3>No reviews yet</h3>
+          <p class="muted">
+            Reviews customers leave for your stalls will appear here
+            for you to answer.
+          </p>
+        </div>
+      `;
+
+      return;
+    }
+
+    reviewList.innerHTML = stallReviews.map(renderReview).join("");
+
+    reviewList.querySelectorAll("[data-save-reply]").forEach(button => {
+      button.addEventListener("click", () =>
+        saveReply(Number(button.dataset.saveReply), button)
+      );
+    });
+
+    reviewList.querySelectorAll("[data-delete-reply]").forEach(button => {
+      button.addEventListener("click", () =>
+        removeReply(Number(button.dataset.deleteReply), button)
+      );
+    });
+  }
+
+  async function loadVendorReviews() {
+    reviewList.innerHTML = `
+      <div class="card empty">
+        <p class="muted">Loading your reviews…</p>
+      </div>
+    `;
+
+    try {
+      const response = await apiRequest("/vendors/me/reviews");
+
+      stallReviews = normaliseArray(response?.reviews);
+
+      setMessage(reviewsMessage);
+      renderReviews();
+    } catch (error) {
+      console.error("Unable to load the stall reviews:", error);
+
+      setMessage(reviewsMessage, error.message, "error");
+      stallReviews = [];
+
+      reviewList.innerHTML = `
+        <div class="card empty">
+          <h3>Unable to load your reviews</h3>
+          <p class="muted">Please refresh the page or try again later.</p>
+        </div>
+      `;
+    }
+  }
+
+  async function saveReply(reviewId, button) {
+    const input = reviewList.querySelector(
+      `[data-reply-input="${reviewId}"]`
+    );
+
+    const replyText = input?.value.trim();
+
+    if (!replyText) {
+      setMessage(
+        reviewsMessage,
+        "Write a reply before posting it.",
+        "error"
+      );
+
+      return;
+    }
+
+    const originalLabel = button.textContent;
+
+    button.disabled = true;
+    button.textContent = "Saving…";
+
+    try {
+      const response = await apiRequest(`/reviews/${reviewId}/reply`, {
+        method: "PUT",
+        body: JSON.stringify({ ReplyText: replyText })
+      });
+
+      showToast(response.message, "success");
+      setMessage(reviewsMessage);
+
+      await loadVendorReviews();
+    } catch (error) {
+      setMessage(reviewsMessage, error.message, "error");
+      showToast(error.message, "error");
+
+      button.disabled = false;
+      button.textContent = originalLabel;
+    }
+  }
+
+  async function removeReply(reviewId, button) {
+    button.disabled = true;
+    button.textContent = "Removing…";
+
+    try {
+      const response = await apiRequest(`/reviews/${reviewId}/reply`, {
+        method: "DELETE"
+      });
+
+      showToast(response.message, "info");
+      setMessage(reviewsMessage);
+
+      await loadVendorReviews();
+    } catch (error) {
+      setMessage(reviewsMessage, error.message, "error");
+      showToast(error.message, "error");
+
+      button.disabled = false;
+      button.textContent = "Remove reply";
+    }
+  }
+
   if (stallsLoaded) {
     currentStallId = Number(stallSelect.value);
   }
 
   loadOrders();
+  refreshUnreadBadge();
 
   document
     .querySelectorAll("[data-vendor-tab]")
@@ -1717,6 +2428,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const showAnalytics = activeTab === "analytics";
         const showOrders = activeTab === "orders";
         const showMenu = activeTab === "menu";
+        const showInbox = activeTab === "inbox";
+        const showReviews = activeTab === "reviews";
 
         document.querySelector(".metrics").hidden =
           !showAnalytics;
@@ -1727,6 +2440,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         ordersPanel.hidden = !showOrders;
         menuPanel.hidden = !showMenu;
+        inboxPanel.hidden = !showInbox;
+        reviewsPanel.hidden = !showReviews;
 
         // Returning to the analytics tab always shows current figures.
         if (showAnalytics) {
@@ -1737,6 +2452,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         if (showMenu) {
           loadMenu();
           loadTenancy();
+        }
+
+        // The inbox and the reviews are read fresh each time they are opened,
+        // because both change from outside this browser
+        if (showInbox) {
+          loadInbox();
+        }
+
+        if (showReviews) {
+          loadVendorReviews();
         }
       });
     });

@@ -91,7 +91,7 @@
                               Vendor analytics
                         </span>
                         <h1>
-                              Know your stall
+                              Know Your Stall
                         </h1>
                         <p class="lead">
                               View sales performance and top-selling items for your assigned stall.
@@ -142,6 +142,15 @@
                               </button>
                               <button class="tab" data-vendor-tab="menu" type="button">
                                     Menu &amp; Stall
+                              </button>
+                              <button class="tab" data-vendor-tab="inbox" type="button">
+                                    Inbox
+                                    <span class="inbox-badge" hidden="" id="inboxTabBadge">
+                                          0
+                                    </span>
+                              </button>
+                              <button class="tab" data-vendor-tab="reviews" type="button">
+                                    Reviews
                               </button>
                         </div>
                         <div class="metrics">
@@ -326,6 +335,82 @@
                               </aside>
                         </div>
                   </section>
+                  <section hidden="" id="vendorInboxPanel" style="margin-top:20px">
+                        <div class="card card-pad inbox-bar">
+                              <div class="row-between wrap">
+                                    <div>
+                                          <span class="small muted">
+                                                Notifications
+                                          </span>
+                                          <h3 id="inboxHeading">
+                                                Your inbox
+                                          </h3>
+                                    </div>
+                                    <button class="button ghost" id="markAllReadButton" type="button">
+                                          Mark all as read
+                                    </button>
+                              </div>
+                              <div aria-label="Filter notifications" class="order-filter-chips" id="inboxFilters"
+                                    role="group">
+                                    <button aria-pressed="true" class="order-chip is-active" data-inbox-filter="all"
+                                          type="button">
+                                          All
+                                          <span class="order-chip-count" data-inbox-count="all">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-inbox-filter="unread"
+                                          type="button">
+                                          Unread
+                                          <span class="order-chip-count" data-inbox-count="unread">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-inbox-filter="offers"
+                                          type="button">
+                                          Tenancy offers
+                                          <span class="order-chip-count" data-inbox-count="offers">
+                                                0
+                                          </span>
+                                    </button>
+                                    <button aria-pressed="false" class="order-chip" data-inbox-filter="orders"
+                                          type="button">
+                                          New orders
+                                          <span class="order-chip-count" data-inbox-count="orders">
+                                                0
+                                          </span>
+                                    </button>
+                              </div>
+                              <div aria-live="polite" class="form-message" id="inboxMessage">
+                              </div>
+                        </div>
+                        <div class="stack" id="inboxList" style="margin-top:18px">
+                        </div>
+                  </section>
+                  <section hidden="" id="vendorReviewsPanel" style="margin-top:20px">
+                        <div class="card card-pad inbox-bar">
+                              <div class="row-between wrap">
+                                    <div>
+                                          <span class="small muted">
+                                                Customer feedback
+                                          </span>
+                                          <h3 id="vendorReviewsHeading">
+                                                Reviews of your stalls
+                                          </h3>
+                                    </div>
+                                    <span class="small muted" id="vendorReviewsCount">
+                                    </span>
+                              </div>
+                              <p class="muted small">
+                                    Your reply is shown publicly underneath the review on the stall's review page.
+                                    Unanswered reviews are listed first.
+                              </p>
+                              <div aria-live="polite" class="form-message" id="vendorReviewsMessage">
+                              </div>
+                        </div>
+                        <div class="stack" id="vendorReviewList" style="margin-top:18px">
+                        </div>
+                  </section>
             </section>
             <div class="modal-backdrop" hidden="" id="menuItemBackdrop">
                   <form class="modal stack" id="menuItemForm">
@@ -394,6 +479,65 @@
                         <button class="button primary" type="submit">
                               Save menu item
                         </button>
+                  </form>
+            </div>
+            <div class="modal-backdrop" hidden="" id="offerBackdrop">
+                  <form class="modal stack" id="offerForm">
+                        <header class="row-between">
+                              <div>
+                                    <span class="small muted">
+                                          Tenancy offer
+                                    </span>
+                                    <h2 id="offerStallName">
+                                          Renewal offer
+                                    </h2>
+                              </div>
+                              <button class="button ghost" id="closeOfferButton" type="button">
+                                    Close
+                              </button>
+                        </header>
+                        <input id="offerId" type="hidden" />
+                        <p class="muted small" id="offerFrom">
+                        </p>
+                        <div class="offer-terms" id="offerTerms">
+                        </div>
+                        <blockquote class="offer-note" hidden="" id="offerNote">
+                        </blockquote>
+                        <div class="field">
+                              <label for="offerSignature">
+                                    Digital signature
+                              </label>
+                              <input autocomplete="off" class="input" id="offerSignature" maxlength="80"
+                                    placeholder="Type your account name to sign" type="text" />
+                              <small class="muted" id="offerSignatureHint">
+                              </small>
+                        </div>
+                        <label class="stall-toggle">
+                              <input id="offerAgree" type="checkbox" />
+                              <span>
+                                    I agree to the proposed tenancy terms above.
+                              </span>
+                        </label>
+                        <div class="field">
+                              <label for="offerResponseNote">
+                                    Reason for rejecting
+                                    <span class="muted small">
+                                          (optional, sent to the operator)
+                                    </span>
+                              </label>
+                              <textarea class="textarea" id="offerResponseNote" maxlength="300"
+                                    placeholder="Only used if you reject the offer."></textarea>
+                        </div>
+                        <div aria-live="polite" class="form-message" id="offerMessage">
+                        </div>
+                        <div class="offer-actions">
+                              <button class="button secondary" id="rejectOfferButton" type="button">
+                                    Reject offer
+                              </button>
+                              <button class="button primary" id="signOfferButton" type="submit">
+                                    Sign and send back
+                              </button>
+                        </div>
                   </form>
             </div>
       </main>

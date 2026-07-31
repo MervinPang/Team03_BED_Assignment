@@ -231,3 +231,23 @@
     padding: 76px 8px 8px;
   }
 }
+
+/* --- The vendor's answer, shown underneath the review it replies to --- */
+.vendor-reply {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+  padding: 13px 16px;
+  border-left: 3px solid var(--brand2);
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: var(--bg2);
+}
+
+.vendor-reply-author {
+  color: var(--brand);
+  font-weight: 800;
+}
+
+.vendor-reply p {
+  margin: 0;
+}
