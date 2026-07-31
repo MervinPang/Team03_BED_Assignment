@@ -42,7 +42,15 @@ const { validateMenuItem, validateAvailability, validateStallUpdate, requireStal
 
 const rentalController = require("./controllers/rentalController");
 
-const { validateAgreement, validateRenewal, validateTenancyEnd, validateAgreementQuery, validateExpiryWindow, validateAgreementId } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
+const { validateAgreement, validateRenewal, validateTenancyEnd, validateAgreementQuery, validateExpiryWindow, validateAgreementId, validateOfferSignature, validateOfferRejection, validateOfferId, validateOfferQuery } = require("./middlewares/rentalValidation"); // Import Rental Validation Middleware
+
+const notificationController = require("./controllers/notificationController");
+
+const { validateNotificationId, validateNotificationQuery } = require("./middlewares/notificationValidation"); // Import Notification Validation Middleware
+
+const reviewReplyController = require("./controllers/reviewReplyController");
+
+const { validateReply, validateReplyReviewId } = require("./middlewares/reviewReplyValidation"); // Import Review Reply Validation Middleware
 
 // Create Express app
 const app = express();
@@ -80,8 +88,28 @@ app.get("/rental-agreements", verifyJWT, validateAgreementQuery, rentalControlle
 app.get("/rental-agreements/expiring", verifyJWT, validateExpiryWindow, rentalController.getExpiringAgreements);
 app.get("/rental-agreements/:id", verifyJWT, validateAgreementId, rentalController.getAgreementById);
 app.post("/rental-agreements", verifyJWT, validateAgreement, rentalController.createAgreement);
+// A renewal is put to the vendor for signature and does not change the tenancy
 app.put("/rental-agreements/:id/renew", verifyJWT, validateAgreementId, validateRenewal, rentalController.renewAgreement);
 app.put("/rental-agreements/:id/end", verifyJWT, validateAgreementId, validateTenancyEnd, rentalController.endAgreement);
+
+// Routes for Tenancy Offers
+// The operator sends the terms, the vendor signs them or turns them down
+app.get("/agreement-offers", verifyJWT, validateOfferQuery, rentalController.getOffers);
+app.put("/agreement-offers/:offerId/sign", verifyJWT, validateOfferId, validateOfferSignature, rentalController.signOffer);
+app.put("/agreement-offers/:offerId/reject", verifyJWT, validateOfferId, validateOfferRejection, rentalController.rejectOffer);
+app.put("/agreement-offers/:offerId/withdraw", verifyJWT, validateOfferId, rentalController.withdrawOffer);
+
+// Routes for Notifications
+app.get("/notifications", verifyJWT, validateNotificationQuery, notificationController.getMyNotifications);
+app.get("/notifications/unread-count", verifyJWT, notificationController.getMyUnreadCount);
+app.put("/notifications/read-all", verifyJWT, notificationController.markAllNotificationsRead);
+app.put("/notifications/:notificationId/read", verifyJWT, validateNotificationId, notificationController.markNotificationRead);
+
+// Routes for Vendor Replies to Customer Reviews
+app.get("/stalls/:stallId/review-replies", reviewReplyController.getRepliesByStall);
+app.get("/vendors/me/reviews", verifyJWT, reviewReplyController.getMyStallReviews);
+app.put("/reviews/:reviewId/reply", verifyJWT, validateReplyReviewId, validateReply, reviewReplyController.saveReply);
+app.delete("/reviews/:reviewId/reply", verifyJWT, validateReplyReviewId, reviewReplyController.deleteReply);
 
 // Routes for Place Food Order
 app.get("/orders", verifyJWT, orderController.getAllOrders);

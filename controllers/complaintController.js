@@ -1,5 +1,6 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
+const rentalModel = require("../models/rentalModel");
 
 async function submitComplaint(req, res) {
   try {
@@ -65,14 +66,44 @@ async function updateComplaintStatus(req, res) {
     const { status } = req.body;
     const pool = await sql.connect(dbConfig);
 
-    // Confirm complaint exists first
+    // Confirm the complaint exists, and read the operator of the hawker centre
+    // its stall stands in, because that is who is allowed to decide the case
     const complaintCheck = await pool
       .request()
       .input("ComplaintID", sql.Int, complaintId)
-      .query("SELECT ComplaintID FROM Complaint WHERE ComplaintID = @ComplaintID");
+      .query(`
+        SELECT c.ComplaintID, fs.StallName, hc.HCName, hc.OperatorID
+        FROM Complaint c
+        JOIN FoodStall fs ON c.StallID = fs.StallID
+        JOIN HawkerCentre hc ON fs.HawkerCentreID = hc.HawkerCentreID
+        WHERE c.ComplaintID = @ComplaintID
+      `);
 
     if (complaintCheck.recordset.length === 0) {
       return res.status(400).json({ error: "Complaint does not exist." });
+    }
+
+    const complaint = complaintCheck.recordset[0];
+
+    /*
+     * The operator behind the signed in account is read from the database on
+     * every request rather than taken from the token, so that nothing sent by
+     * the browser can widen the centres whose cases may be closed.
+     */
+    const operator = await rentalModel.getOperatorIdForUser(Number(req.user.id));
+
+    if (!operator || !operator.OperatorID) {
+      return res.status(403).json({
+        error: "Your account is not linked to a hawker centre operator.",
+      });
+    }
+
+    if (Number(complaint.OperatorID) !== Number(operator.OperatorID)) {
+      return res.status(403).json({
+        error:
+          `${complaint.StallName} is in ${complaint.HCName}, ` +
+          "which is run by another operator.",
+      });
     }
 
     // If marking as Resolved, also set ResolvedAt to now

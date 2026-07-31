@@ -26,7 +26,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     const renewSummary = document.getElementById("renewSummary");
     const renewEndDate = document.getElementById("renewEndDate");
     const renewPrice = document.getElementById("renewPrice");
+    const renewNote = document.getElementById("renewNote");
     const renewMessage = document.getElementById("renewMessage");
+
+    const offerList = document.getElementById("offerList");
+    const offerCount = document.getElementById("offerCount");
+    const offerListMessage = document.getElementById("offerListMessage");
 
     const centreList = document.getElementById("centreList");
     const stallTableBody = document.getElementById("stallTableBody");
@@ -41,9 +46,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     function statusBadgeClass(status) {
         if (status === "Active") return "success";
         if (status === "Upcoming") return "warning";
+        if (status === "Awaiting Signature") return "warning";
         if (status === "Ended") return "neutral";
 
         return "unavailable";
+    }
+
+    function offerTypeLabel(offerType) {
+        return offerType === "New Tenancy" ? "New tenancy" : "Renewal";
     }
 
     function dateOnly(value) {
@@ -178,7 +188,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                                    >
                                        End tenancy
                                    </button>`
-                        : `<span class="small muted">Ready to let</span>`
+                        : stall.PendingOfferID
+                            /*
+                             * The unit is empty but already promised to someone,
+                             * so calling it ready to let would invite a second
+                             * offer the register would then refuse.
+                             */
+                            ? `<span class="small muted">
+                                       Offered to ${esc(stall.PendingOfferVendor)}
+                                   </span>`
+                            : `<span class="small muted">Ready to let</span>`
                     }
                         </td>
                     </tr>
@@ -419,11 +438,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 `
                         : ""
                     }
+
+                            ${agreement.AgreementStatus === "Awaiting Signature"
+                        ? `
+                                    <p class="small agreement-warning">
+                                        Waiting on ${esc(agreement.VendorName)} to sign.
+                                        The stall stays vacant until they do.
+                                    </p>
+                                `
+                        : ""
+                    }
                         </div>
 
-                        ${agreement.TerminatedOn
-                        ? `<span class="small muted">Closed</span>`
-                        : `<button
+                        ${/*
+                           * Only a tenancy the vendor has signed can be renewed.
+                           * One still awaiting a signature is dealt with through
+                           * its offer, and a cancelled or closed one is finished.
+                           */
+                        agreement.AgreementStatus === "Awaiting Signature"
+                            ? `<span class="small muted">Unsigned</span>`
+                            : agreement.AgreementStatus === "Cancelled"
+                                ? `<span class="small muted">Cancelled</span>`
+                                : agreement.TerminatedOn
+                                    ? `<span class="small muted">Closed</span>`
+                                    : `<button
                                     class="button secondary"
                                     type="button"
                                     data-renew="${agreement.AgreementID}"
@@ -487,6 +525,196 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
     }
 
+    function offerBadgeClass(status) {
+        if (status === "Signed") return "success";
+        if (status === "Pending Signature") return "warning";
+
+        return "unavailable";
+    }
+
+    /*
+     * The terms this operator has put out and where each one has got to.
+     *
+     * A renewal no longer changes an agreement on its own, so this list is what
+     * tells the operator whether the vendor has signed, turned the terms down,
+     * or has yet to answer at all.
+     */
+    async function loadOffers() {
+        offerList.innerHTML = `
+            <p class="small muted">Loading tenancy offers…</p>
+        `;
+
+        try {
+            const response = await apiRequest("/agreement-offers");
+
+            const offers = Array.isArray(response?.offers)
+                ? response.offers
+                : [];
+
+            const pending = Number(response?.pendingCount || 0);
+
+            offerCount.textContent = offers.length
+                ? `${offers.length} sent · ${pending} awaiting signature`
+                : "";
+
+            setMessage(offerListMessage);
+
+            if (!offers.length) {
+                offerList.innerHTML = `
+                    <div class="empty">
+                        <h3>No offers sent</h3>
+                        <p class="muted">
+                            Renewing a tenancy sends the new terms to the vendor
+                            for signature and they appear here.
+                        </p>
+                    </div>
+                `;
+
+                return;
+            }
+
+            offerList.innerHTML = offers
+                .map(offer => {
+                    const priceChange = Number(offer.PriceChange || 0);
+
+                    const changeLabel =
+                        priceChange > 0
+                            ? `up $${priceChange.toFixed(2)}`
+                            : priceChange < 0
+                                ? `down $${Math.abs(priceChange).toFixed(2)}`
+                                : "rent unchanged";
+
+                    const isNew = offer.OfferType === "New Tenancy";
+
+                    return `
+                        <article class="agreement-row">
+                            <div class="row-between wrap">
+                                <div>
+                                    <strong>${esc(offer.StallName)}</strong>
+                                    <p class="small muted">
+                                        ${offerTypeLabel(offer.OfferType)} ·
+                                        ${esc(offer.VendorName)} ·
+                                        sent ${dateOnly(offer.CreatedAt)}
+                                    </p>
+                                </div>
+
+                                <span class="badge ${offerBadgeClass(offer.OfferStatus)}">
+                                    ${esc(offer.OfferStatus)}
+                                </span>
+                            </div>
+
+                            ${isNew
+                            ? `
+                                    <p class="small muted">
+                                        $${Number(offer.ProposedRentalPrice).toFixed(2)} a month,
+                                        ${dateOnly(offer.StartDate)}
+                                        to ${dateOnly(offer.ProposedEndDate)}
+                                    </p>
+                                `
+                            : `
+                                    <p class="small muted">
+                                        $${Number(offer.CurrentRentalPrice).toFixed(2)}
+                                        until ${dateOnly(offer.CurrentEndDate)}
+                                        &rarr;
+                                        $${Number(offer.ProposedRentalPrice).toFixed(2)}
+                                        until ${dateOnly(offer.ProposedEndDate)}
+                                        (${changeLabel})
+                                    </p>
+                                `
+                        }
+
+                            ${offer.OfferStatus === "Signed"
+                            ? `
+                                    <p class="small muted">
+                                        Signed by ${esc(offer.SignatureName)} on
+                                        ${dateOnly(offer.RespondedAt)}.
+                                        ${isNew
+                                ? "The vendor has taken on the stall."
+                                : "The tenancy is now on these terms."
+                            }
+                                    </p>
+                                `
+                            : ""
+                        }
+
+                            ${offer.OfferStatus === "Rejected"
+                            ? `
+                                    <p class="small muted">
+                                        Rejected on ${dateOnly(offer.RespondedAt)} and
+                                        cancelled.
+                                        ${isNew
+                                ? "The stall stays vacant and can be offered again."
+                                : "The tenancy stays on its current terms."
+                            }${offer.ResponseNote
+                                ? ` Reason given: ${esc(offer.ResponseNote)}`
+                                : ""
+                            }
+                                    </p>
+                                `
+                            : ""
+                        }
+
+                            ${offer.OfferStatus === "Pending Signature"
+                            ? `
+                                    <div class="row">
+                                        <button
+                                            class="button secondary"
+                                            type="button"
+                                            data-withdraw-offer="${offer.OfferID}"
+                                        >
+                                            Withdraw offer
+                                        </button>
+                                    </div>
+                                `
+                            : ""
+                        }
+                        </article>
+                    `;
+                })
+                .join("");
+
+            offerList
+                .querySelectorAll("[data-withdraw-offer]")
+                .forEach(button => {
+                    button.addEventListener("click", () =>
+                        withdrawOffer(
+                            Number(button.dataset.withdrawOffer),
+                            button
+                        )
+                    );
+                });
+        } catch (error) {
+            console.error("Unable to load tenancy offers:", error);
+
+            offerCount.textContent = "";
+            setMessage(offerListMessage, error.message, "error");
+
+            offerList.innerHTML = "";
+        }
+    }
+
+    async function withdrawOffer(offerId, button) {
+        button.disabled = true;
+        button.textContent = "Withdrawing…";
+
+        try {
+            const response = await apiRequest(
+                `/agreement-offers/${offerId}/withdraw`,
+                { method: "PUT" }
+            );
+
+            showToast(response.message, "info");
+
+            await loadOffers();
+        } catch (error) {
+            setMessage(offerListMessage, error.message, "error");
+            showToast(error.message, "error");
+
+            button.disabled = false;
+            button.textContent = "Withdraw offer";
+        }
+    }
+
     function openRenewal(agreementId) {
         const agreement = agreements.find(
             entry => Number(entry.AgreementID) === agreementId
@@ -500,6 +728,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         renewEndDate.value = "";
         renewPrice.value = "";
+        renewNote.value = "";
 
         setMessage(renewMessage);
 
@@ -536,7 +765,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         submitButton.disabled = true;
-        submitButton.textContent = "Creating agreement…";
+        submitButton.textContent = "Sending for signature…";
 
         try {
             const response = await apiRequest("/rental-agreements", {
@@ -549,7 +778,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             agreementForm.reset();
 
-            // A new tenancy fills a unit, so the occupancy figures move too
+            /*
+             * The unit is not filled yet: the tenancy is only offered, so what
+             * moves is the list of offers. The register and the occupancy
+             * figures are reloaded too, because the agreement now shows there
+             * as awaiting the vendor's signature.
+             */
+            await loadOffers();
             await loadAgreements();
             await loadManagedStalls();
             await loadCentres();
@@ -558,7 +793,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             showToast(error.message, "error");
         } finally {
             submitButton.disabled = false;
-            submitButton.textContent = "Create agreement";
+            submitButton.textContent = "Send for signature";
         }
     });
 
@@ -570,6 +805,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         if (renewPrice.value !== "") {
             payload.RentalPrice = Number(renewPrice.value);
+        }
+
+        if (renewNote.value.trim() !== "") {
+            payload.OfferNote = renewNote.value.trim();
         }
 
         try {
@@ -584,6 +823,9 @@ document.addEventListener("DOMContentLoaded", async () => {
             closeRenewal();
             showToast(response.message);
 
+            // The agreement is unchanged until the vendor signs, so what moves
+            // here is the list of offers rather than the register itself
+            await loadOffers();
             await loadAgreements();
             await loadManagedStalls();
         } catch (error) {
@@ -609,4 +851,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     await loadStalls();
     await loadVendorOptions();
     await loadAgreements();
+    await loadOffers();
 });

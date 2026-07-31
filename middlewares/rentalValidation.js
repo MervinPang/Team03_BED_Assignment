@@ -1,7 +1,26 @@
 const Joi = require("joi"); // Import Joi for validation
 
-// Ended means the operator closed the tenancy before its agreed end date
-const AGREEMENT_STATUSES = ["Active", "Upcoming", "Expired", "Ended"];
+/*
+ * Awaiting Signature is an agreement the vendor has been offered but not yet
+ * signed, Cancelled is one they turned down or the operator took back, and
+ * Ended means the operator closed a running tenancy before its agreed end date.
+ */
+const AGREEMENT_STATUSES = [
+    "Awaiting Signature",
+    "Active",
+    "Upcoming",
+    "Expired",
+    "Ended",
+    "Cancelled",
+];
+
+// Where a set of proposed terms has got to between the operator and the vendor
+const OFFER_STATUSES = [
+    "Pending Signature",
+    "Signed",
+    "Rejected",
+    "Withdrawn",
+];
 
 // Validation schema for creating a rental agreement
 const agreementSchema = Joi.object({
@@ -47,7 +66,11 @@ const agreementSchema = Joi.object({
     }),
 });
 
-// Validation schema for renewing an agreement
+/*
+ * Validation schema for renewing an agreement. A renewal is put to the vendor
+ * rather than applied, so the note is what the operator says to explain terms
+ * the vendor is being asked to accept.
+ */
 const renewalSchema = Joi.object({
     EndDate: Joi.date().iso().required().messages({
         "date.base": "End date must be a valid date",
@@ -59,6 +82,41 @@ const renewalSchema = Joi.object({
         "number.base": "Rental price must be a number",
         "number.min": "Rental price must be at least 0.01",
         "number.max": "Rental price cannot exceed 999999.99",
+    }),
+
+    OfferNote: Joi.string().trim().max(500).allow(null, "").messages({
+        "string.base": "The note to the vendor must be text",
+        "string.max": "The note to the vendor cannot exceed 500 characters",
+    }),
+});
+
+/*
+ * Validation schema for signing an offer.
+ *
+ * Agree has to be sent as true rather than merely being absent, so accepting
+ * new terms is always something the vendor did on purpose and never something
+ * an empty request body could do on their behalf.
+ */
+const offerSignatureSchema = Joi.object({
+    SignatureName: Joi.string().trim().min(2).max(80).required().messages({
+        "string.base": "The signature must be text",
+        "string.empty": "Type your account name to sign the offer",
+        "string.min": "The signature must be at least 2 characters",
+        "string.max": "The signature cannot exceed 80 characters",
+        "any.required": "Type your account name to sign the offer",
+    }),
+
+    Agree: Joi.boolean().valid(true).required().messages({
+        "any.only": "You must confirm that you agree to the proposed terms",
+        "any.required": "You must confirm that you agree to the proposed terms",
+    }),
+});
+
+// Validation schema for turning an offer down
+const offerRejectionSchema = Joi.object({
+    ResponseNote: Joi.string().trim().max(300).allow(null, "").messages({
+        "string.base": "The reason must be text",
+        "string.max": "The reason cannot exceed 300 characters",
     }),
 });
 
@@ -98,7 +156,7 @@ function validateAgreementQuery(req, res, next) {
 
     if (status !== undefined && !AGREEMENT_STATUSES.includes(status)) {
         return res.status(400).json({
-            error: "Invalid status. Use Active, Upcoming or Expired",
+            error: "Invalid status. Use " + AGREEMENT_STATUSES.join(", "),
         });
     }
 
@@ -133,11 +191,43 @@ function validateAgreementId(req, res, next) {
     next();
 }
 
+// Middleware to validate the offer ID from URL parameters
+function validateOfferId(req, res, next) {
+    const id = Number(req.params.offerId);
+
+    if (!Number.isInteger(id) || id <= 0) {
+        return res.status(400).json({
+            error: "Invalid offer ID. ID must be a positive number",
+        });
+    }
+
+    next();
+}
+
+// Middleware to validate the optional status filter used when listing offers
+function validateOfferQuery(req, res, next) {
+    const status = req.query.status;
+
+    if (status !== undefined && !OFFER_STATUSES.includes(status)) {
+        return res.status(400).json({
+            error:
+                "Invalid status. Use " + OFFER_STATUSES.join(", "),
+        });
+    }
+
+    req.offerStatus = status || null;
+    next();
+}
+
 module.exports = {
     validateAgreement: validateWith(agreementSchema),
     validateRenewal: validateWith(renewalSchema),
     validateTenancyEnd: validateWith(tenancyEndSchema),
+    validateOfferSignature: validateWith(offerSignatureSchema),
+    validateOfferRejection: validateWith(offerRejectionSchema),
     validateAgreementQuery,
     validateExpiryWindow,
     validateAgreementId,
+    validateOfferId,
+    validateOfferQuery,
 };

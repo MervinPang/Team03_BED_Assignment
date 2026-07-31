@@ -13,8 +13,11 @@ document.addEventListener("DOMContentLoaded", async () => {
     const currentRole = role(currentUser.role);
     const isCustomer = currentRole === "customer";
 
-    // A complaint is decided by the NEA officer, not by the stall it is about
-    const canManageStatus = currentRole === "nea_officer";
+    /*
+     * A case is decided by the operator of the hawker centre, not by the stall
+     * it is about and not by the NEA officer, whose work is the inspection.
+     */
+    const canManageStatus = currentRole === "operator";
 
     const STATUSES = ["Pending", "In Review", "Resolved"];
 
@@ -376,13 +379,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             if (currentRole === "vendor") {
                 setMessage(
                     trackerMessage,
-                    "You can view every complaint about your stall here. The outcome of a case is decided by the NEA officer.",
+                    "You can view every complaint about your stall here. The outcome of a case is decided by the operator of your hawker centre.",
                     "info"
                 );
             } else if (currentRole === "operator") {
                 setMessage(
                     trackerMessage,
-                    "You can view every complaint about the stalls you manage. The outcome of a case is decided by the NEA officer.",
+                    "You decide the outcome of every complaint about the stalls in the hawker centres you manage.",
+                    "info"
+                );
+            } else if (currentRole === "nea_officer") {
+                setMessage(
+                    trackerMessage,
+                    "You can view every complaint about this stall. The outcome of a case is decided by the operator of its hawker centre.",
                     "info"
                 );
             }

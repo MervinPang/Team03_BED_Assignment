@@ -92,7 +92,7 @@
                                     Regulatory and compliance
                               </span>
                               <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">
-                                    Inspection management
+                                    Inspection Management
                               </h1>
                               <p class="lead">
                                     Submit inspection findings and review a stall’s hygiene-grade history.
@@ -118,9 +118,10 @@
                                     <div class="grid grid-2">
                                           <div class="field">
                                                 <label for="stallId">
-                                                      Stall ID
+                                                      Stall Name
                                                 </label>
-                                                <input class="input" id="stallId" min="1" required="" type="number" />
+                                                <select class="select" id="stallId" required="">
+                                                </select>
                                           </div>
                                           <div class="field">
                                                 <label for="score">
@@ -212,8 +213,8 @@
                                     </h2>
                               </div>
                               <form class="history-search" id="historyForm">
-                                    <input class="input" id="historyStallId" min="1" placeholder="Enter Stall ID"
-                                          required="" type="number" />
+                                    <select class="select" id="historyStallId" required="">
+                                    </select>
                                     <button class="button secondary" type="submit">
                                           Load history
                                     </button>
@@ -230,7 +231,7 @@
                                           No stall selected
                                     </h3>
                                     <p class="muted">
-                                          Enter a Stall ID to view its inspection records.
+                                          Choose a food stall to view its inspection records.
                                     </p>
                               </div>
                         </div>

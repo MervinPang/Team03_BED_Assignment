@@ -1,10 +1,11 @@
-document.addEventListener("DOMContentLoaded", () => {
+document.addEventListener("DOMContentLoaded", async () => {
     const officer = requireNeaOfficer();
     if (!officer) return;
 
     const inspectionForm = document.getElementById("inspectionForm");
     const historyForm = document.getElementById("historyForm");
-    const stallIdInput = document.getElementById("stallId");
+    const stallSelect = document.getElementById("stallId");
+    const historyStallSelect = document.getElementById("historyStallId");
     const scoreInput = document.getElementById("score");
     const remarksInput = document.getElementById("remarks");
     const remarksCounter = document.getElementById("remarksCounter");
@@ -16,6 +17,86 @@ document.addEventListener("DOMContentLoaded", () => {
     const historyMessage = document.getElementById("historyMessage");
     const historyContainer = document.getElementById("inspectionHistory");
     const submitButton = document.getElementById("submitInspectionButton");
+
+    let stalls = [];
+
+    // An officer picks a stall by name, so the ID behind the option is only
+    // used when the report is sent and when a record is labelled.
+    function stallName(stallId) {
+        const stall = stalls.find(
+            item => Number(item.StallID) === Number(stallId)
+        );
+
+        return stall?.StallName || `Stall #${stallId}`;
+    }
+
+    async function loadStalls() {
+        const selects = [stallSelect, historyStallSelect];
+
+        selects.forEach(select => {
+            select.disabled = true;
+
+            select.innerHTML = `
+                <option value="">Loading stalls...</option>
+            `;
+        });
+
+        submitButton.disabled = true;
+
+        try {
+            const response = await apiRequest("/stalls");
+
+            stalls = Array.isArray(response) ? response : [];
+
+            if (!stalls.length) {
+                selects.forEach(select => {
+                    select.innerHTML = `
+                        <option value="">No stalls available</option>
+                    `;
+                });
+
+                setMessage(
+                    historyMessage,
+                    "No food stalls are available to inspect at the moment.",
+                    "info"
+                );
+
+                return false;
+            }
+
+            const options = stalls
+                .map(
+                    stall => `
+                        <option value="${Number(stall.StallID)}">
+                            ${esc(stall.StallName || "Unnamed stall")}
+                        </option>
+                    `
+                )
+                .join("");
+
+            selects.forEach(select => {
+                select.innerHTML = options;
+                select.disabled = false;
+            });
+
+            submitButton.disabled = false;
+
+            return true;
+        } catch (error) {
+            console.error("Unable to load stalls:", error);
+
+            selects.forEach(select => {
+                select.innerHTML = `
+                    <option value="">Unable to load stalls</option>
+                `;
+            });
+
+            setMessage(historyMessage, error.message, "error");
+            showToast(error.message, "error");
+
+            return false;
+        }
+    }
 
     function deriveGrade(score) {
         if (score >= 85) return "A";
@@ -76,7 +157,7 @@ document.addEventListener("DOMContentLoaded", () => {
                             <span class="small muted">
                                 Inspection #${esc(record.InspectionID)}
                             </span>
-                            <h3>Stall #${esc(record.StallID)}</h3>
+                            <h3>${esc(stallName(record.StallID))}</h3>
                         </div>
 
                         <span class="badge badge-neutral">
@@ -127,12 +208,24 @@ document.addEventListener("DOMContentLoaded", () => {
         event.preventDefault();
         setMessage(inspectionMessage);
 
+        const stallId = Number(stallSelect.value);
+
+        if (!Number.isInteger(stallId) || stallId <= 0) {
+            setMessage(
+                inspectionMessage,
+                "Please select a food stall.",
+                "error"
+            );
+
+            return;
+        }
+
         submitButton.disabled = true;
         submitButton.textContent = "Submitting report…";
 
         try {
             const payload = {
-                stall_id: Number(stallIdInput.value),
+                stall_id: stallId,
                 score: Number(scoreInput.value),
                 remarks: remarksInput.value.trim()
             };
@@ -153,10 +246,9 @@ document.addEventListener("DOMContentLoaded", () => {
                 "success"
             );
 
-            document.getElementById("historyStallId").value =
-                stallIdInput.value;
+            historyStallSelect.value = String(stallId);
 
-            await loadHistory(stallIdInput.value);
+            await loadHistory(stallId);
 
             inspectionForm.reset();
             remarksCounter.textContent = "0 / 500";
@@ -177,12 +269,18 @@ document.addEventListener("DOMContentLoaded", () => {
 
     historyForm.addEventListener("submit", event => {
         event.preventDefault();
+        loadHistory(historyStallSelect.value);
+    });
 
-        const stallId =
-            document.getElementById("historyStallId").value;
-
-        loadHistory(stallId);
+    historyStallSelect.addEventListener("change", () => {
+        loadHistory(historyStallSelect.value);
     });
 
     updateGradePreview();
+
+    const stallsLoaded = await loadStalls();
+
+    if (stallsLoaded) {
+        await loadHistory(historyStallSelect.value);
+    }
 });

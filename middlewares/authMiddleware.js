@@ -64,11 +64,11 @@ function verifyJWT(req, res, next) {
             "GET /inspections/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
 
             // Complaints
-            // Vendors and operators read the complaints about a stall but
-            // cannot close them. Only an NEA officer decides the outcome.
+            // A case is decided by the operator of the hawker centre the stall
+            // stands in. Everyone else, the NEA officer included, only reads it.
             "POST /complaints": ["customer"],
             "GET /complaints/[0-9]+": ["customer", "vendor", "nea_officer", "operator"],
-            "PUT /complaints/[0-9]+/status": ["nea_officer"],
+            "PUT /complaints/[0-9]+/status": ["operator"],
 
             //Analytics
             "GET /analytics/revenue/[0-9]+": ["vendor"],
@@ -91,7 +91,31 @@ function verifyJWT(req, res, next) {
             "GET /rental-agreements/[0-9]+": ["vendor", "operator"],
             "POST /rental-agreements": ["operator"],
             "PUT /rental-agreements/[0-9]+/renew": ["operator"],
-            "PUT /rental-agreements/[0-9]+/end": ["operator"]
+            "PUT /rental-agreements/[0-9]+/end": ["operator"],
+
+            // Tenancy offers
+            // The operator puts terms out and may take them back while they are
+            // unanswered. Only the vendor being asked can sign or reject them,
+            // which is what stops a rent rise being applied without agreement.
+            "GET /agreement-offers": ["vendor", "operator"],
+            "PUT /agreement-offers/[0-9]+/sign": ["vendor"],
+            "PUT /agreement-offers/[0-9]+/reject": ["vendor"],
+            "PUT /agreement-offers/[0-9]+/withdraw": ["operator"],
+
+            // Notifications
+            // Every signed in account has an inbox and only ever reaches its
+            // own, because the recipient is taken from the token
+            "GET /notifications": ["customer", "vendor", "nea_officer", "operator"],
+            "GET /notifications/unread-count": ["customer", "vendor", "nea_officer", "operator"],
+            "PUT /notifications/read-all": ["customer", "vendor", "nea_officer", "operator"],
+            "PUT /notifications/[0-9]+/read": ["customer", "vendor", "nea_officer", "operator"],
+
+            // Replies to customer reviews
+            // A vendor answers the reviews of the stall they run. The reply
+            // itself is public and is read without a token.
+            "GET /vendors/me/reviews": ["vendor"],
+            "PUT /reviews/[0-9]+/reply": ["vendor"],
+            "DELETE /reviews/[0-9]+/reply": ["vendor"]
         };
 
         const requestedEndpoint = `${req.method} ${req.path}`;

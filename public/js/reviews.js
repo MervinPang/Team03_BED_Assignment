@@ -40,16 +40,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         document.getElementById("reviewsEyebrow").textContent =
-            "Your customer feedback";
+            "Your Customer Feedback";
 
         document.getElementById("reviewsTitle").textContent =
-            "My stall reviews";
+            "My Stall Reviews";
 
         document.getElementById("reviewsLead").textContent =
             "Read the reviews customers have left for the food stalls assigned to your vendor account.";
 
         document.getElementById("reviewStallLabel").textContent =
-            "Your stall";
+            "Your Stall";
     }
 
     async function loadStalls() {
@@ -231,10 +231,34 @@ document.addEventListener("DOMContentLoaded", async () => {
         loadButton.disabled = true;
 
         try {
-            const data = await apiRequest(
-                `/feedback/stall/${stallId}?sort=${encodeURIComponent(
-                    sortInput.value
-                )}`
+            /*
+             * The reviews and the vendor's answers to them are read together.
+             * A reply lives in its own table so that answering a review never
+             * rewrites what the customer wrote, and the two are only brought
+             * back together here for display.
+             */
+            const [data, replyData] = await Promise.all([
+                apiRequest(
+                    `/feedback/stall/${stallId}?sort=${encodeURIComponent(
+                        sortInput.value
+                    )}`
+                ),
+                apiRequest(`/stalls/${stallId}/review-replies`).catch(
+                    (error) => {
+                        console.error(
+                            "Unable to load vendor replies:",
+                            error
+                        );
+
+                        return null;
+                    }
+                )
+            ]);
+
+            const repliesByReview = new Map(
+                (Array.isArray(replyData?.replies) ? replyData.replies : []).map(
+                    (reply) => [Number(reply.ReviewID), reply]
+                )
             );
 
             const reviews = Array.isArray(data?.reviews)
@@ -346,6 +370,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                         review.ReviewComment || ""
                     )}
                             </p>
+
+                            ${repliesByReview.has(Number(review.ReviewID))
+                            ? (() => {
+                                const reply = repliesByReview.get(
+                                    Number(review.ReviewID)
+                                );
+
+                                return `
+                                        <div class="vendor-reply">
+                                            <div class="row-between wrap">
+                                                <span class="small vendor-reply-author">
+                                                    Reply from
+                                                    ${esc(reply.StallName)}
+                                                </span>
+
+                                                <span class="small muted">
+                                                    ${formatDate(
+                                    reply.UpdatedAt ||
+                                    reply.CreatedAt
+                                )}
+                                                </span>
+                                            </div>
+
+                                            <p>${esc(reply.ReplyText)}</p>
+                                        </div>
+                                    `;
+                            })()
+                            : ""
+                        }
 
                             ${Number(currentUser?.id) ===
                             Number(review.UserID)

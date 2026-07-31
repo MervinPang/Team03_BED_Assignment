@@ -89,10 +89,10 @@
                   <div class="page-head">
                         <div>
                               <span class="eyebrow">
-                                    Tenancy management
+                                    Tenancy Management
                               </span>
                               <h1 style="font-size:clamp(2.3rem,5vw,4.5rem)">
-                                    Stall rental agreements
+                                    Stall Rental Agreements
                               </h1>
                               <p class="lead" id="operatorLead">
                                     Record a tenancy, review who rents each stall and renew agreements before they
@@ -136,7 +136,7 @@
                                           Your premises
                                     </span>
                                     <h2>
-                                          Stalls and occupancy
+                                          Stalls and Occupancy
                                     </h2>
                               </div>
                         </div>
@@ -176,7 +176,7 @@
                                                 New agreement
                                           </span>
                                           <h2>
-                                                Record a tenancy
+                                                Record a Tenancy
                                           </h2>
                                     </div>
                               </div>
@@ -227,10 +227,15 @@
                                           </label>
                                           <textarea class="textarea" id="agreementTerms" maxlength="800"></textarea>
                                     </div>
+                                    <p class="small muted">
+                                          The stall is offered to the vendor, not handed over. It stays vacant
+                                          until they sign the agreement, and the offer is cancelled if they
+                                          turn it down.
+                                    </p>
                                     <div class="form-message" id="agreementMessage">
                                     </div>
                                     <button class="button primary" id="agreementSubmitButton" type="submit">
-                                          Create agreement
+                                          Send for signature
                                     </button>
                               </form>
                         </section>
@@ -257,6 +262,9 @@
                                                 <option value="">
                                                       All agreements
                                                 </option>
+                                                <option value="Awaiting Signature">
+                                                      Awaiting signature
+                                                </option>
                                                 <option value="Active">
                                                       Active
                                                 </option>
@@ -269,6 +277,9 @@
                                                 <option value="Ended">
                                                       Ended early
                                                 </option>
+                                                <option value="Cancelled">
+                                                      Cancelled
+                                                </option>
                                                 <option value="expiring">
                                                       Expiring within 30 days
                                                 </option>
@@ -278,6 +289,28 @@
                                     </span>
                               </div>
                               <div class="stack" id="agreementList">
+                              </div>
+                        </section>
+                        <section class="card panel-card">
+                              <div class="row-between wrap">
+                                    <div>
+                                          <span class="small muted">
+                                                Sent for signature
+                                          </span>
+                                          <h2>
+                                                Tenancy offers
+                                          </h2>
+                                          <p class="muted small">
+                                                A renewal only changes the agreement once the vendor signs it.
+                                                Until then the tenancy stays on its current terms.
+                                          </p>
+                                    </div>
+                                    <span class="small muted" id="offerCount">
+                                    </span>
+                              </div>
+                              <div aria-live="polite" class="form-message" id="offerListMessage">
+                              </div>
+                              <div class="stack" id="offerList">
                               </div>
                         </section>
                   </div>
@@ -313,10 +346,24 @@
                         </label>
                         <input class="input" id="renewPrice" min="0.01" step="0.01" type="number" />
                   </div>
+                  <div class="field">
+                        <label for="renewNote">
+                              Note to the vendor
+                              <span class="muted small">
+                                    (optional)
+                              </span>
+                        </label>
+                        <textarea class="textarea" id="renewNote" maxlength="500"
+                              placeholder="Explain the terms the vendor is being asked to accept."></textarea>
+                  </div>
+                  <p class="small muted">
+                        These terms are sent to the vendor for signature. The tenancy stays on its
+                        current terms until they sign, and is unchanged if they reject them.
+                  </p>
                   <div class="form-message" id="renewMessage">
                   </div>
                   <button class="button primary" type="submit">
-                        Renew agreement
+                        Send for signature
                   </button>
             </form>
       </div>
