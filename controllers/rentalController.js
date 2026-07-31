@@ -1,8 +1,42 @@
 // Rental Controller - Handles HTTP requests for stall rental agreements
+const crypto = require("crypto");
 const rentalModel = require("../models/rentalModel");
+const notificationModel = require("../models/notificationModel");
 
 function isOperator(user) {
     return user.role === "operator";
+}
+
+function formatDate(value) {
+    return new Date(value).toISOString().slice(0, 10);
+}
+
+function formatPrice(value) {
+    return `$${Number(value).toFixed(2)}`;
+}
+
+/*
+ * The signature stored against an accepted offer.
+ *
+ * Hashing the terms alongside the name means the signature only ever matches
+ * the exact end date and price that were on the table when the vendor agreed.
+ * If those were edited afterwards the hash no longer reproduces, so the record
+ * shows the vendor agreed to something other than what the row now says.
+ */
+function buildSignatureHash(offer, signatureName) {
+    return crypto
+        .createHash("sha256")
+        .update(
+            [
+                offer.OfferID,
+                offer.AgreementID,
+                offer.VendorUserID,
+                formatDate(offer.ProposedEndDate),
+                Number(offer.ProposedRentalPrice).toFixed(2),
+                signatureName.trim().toLowerCase(),
+            ].join("|")
+        )
+        .digest("hex");
 }
 
 /*
@@ -260,7 +294,15 @@ async function createAgreement(req, res) {
     }
 }
 
-// Extend an existing agreement to a later end date
+/*
+ * Put a renewal to the vendor.
+ *
+ * A renewal is a change to what the vendor pays and how long they are held to
+ * it, so it is offered rather than applied. The agreement is left exactly as it
+ * is and the new terms wait in the vendor's inbox until they sign. A vendor who
+ * rejects them simply stays on the agreement already in force, which is what
+ * keeps an operator from raising the rent on their own.
+ */
 async function renewAgreement(req, res) {
     try {
         const operatorId = await requireOperatorId(req, res);
@@ -284,12 +326,22 @@ async function renewAgreement(req, res) {
             });
         }
 
+        // A tenancy that has already been handed back cannot be renewed
+        if (agreement.TerminatedOn) {
+            return res.status(409).json({
+                error:
+                    "This tenancy was ended on " +
+                    formatDate(agreement.TerminatedOn) +
+                    " and can no longer be renewed",
+            });
+        }
+
         // A renewal always moves the end date forward
         if (new Date(req.body.EndDate) <= new Date(agreement.EndDate)) {
             return res.status(409).json({
                 error:
                     "The new end date must be later than the current end date of " +
-                    new Date(agreement.EndDate).toISOString().slice(0, 10),
+                    formatDate(agreement.EndDate),
             });
         }
 
@@ -305,27 +357,306 @@ async function renewAgreement(req, res) {
             return res.status(409).json({
                 error:
                     `The renewal overlaps the agreement of ${overlapping.VendorName} ` +
-                    `that ends on ${new Date(overlapping.EndDate).toISOString().slice(0, 10)}`,
+                    `that ends on ${formatDate(overlapping.EndDate)}`,
             });
         }
 
-        await rentalModel.renewAgreement(
+        // Only one set of terms may sit with the vendor at a time
+        const openOffer = await rentalModel.findOpenOffer(agreementId);
+
+        if (openOffer) {
+            return res.status(409).json({
+                error:
+                    `${agreement.VendorName} is already holding an offer on this ` +
+                    "tenancy. Withdraw it before sending another.",
+                offer: openOffer,
+            });
+        }
+
+        const proposedRentalPrice =
+            req.body.RentalPrice ?? Number(agreement.RentalPrice);
+
+        const offerId = await rentalModel.createOffer({
             agreementId,
-            req.body.EndDate,
-            req.body.RentalPrice
-        );
+            offeredByUserId: Number(req.user.id),
+            proposedEndDate: req.body.EndDate,
+            proposedRentalPrice,
+            offerNote: req.body.OfferNote || null,
+        });
 
-        const renewed = await rentalModel.getAgreementById(agreementId);
+        const offer = await rentalModel.getOfferById(offerId);
 
-        return res.status(200).json({
-            message: "Rental agreement renewed successfully",
-            agreement: renewed,
+        const priceLine =
+            Number(proposedRentalPrice) === Number(agreement.RentalPrice)
+                ? `the rent held at ${formatPrice(proposedRentalPrice)} per month`
+                : `the rent moving from ${formatPrice(agreement.RentalPrice)} to ` +
+                  `${formatPrice(proposedRentalPrice)} per month`;
+
+        await notificationModel.createNotification({
+            recipientUserId: Number(agreement.VendorUserID),
+            notificationType: "Agreement Offer",
+            title: `Renewal offer for ${agreement.StallName}`,
+            message:
+                `${offer.OperatorName} has proposed renewing your tenancy until ` +
+                `${formatDate(req.body.EndDate)}, with ${priceLine}. ` +
+                "Sign the offer to accept it, or reject it to stay on your current agreement.",
+            offerId,
+        });
+
+        return res.status(201).json({
+            message:
+                `The renewal has been sent to ${agreement.VendorName} for signature. ` +
+                "The current agreement stays in force until they sign it.",
+            offer,
         });
     } catch (error) {
         console.error("Controller error (renewAgreement):", error);
 
         return res.status(500).json({
-            error: "Unable to renew the rental agreement",
+            error: "Unable to send the renewal to the vendor",
+        });
+    }
+}
+
+/*
+ * The offers on a tenancy. A vendor sees the terms put to them and an operator
+ * sees the terms they have put out across their own hawker centres.
+ */
+async function getOffers(req, res) {
+    try {
+        let vendorUserId = null;
+        let operatorId = null;
+
+        if (isOperator(req.user)) {
+            operatorId = await requireOperatorId(req, res);
+
+            if (operatorId === null) return;
+        } else {
+            vendorUserId = Number(req.user.id);
+        }
+
+        const offers = await rentalModel.getOffers({
+            vendorUserId,
+            operatorId,
+            status: req.offerStatus,
+        });
+
+        return res.status(200).json({
+            offerCount: offers.length,
+            pendingCount: offers.filter(
+                offer => offer.OfferStatus === "Pending Signature"
+            ).length,
+            offers,
+        });
+    } catch (error) {
+        console.error("Controller error (getOffers):", error);
+
+        return res.status(500).json({
+            error: "Unable to retrieve the tenancy offers",
+        });
+    }
+}
+
+/*
+ * Read the offer named in the URL and confirm the signed in vendor is the one
+ * being asked to sign it. Returns null once a response has been sent.
+ */
+async function requireVendorOffer(req, res) {
+    const offer = await rentalModel.getOfferById(Number(req.params.offerId));
+
+    if (!offer) {
+        res.status(404).json({ error: "Tenancy offer not found" });
+        return null;
+    }
+
+    if (Number(offer.VendorUserID) !== Number(req.user.id)) {
+        res.status(403).json({
+            error: "This offer was made to another vendor",
+        });
+
+        return null;
+    }
+
+    if (offer.OfferStatus !== "Pending Signature") {
+        res.status(409).json({
+            error:
+                `This offer was already ${offer.OfferStatus.toLowerCase()} on ` +
+                formatDate(offer.RespondedAt),
+        });
+
+        return null;
+    }
+
+    return offer;
+}
+
+/*
+ * Accept an offer by signing it.
+ *
+ * The vendor types their own account name, which is checked against the account
+ * on the token, so a signature can only be given by the person it names. Once
+ * the signature is stored the agreement moves onto the signed terms and the
+ * operator is told, which is the digital equivalent of sending the countersigned
+ * copy back.
+ */
+async function signOffer(req, res) {
+    try {
+        const offer = await requireVendorOffer(req, res);
+
+        if (!offer) return;
+
+        const signatureName = req.body.SignatureName.trim();
+
+        if (
+            signatureName.toLowerCase() !==
+            String(offer.VendorName).trim().toLowerCase()
+        ) {
+            return res.status(400).json({
+                error:
+                    "The signature must match your account name, " +
+                    `${offer.VendorName}`,
+            });
+        }
+
+        const signatureHash = buildSignatureHash(offer, signatureName);
+
+        const agreementId = await rentalModel.signOffer(
+            offer.OfferID,
+            signatureName,
+            signatureHash
+        );
+
+        // Another request answered the offer between the read and the write
+        if (agreementId === null) {
+            return res.status(409).json({
+                error: "This offer has already been answered",
+            });
+        }
+
+        await notificationModel.createNotification({
+            recipientUserId: Number(offer.OfferedByUserID),
+            notificationType: "Agreement Signed",
+            title: `${offer.VendorName} signed the offer for ${offer.StallName}`,
+            message:
+                `${signatureName} signed the renewal of ${offer.StallName} at ` +
+                `${formatPrice(offer.ProposedRentalPrice)} per month until ` +
+                `${formatDate(offer.ProposedEndDate)}. The tenancy is now on these terms.`,
+            offerId: offer.OfferID,
+        });
+
+        const signed = await rentalModel.getOfferById(offer.OfferID);
+        const agreement = await rentalModel.getAgreementById(agreementId);
+
+        return res.status(200).json({
+            message:
+                `You signed the renewal of ${offer.StallName}. Your tenancy now runs to ` +
+                `${formatDate(offer.ProposedEndDate)} at ` +
+                `${formatPrice(offer.ProposedRentalPrice)} per month.`,
+            offer: signed,
+            agreement,
+        });
+    } catch (error) {
+        console.error("Controller error (signOffer):", error);
+
+        return res.status(500).json({
+            error: "Unable to sign the tenancy offer",
+        });
+    }
+}
+
+/*
+ * Turn an offer down. The offer is cancelled and the agreement is left on the
+ * terms it already held, so rejecting never costs the vendor their stall.
+ */
+async function rejectOffer(req, res) {
+    try {
+        const offer = await requireVendorOffer(req, res);
+
+        if (!offer) return;
+
+        const rejected = await rentalModel.rejectOffer(
+            offer.OfferID,
+            req.body.ResponseNote || null
+        );
+
+        if (rejected === null) {
+            return res.status(409).json({
+                error: "This offer has already been answered",
+            });
+        }
+
+        await notificationModel.createNotification({
+            recipientUserId: Number(offer.OfferedByUserID),
+            notificationType: "Agreement Rejected",
+            title: `${offer.VendorName} rejected the offer for ${offer.StallName}`,
+            message:
+                `${offer.VendorName} did not accept the proposed terms of ` +
+                `${formatPrice(offer.ProposedRentalPrice)} per month until ` +
+                `${formatDate(offer.ProposedEndDate)}. The tenancy stays on its current ` +
+                `terms of ${formatPrice(offer.CurrentRentalPrice)} per month until ` +
+                `${formatDate(offer.CurrentEndDate)}.` +
+                (req.body.ResponseNote ? ` Reason given: ${req.body.ResponseNote}` : ""),
+            offerId: offer.OfferID,
+        });
+
+        const answered = await rentalModel.getOfferById(offer.OfferID);
+
+        return res.status(200).json({
+            message:
+                "The offer was rejected and cancelled. Your tenancy stays on its current " +
+                `terms of ${formatPrice(offer.CurrentRentalPrice)} per month until ` +
+                `${formatDate(offer.CurrentEndDate)}.`,
+            offer: answered,
+        });
+    } catch (error) {
+        console.error("Controller error (rejectOffer):", error);
+
+        return res.status(500).json({
+            error: "Unable to reject the tenancy offer",
+        });
+    }
+}
+
+// Take back an offer the vendor has not answered yet
+async function withdrawOffer(req, res) {
+    try {
+        const operatorId = await requireOperatorId(req, res);
+
+        if (operatorId === null) return;
+
+        const offer = await rentalModel.getOfferById(Number(req.params.offerId));
+
+        if (!offer) {
+            return res.status(404).json({ error: "Tenancy offer not found" });
+        }
+
+        if (Number(offer.OperatorID) !== operatorId) {
+            return res.status(403).json({
+                error: "This stall is in a hawker centre you do not manage",
+            });
+        }
+
+        const withdrawn = await rentalModel.withdrawOffer(offer.OfferID);
+
+        if (withdrawn === null) {
+            return res.status(409).json({
+                error:
+                    `This offer was already ${offer.OfferStatus.toLowerCase()} and ` +
+                    "can no longer be withdrawn",
+            });
+        }
+
+        const answered = await rentalModel.getOfferById(offer.OfferID);
+
+        return res.status(200).json({
+            message: `The offer to ${offer.VendorName} was withdrawn`,
+            offer: answered,
+        });
+    } catch (error) {
+        console.error("Controller error (withdrawOffer):", error);
+
+        return res.status(500).json({
+            error: "Unable to withdraw the tenancy offer",
         });
     }
 }
@@ -409,4 +740,8 @@ module.exports = {
     createAgreement,
     renewAgreement,
     endAgreement,
+    getOffers,
+    signOffer,
+    rejectOffer,
+    withdrawOffer,
 };
