@@ -11,23 +11,51 @@ const dbConfig = require("../dbConfig");
  */
 
 /*
- * A tenancy is in force when today falls inside its dates and the operator has
- * not ended it early. Every query that asks who runs a stall today uses this
- * one definition, so the register, the stall itself and the occupancy figures
- * can never answer that question differently.
+ * A tenancy is in force when the vendor has signed it, today falls inside its
+ * dates and the operator has not ended it early. Every query that asks who runs
+ * a stall today uses this one definition, so the register, the stall itself and
+ * the occupancy figures can never answer that question differently.
+ *
+ * The signature is part of the test because an agreement now exists from the
+ * moment it is offered. Until the vendor accepts it, it holds no stall and the
+ * unit is still vacant.
  */
 const TENANCY_IN_FORCE = `
-    ra.TerminatedOn IS NULL
+    ra.AcceptedOn IS NOT NULL
+    AND ra.TerminatedOn IS NULL
     AND CAST(GETDATE() AS DATE) BETWEEN ra.StartDate AND ra.EndDate
 `;
 
 /*
- * The status of an agreement. Ended comes first because an agreement that was
- * ended early still carries the end date it was signed with, which on its own
- * would make it look like it is still running.
+ * Whose stall it is.
+ *
+ * A tenancy signed today but starting next month still belongs to the vendor
+ * who signed it: they need the unit to build a menu before opening day, and
+ * nothing revisits an agreement once it is signed, so a stall left unassigned
+ * here would stay unassigned for the whole of the tenancy.
+ *
+ * TENANCY_IN_FORCE stays the test for who is trading today, which is what the
+ * occupancy figures ask. This is the test for who the stall is handed to.
+ */
+const TENANCY_HELD = `
+    ra.AcceptedOn IS NOT NULL
+    AND ra.CancelledOn IS NULL
+    AND ra.TerminatedOn IS NULL
+    AND ra.EndDate >= CAST(GETDATE() AS DATE)
+`;
+
+/*
+ * The status of an agreement.
+ *
+ * The two outcomes of the offer come first, because an agreement nobody has
+ * signed yet still carries the dates and rent it was offered with and would
+ * otherwise read as a running tenancy. Ended comes before the date tests for
+ * the same reason: a tenancy ended early keeps its agreed end date.
  */
 const AGREEMENT_STATUS = `
     CASE
+        WHEN ra.CancelledOn IS NOT NULL THEN 'Cancelled'
+        WHEN ra.AcceptedOn IS NULL THEN 'Awaiting Signature'
         WHEN ra.TerminatedOn IS NOT NULL THEN 'Ended'
         WHEN ra.EndDate < CAST(GETDATE() AS DATE) THEN 'Expired'
         WHEN ra.StartDate > CAST(GETDATE() AS DATE) THEN 'Upcoming'
@@ -48,6 +76,8 @@ const AGREEMENT_COLUMNS = `
     ra.EndDate,
     ra.RentalPrice,
     ra.TermCondition,
+    ra.AcceptedOn,
+    ra.CancelledOn,
     ra.TerminatedOn,
     fs.StallName,
     fs.StallUnitNo,
@@ -183,6 +213,7 @@ async function findOverlappingAgreement(stallId, startDate, endDate, excludeAgre
                 ON ra.VendorUserID = ua.UserID
             WHERE ra.StallID = @StallID
               AND ra.TerminatedOn IS NULL
+              AND ra.CancelledOn IS NULL
               AND (@ExcludeAgreementID IS NULL OR ra.AgreementID <> @ExcludeAgreementID)
               AND ra.StartDate <= @EndDate
               AND ra.EndDate >= @StartDate
@@ -285,6 +316,8 @@ async function getManagedStalls(operatorId) {
                 tenant.Username AS TenantName,
                 grade.HygieneGrade,
                 grade.InspectionDate,
+                offered.OfferID AS PendingOfferID,
+                offered.VendorName AS PendingOfferVendor,
                 CASE WHEN tenancy.AgreementID IS NULL THEN 0 ELSE 1 END
                     AS HasCurrentTenancy,
                 CASE
@@ -313,6 +346,25 @@ async function getManagedStalls(operatorId) {
                 WHERE i.StallID = fs.StallID
                 ORDER BY i.InspectionDate DESC, i.InspectionID DESC
             ) grade
+            /*
+             * A stall with an unanswered offer on it is neither let nor free to
+             * offer again, so the offer is read alongside the tenancy to keep
+             * the register from calling that unit ready to let.
+             */
+            OUTER APPLY (
+                SELECT TOP 1
+                    ao.OfferID,
+                    vendor.Username AS VendorName
+                FROM AgreementOffer ao
+                JOIN RentalAgreement pending
+                    ON ao.AgreementID = pending.AgreementID
+                JOIN UserAccount vendor
+                    ON pending.VendorUserID = vendor.UserID
+                WHERE pending.StallID = fs.StallID
+                  AND ao.OfferType = 'New Tenancy'
+                  AND ao.OfferStatus = 'Pending Signature'
+                ORDER BY ao.CreatedAt DESC, ao.OfferID DESC
+            ) offered
             WHERE hc.OperatorID = @OperatorID
             ORDER BY hc.HCName, fs.StallName;
         `);
@@ -451,25 +503,26 @@ async function getVendorAccounts() {
  */
 async function createAgreement(agreement) {
     let connection;
-    let transaction;
-    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
-        transaction = new sql.Transaction(connection);
 
-        await transaction.begin();
-        transactionStarted = true;
+        const request = connection.request();
+        request.input("StallID", sql.Int, agreement.StallID);
+        request.input("VendorUserID", sql.Int, agreement.VendorUserID);
+        request.input("StartDate", sql.Date, agreement.StartDate);
+        request.input("EndDate", sql.Date, agreement.EndDate);
+        request.input("RentalPrice", sql.Decimal(8, 2), agreement.RentalPrice);
+        request.input("TermCondition", sql.VarChar(800), agreement.TermCondition || null);
 
-        const agreementRequest = new sql.Request(transaction);
-        agreementRequest.input("StallID", sql.Int, agreement.StallID);
-        agreementRequest.input("VendorUserID", sql.Int, agreement.VendorUserID);
-        agreementRequest.input("StartDate", sql.Date, agreement.StartDate);
-        agreementRequest.input("EndDate", sql.Date, agreement.EndDate);
-        agreementRequest.input("RentalPrice", sql.Decimal(8, 2), agreement.RentalPrice);
-        agreementRequest.input("TermCondition", sql.VarChar(800), agreement.TermCondition || null);
-
-        const result = await agreementRequest.query(`
+        /*
+         * The agreement is written unsigned, with AcceptedOn left NULL. It is
+         * the record of what the vendor is being asked to take on, and nothing
+         * more: the stall is not handed over here, because a tenancy the vendor
+         * has not agreed to is not a tenancy. Signing the offer is what fills
+         * AcceptedOn in and puts the vendor on the stall.
+         */
+        const result = await request.query(`
             INSERT INTO RentalAgreement (
                 StallID,
                 VendorUserID,
@@ -489,34 +542,9 @@ async function createAgreement(agreement) {
             );
         `);
 
-        // The vendor of an agreement that is in force today also runs the stall
-        const assignRequest = new sql.Request(transaction);
-        assignRequest.input("StallID", sql.Int, agreement.StallID);
-        assignRequest.input("VendorUserID", sql.Int, agreement.VendorUserID);
-
-        await assignRequest.query(`
-            UPDATE FoodStall
-            SET VendorUserID = @VendorUserID
-            WHERE StallID = @StallID
-              AND EXISTS (
-                    SELECT 1
-                    FROM RentalAgreement ra
-                    WHERE ra.StallID = @StallID
-                      AND ra.VendorUserID = @VendorUserID
-                      AND ${TENANCY_IN_FORCE}
-              );
-        `);
-
-        await transaction.commit();
-
         return result.recordset[0].AgreementID;
     } catch (error) {
         console.error("Database error (createAgreement):", error);
-
-        if (transactionStarted) {
-            await transaction.rollback();
-        }
-
         throw error;
     }
 }
@@ -529,6 +557,7 @@ async function createAgreement(agreement) {
 const OFFER_COLUMNS = `
     ao.OfferID,
     ao.AgreementID,
+    ao.OfferType,
     ao.OfferedByUserID,
     ao.ProposedEndDate,
     ao.ProposedRentalPrice,
@@ -545,7 +574,10 @@ const OFFER_COLUMNS = `
     ra.EndDate AS CurrentEndDate,
     ra.RentalPrice AS CurrentRentalPrice,
     ra.TermCondition,
+    ra.AcceptedOn,
+    ra.CancelledOn,
     ra.TerminatedOn,
+    ${AGREEMENT_STATUS} AS AgreementStatus,
     fs.StallName,
     fs.StallUnitNo,
     hc.HCName,
@@ -574,14 +606,16 @@ const OFFER_JOINS = `
 `;
 
 /*
- * Put new tenancy terms to the vendor of an agreement.
+ * Put terms to a vendor, either for a stall they do not hold yet or for the
+ * renewal of one they do.
  *
- * Nothing on the agreement itself is touched. The offer only records what is
- * being asked for, so a vendor who turns it down is left on exactly the terms
- * they were already holding.
+ * Neither kind takes effect on its own. A renewal leaves the running agreement
+ * untouched, and a new tenancy leaves its agreement unsigned and holding no
+ * stall, so in both cases a vendor who says no keeps exactly what they had.
  */
 async function createOffer({
     agreementId,
+    offerType = "Renewal",
     offeredByUserId,
     proposedEndDate,
     proposedRentalPrice,
@@ -594,6 +628,7 @@ async function createOffer({
 
         const request = connection.request();
         request.input("AgreementID", sql.Int, agreementId);
+        request.input("OfferType", sql.VarChar(20), offerType);
         request.input("OfferedByUserID", sql.Int, offeredByUserId);
         request.input("ProposedEndDate", sql.Date, proposedEndDate);
         request.input(
@@ -605,10 +640,10 @@ async function createOffer({
 
         const result = await request.query(`
             INSERT INTO AgreementOffer
-                (AgreementID, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
+                (AgreementID, OfferType, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
             OUTPUT INSERTED.OfferID
             VALUES
-                (@AgreementID, @OfferedByUserID, @ProposedEndDate, @ProposedRentalPrice, @OfferNote);
+                (@AgreementID, @OfferType, @OfferedByUserID, @ProposedEndDate, @ProposedRentalPrice, @OfferNote);
         `);
 
         return result.recordset[0].OfferID;
@@ -681,6 +716,11 @@ async function getOffers({ vendorUserId = null, operatorId = null, status = null
  * back with it, because a signed offer that never took effect would tell the
  * operator the vendor had agreed to terms they are not actually on.
  *
+ * What the signature does depends on what was offered. A renewal moves the
+ * running agreement onto the new end date and rent. A new tenancy fills in
+ * AcceptedOn, which is the moment the agreement starts to count, and hands the
+ * stall over if that tenancy is in force today.
+ *
  * The offer is only signable while it is still pending, so a second click
  * cannot apply the same rise twice.
  */
@@ -710,6 +750,7 @@ async function signOffer(offerId, signatureName, signatureHash) {
             OUTPUT
                 INSERTED.OfferID,
                 INSERTED.AgreementID,
+                INSERTED.OfferType,
                 INSERTED.ProposedEndDate,
                 INSERTED.ProposedRentalPrice
             WHERE OfferID = @OfferID
@@ -725,7 +766,6 @@ async function signOffer(offerId, signatureName, signatureHash) {
 
         const offer = signed.recordset[0];
 
-        // The signature is what moves the agreement onto the new terms
         const applyRequest = new sql.Request(transaction);
         applyRequest.input("AgreementID", sql.Int, offer.AgreementID);
         applyRequest.input("EndDate", sql.Date, offer.ProposedEndDate);
@@ -735,12 +775,59 @@ async function signOffer(offerId, signatureName, signatureHash) {
             offer.ProposedRentalPrice
         );
 
-        await applyRequest.query(`
-            UPDATE RentalAgreement
-            SET EndDate = @EndDate,
-                RentalPrice = @RentalPrice
-            WHERE AgreementID = @AgreementID;
-        `);
+        if (offer.OfferType === "New Tenancy") {
+            /*
+             * Accepting brings the agreement into being on the terms it was
+             * offered with. Those are already on the row, so only the
+             * acceptance itself is written, and only while it is still unsigned
+             * and uncancelled.
+             */
+            const accepted = await applyRequest.query(`
+                UPDATE RentalAgreement
+                SET AcceptedOn = GETDATE()
+                OUTPUT INSERTED.AgreementID, INSERTED.StallID, INSERTED.VendorUserID
+                WHERE AgreementID = @AgreementID
+                  AND AcceptedOn IS NULL
+                  AND CancelledOn IS NULL;
+            `);
+
+            if (!accepted.recordset.length) {
+                await transaction.rollback();
+                transactionStarted = false;
+
+                return null;
+            }
+
+            // Accepting hands the unit over, whether it opens today or later
+            const assignRequest = new sql.Request(transaction);
+            assignRequest.input("StallID", sql.Int, accepted.recordset[0].StallID);
+            assignRequest.input(
+                "VendorUserID",
+                sql.Int,
+                accepted.recordset[0].VendorUserID
+            );
+
+            await assignRequest.query(`
+                UPDATE FoodStall
+                SET VendorUserID = @VendorUserID
+                WHERE StallID = @StallID
+                  AND EXISTS (
+                        SELECT 1
+                        FROM RentalAgreement ra
+                        WHERE ra.StallID = @StallID
+                          AND ra.VendorUserID = @VendorUserID
+                          AND ${TENANCY_HELD}
+                  );
+            `);
+        } else {
+            // A renewal moves the agreement already in force onto the new terms
+            await applyRequest.query(`
+                UPDATE RentalAgreement
+                SET EndDate = @EndDate,
+                    RentalPrice = @RentalPrice
+                WHERE AgreementID = @AgreementID;
+            `);
+        }
 
         await transaction.commit();
         transactionStarted = false;
@@ -758,60 +845,89 @@ async function signOffer(offerId, signatureName, signatureHash) {
 }
 
 /*
- * Turn an offer down. The agreement is deliberately left untouched, which is
- * what keeps the vendor on the last set of terms both sides actually agreed to.
+ * Close an offer without accepting it, either because the vendor turned it down
+ * or because the operator took it back.
+ *
+ * A renewal leaves its agreement untouched, which is what keeps the vendor on
+ * the last set of terms both sides actually agreed to. A new tenancy has no
+ * such earlier terms to fall back on, so its agreement is marked cancelled and
+ * the stall it was for stays vacant and free to offer to somebody else.
+ *
+ * Both writes share one transaction, so an offer can never end up refused while
+ * the agreement it was for is still sitting open.
  */
-async function rejectOffer(offerId, responseNote) {
+async function closeOffer(offerId, offerStatus, responseNote = null) {
     let connection;
+    let transaction;
+    let transactionStarted = false;
 
     try {
         connection = await sql.connect(dbConfig);
+        transaction = new sql.Transaction(connection);
 
-        const request = connection.request();
-        request.input("OfferID", sql.Int, offerId);
-        request.input("ResponseNote", sql.VarChar(300), responseNote ?? null);
+        await transaction.begin();
+        transactionStarted = true;
 
-        const result = await request.query(`
+        const closeRequest = new sql.Request(transaction);
+        closeRequest.input("OfferID", sql.Int, offerId);
+        closeRequest.input("OfferStatus", sql.VarChar(30), offerStatus);
+        closeRequest.input("ResponseNote", sql.VarChar(300), responseNote);
+
+        const closed = await closeRequest.query(`
             UPDATE AgreementOffer
-            SET OfferStatus = 'Rejected',
+            SET OfferStatus = @OfferStatus,
                 RespondedAt = GETDATE(),
                 ResponseNote = @ResponseNote
-            OUTPUT INSERTED.OfferID
+            OUTPUT INSERTED.OfferID, INSERTED.AgreementID, INSERTED.OfferType
             WHERE OfferID = @OfferID
               AND OfferStatus = 'Pending Signature';
         `);
 
-        return result.recordset[0] ? result.recordset[0].OfferID : null;
+        if (!closed.recordset.length) {
+            await transaction.rollback();
+            transactionStarted = false;
+
+            return null;
+        }
+
+        const offer = closed.recordset[0];
+
+        if (offer.OfferType === "New Tenancy") {
+            const cancelRequest = new sql.Request(transaction);
+            cancelRequest.input("AgreementID", sql.Int, offer.AgreementID);
+
+            await cancelRequest.query(`
+                UPDATE RentalAgreement
+                SET CancelledOn = GETDATE()
+                WHERE AgreementID = @AgreementID
+                  AND AcceptedOn IS NULL
+                  AND CancelledOn IS NULL;
+            `);
+        }
+
+        await transaction.commit();
+        transactionStarted = false;
+
+        return offer.OfferID;
     } catch (error) {
-        console.error("Database error (rejectOffer):", error);
+        console.error("Database error (closeOffer):", error);
+
+        if (transactionStarted) {
+            await transaction.rollback();
+        }
+
         throw error;
     }
 }
 
-// Withdraw an offer the operator no longer wants to stand behind
+// The vendor turns the terms down
+async function rejectOffer(offerId, responseNote) {
+    return closeOffer(offerId, "Rejected", responseNote ?? null);
+}
+
+// The operator takes back an offer the vendor has not answered yet
 async function withdrawOffer(offerId) {
-    let connection;
-
-    try {
-        connection = await sql.connect(dbConfig);
-
-        const request = connection.request();
-        request.input("OfferID", sql.Int, offerId);
-
-        const result = await request.query(`
-            UPDATE AgreementOffer
-            SET OfferStatus = 'Withdrawn',
-                RespondedAt = GETDATE()
-            OUTPUT INSERTED.OfferID
-            WHERE OfferID = @OfferID
-              AND OfferStatus = 'Pending Signature';
-        `);
-
-        return result.recordset[0] ? result.recordset[0].OfferID : null;
-    } catch (error) {
-        console.error("Database error (withdrawOffer):", error);
-        throw error;
-    }
+    return closeOffer(offerId, "Withdrawn");
 }
 
 // The offer already waiting on this agreement, if there is one
@@ -883,6 +999,7 @@ async function endAgreement(agreementId, terminatedOn) {
             SET TerminatedOn = @TerminatedOn
             OUTPUT INSERTED.StallID
             WHERE AgreementID = @AgreementID
+              AND AcceptedOn IS NOT NULL
               AND TerminatedOn IS NULL;
         `);
 
@@ -895,7 +1012,11 @@ async function endAgreement(agreementId, terminatedOn) {
 
         const stallId = closed.recordset[0].StallID;
 
-        // Whoever still has a tenancy in force is the vendor of record
+        /*
+         * Whoever still holds a signed tenancy is the vendor of record. A
+         * tenancy already agreed for the months ahead counts, so ending one
+         * early hands the unit to the incoming vendor rather than emptying it.
+         */
         const assignRequest = new sql.Request(transaction);
         assignRequest.input("StallID", sql.Int, stallId);
 
@@ -905,8 +1026,15 @@ async function endAgreement(agreementId, terminatedOn) {
                 SELECT TOP 1 ra.VendorUserID
                 FROM RentalAgreement ra
                 WHERE ra.StallID = @StallID
-                  AND ${TENANCY_IN_FORCE}
-                ORDER BY ra.StartDate DESC, ra.AgreementID DESC
+                  AND ${TENANCY_HELD}
+                ORDER BY
+                    CASE
+                        WHEN CAST(GETDATE() AS DATE)
+                             BETWEEN ra.StartDate AND ra.EndDate THEN 0
+                        ELSE 1
+                    END,
+                    ra.StartDate,
+                    ra.AgreementID
             )
             WHERE StallID = @StallID;
         `);

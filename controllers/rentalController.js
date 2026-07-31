@@ -15,13 +15,11 @@ function formatPrice(value) {
     return `$${Number(value).toFixed(2)}`;
 }
 
-/*
- * The signature stored against an accepted offer.
- *
- * Hashing the terms alongside the name means the signature only ever matches
- * the exact end date and price that were on the table when the vendor agreed.
- * If those were edited afterwards the hash no longer reproduces, so the record
- * shows the vendor agreed to something other than what the row now says.
+/* The signature stored against an accepted offer.
+ Hashing the terms alongside the name means the signature only ever matches
+ the exact end date and price that were on the table when the vendor agreed.
+ If those were edited afterwards the hash no longer reproduces, so the record
+ shows the vendor agreed to something other than what the row now says.
  */
 function buildSignatureHash(offer, signatureName) {
     return crypto
@@ -39,13 +37,10 @@ function buildSignatureHash(offer, signatureName) {
         .digest("hex");
 }
 
-/*
- * Resolve the operator a signed in account works for.
- *
- * Everything an operator is allowed to reach follows from this one value, so it
- * is read from the database rather than taken from the request. An operator
- * account with no operator attached is treated as having reached nothing.
- */
+/* Resolve the operator a signed in account works for.
+ Everything an operator is allowed to reach follows from this one value, so it
+ is read from the database rather than taken from the request. An operator
+ account with no operator attached is treated as having reached nothing.*/
 async function requireOperatorId(req, res) {
     const operator = await rentalModel.getOperatorIdForUser(
         Number(req.user.id)
@@ -273,36 +268,66 @@ async function createAgreement(req, res) {
             return res.status(409).json({
                 error:
                     `This stall is already rented to ${overlapping.VendorName} between ` +
-                    `${new Date(overlapping.StartDate).toISOString().slice(0, 10)} and ` +
-                    `${new Date(overlapping.EndDate).toISOString().slice(0, 10)}`,
+                    `${formatDate(overlapping.StartDate)} and ` +
+                    `${formatDate(overlapping.EndDate)}`,
             });
         }
 
+        /*
+         * The agreement is written unsigned and then offered. Until the vendor
+         * signs it, it holds no stall and shows as awaiting signature, so
+         * nobody is put on a tenancy they never agreed to.
+         */
         const agreementId = await rentalModel.createAgreement(req.body);
+
+        const offerId = await rentalModel.createOffer({
+            agreementId,
+            offerType: "New Tenancy",
+            offeredByUserId: Number(req.user.id),
+            proposedEndDate: req.body.EndDate,
+            proposedRentalPrice: req.body.RentalPrice,
+            offerNote: req.body.TermCondition || null,
+        });
+
+        const offer = await rentalModel.getOfferById(offerId);
+
+        await notificationModel.createNotification({
+            recipientUserId: Number(req.body.VendorUserID),
+            notificationType: "Agreement Offer",
+            title: `Tenancy offer for ${stall.StallName}`,
+            message:
+                `${offer.OperatorName} has offered you ${stall.StallName} ` +
+                `(${offer.StallUnitNo}) at ${offer.HCName} from ` +
+                `${formatDate(req.body.StartDate)} to ${formatDate(req.body.EndDate)}, ` +
+                `at ${formatPrice(req.body.RentalPrice)} per month. ` +
+                "Sign the offer to take on the stall, or reject it and the offer is cancelled.",
+            offerId,
+        });
+
         const agreement = await rentalModel.getAgreementById(agreementId);
 
         return res.status(201).json({
-            message: "Rental agreement created successfully",
+            message:
+                `The tenancy of ${stall.StallName} has been sent to ${vendor.Username} ` +
+                "for signature. The stall stays vacant until they sign it.",
             agreement,
+            offer,
         });
     } catch (error) {
         console.error("Controller error (createAgreement):", error);
 
         return res.status(500).json({
-            error: "Unable to create the rental agreement",
+            error: "Unable to offer the rental agreement",
         });
     }
 }
 
-/*
- * Put a renewal to the vendor.
- *
- * A renewal is a change to what the vendor pays and how long they are held to
- * it, so it is offered rather than applied. The agreement is left exactly as it
- * is and the new terms wait in the vendor's inbox until they sign. A vendor who
- * rejects them simply stays on the agreement already in force, which is what
- * keeps an operator from raising the rent on their own.
- */
+/* Put a renewal to the vendor.
+ A renewal is a change to what the vendor pays and how long they are held to
+ it, so it is offered rather than applied. The agreement is left exactly as it
+ is and the new terms wait in the vendor's inbox until they sign. A vendor who
+ rejects them simply stays on the agreement already in force, which is what
+ keeps an operator from raising the rent on their own.*/
 async function renewAgreement(req, res) {
     try {
         const operatorId = await requireOperatorId(req, res);
@@ -333,6 +358,27 @@ async function renewAgreement(req, res) {
                     "This tenancy was ended on " +
                     formatDate(agreement.TerminatedOn) +
                     " and can no longer be renewed",
+            });
+        }
+
+        if (agreement.CancelledOn) {
+            return res.status(409).json({
+                error:
+                    `${agreement.VendorName} did not take on this tenancy, so there is ` +
+                    "nothing to renew. Offer the stall again instead.",
+            });
+        }
+
+        /*
+         * A tenancy the vendor has not signed yet cannot be renewed, because
+         * there is no agreed set of terms for a renewal to extend. The open
+         * offer has to be answered first.
+         */
+        if (!agreement.AcceptedOn) {
+            return res.status(409).json({
+                error:
+                    `${agreement.VendorName} has not signed this tenancy yet, so it ` +
+                    "cannot be renewed until they answer the offer.",
             });
         }
 
@@ -418,10 +464,8 @@ async function renewAgreement(req, res) {
     }
 }
 
-/*
- * The offers on a tenancy. A vendor sees the terms put to them and an operator
- * sees the terms they have put out across their own hawker centres.
- */
+/* The offers on a tenancy. A vendor sees the terms put to them and an operator
+ sees the terms they have put out across their own hawker centres.*/
 async function getOffers(req, res) {
     try {
         let vendorUserId = null;
@@ -457,10 +501,8 @@ async function getOffers(req, res) {
     }
 }
 
-/*
- * Read the offer named in the URL and confirm the signed in vendor is the one
- * being asked to sign it. Returns null once a response has been sent.
- */
+/* Read the offer named in the URL and confirm the signed in vendor is the one
+ being asked to sign it. Returns null once a response has been sent. */
 async function requireVendorOffer(req, res) {
     const offer = await rentalModel.getOfferById(Number(req.params.offerId));
 
@@ -490,15 +532,12 @@ async function requireVendorOffer(req, res) {
     return offer;
 }
 
-/*
- * Accept an offer by signing it.
- *
- * The vendor types their own account name, which is checked against the account
- * on the token, so a signature can only be given by the person it names. Once
- * the signature is stored the agreement moves onto the signed terms and the
- * operator is told, which is the digital equivalent of sending the countersigned
- * copy back.
- */
+/*Accept an offer by signing it.
+ The vendor types their own account name, which is checked against the account
+ on the token, so a signature can only be given by the person it names. Once
+ the signature is stored the agreement moves onto the signed terms and the
+ operator is told, which is the digital equivalent of sending the countersigned
+ copy back. */
 async function signOffer(req, res) {
     try {
         const offer = await requireVendorOffer(req, res);
@@ -533,14 +572,20 @@ async function signOffer(req, res) {
             });
         }
 
+        const isNewTenancy = offer.OfferType === "New Tenancy";
+
         await notificationModel.createNotification({
             recipientUserId: Number(offer.OfferedByUserID),
             notificationType: "Agreement Signed",
             title: `${offer.VendorName} signed the offer for ${offer.StallName}`,
             message:
-                `${signatureName} signed the renewal of ${offer.StallName} at ` +
+                `${signatureName} signed the ` +
+                `${isNewTenancy ? "tenancy" : "renewal"} of ${offer.StallName} at ` +
                 `${formatPrice(offer.ProposedRentalPrice)} per month until ` +
-                `${formatDate(offer.ProposedEndDate)}. The tenancy is now on these terms.`,
+                `${formatDate(offer.ProposedEndDate)}. ` +
+                (isNewTenancy
+                    ? "The stall is now theirs to run."
+                    : "The tenancy is now on these terms."),
             offerId: offer.OfferID,
         });
 
@@ -548,10 +593,14 @@ async function signOffer(req, res) {
         const agreement = await rentalModel.getAgreementById(agreementId);
 
         return res.status(200).json({
-            message:
-                `You signed the renewal of ${offer.StallName}. Your tenancy now runs to ` +
-                `${formatDate(offer.ProposedEndDate)} at ` +
-                `${formatPrice(offer.ProposedRentalPrice)} per month.`,
+            message: isNewTenancy
+                ? `You have taken on ${offer.StallName}. Your tenancy runs from ` +
+                  `${formatDate(offer.StartDate)} to ` +
+                  `${formatDate(offer.ProposedEndDate)} at ` +
+                  `${formatPrice(offer.ProposedRentalPrice)} per month.`
+                : `You signed the renewal of ${offer.StallName}. Your tenancy now runs to ` +
+                  `${formatDate(offer.ProposedEndDate)} at ` +
+                  `${formatPrice(offer.ProposedRentalPrice)} per month.`,
             offer: signed,
             agreement,
         });
@@ -565,8 +614,12 @@ async function signOffer(req, res) {
 }
 
 /*
- * Turn an offer down. The offer is cancelled and the agreement is left on the
- * terms it already held, so rejecting never costs the vendor their stall.
+ * Turn an offer down.
+ *
+ * A renewal leaves the agreement on the terms it already held, so rejecting one
+ * never costs the vendor their stall. A new tenancy is cancelled outright and
+ * the stall goes back to being vacant, because there was no earlier agreement
+ * for the vendor to fall back on.
  */
 async function rejectOffer(req, res) {
     try {
@@ -585,6 +638,14 @@ async function rejectOffer(req, res) {
             });
         }
 
+        const isNewTenancy = offer.OfferType === "New Tenancy";
+
+        const outcome = isNewTenancy
+            ? `The tenancy was cancelled and ${offer.StallName} stays vacant.`
+            : "The tenancy stays on its current terms of " +
+              `${formatPrice(offer.CurrentRentalPrice)} per month until ` +
+              `${formatDate(offer.CurrentEndDate)}.`;
+
         await notificationModel.createNotification({
             recipientUserId: Number(offer.OfferedByUserID),
             notificationType: "Agreement Rejected",
@@ -592,9 +653,7 @@ async function rejectOffer(req, res) {
             message:
                 `${offer.VendorName} did not accept the proposed terms of ` +
                 `${formatPrice(offer.ProposedRentalPrice)} per month until ` +
-                `${formatDate(offer.ProposedEndDate)}. The tenancy stays on its current ` +
-                `terms of ${formatPrice(offer.CurrentRentalPrice)} per month until ` +
-                `${formatDate(offer.CurrentEndDate)}.` +
+                `${formatDate(offer.ProposedEndDate)}. ${outcome}` +
                 (req.body.ResponseNote ? ` Reason given: ${req.body.ResponseNote}` : ""),
             offerId: offer.OfferID,
         });
@@ -602,10 +661,10 @@ async function rejectOffer(req, res) {
         const answered = await rentalModel.getOfferById(offer.OfferID);
 
         return res.status(200).json({
-            message:
-                "The offer was rejected and cancelled. Your tenancy stays on its current " +
-                `terms of ${formatPrice(offer.CurrentRentalPrice)} per month until ` +
-                `${formatDate(offer.CurrentEndDate)}.`,
+            message: isNewTenancy
+                ? `You turned down ${offer.StallName}. The offer was cancelled and ` +
+                  "nothing about your existing stalls has changed."
+                : `The offer was rejected and cancelled. ${outcome}`,
             offer: answered,
         });
     } catch (error) {
@@ -649,7 +708,11 @@ async function withdrawOffer(req, res) {
         const answered = await rentalModel.getOfferById(offer.OfferID);
 
         return res.status(200).json({
-            message: `The offer to ${offer.VendorName} was withdrawn`,
+            message:
+                `The offer to ${offer.VendorName} was withdrawn.` +
+                (offer.OfferType === "New Tenancy"
+                    ? ` ${offer.StallName} is free to offer to another vendor.`
+                    : ""),
             offer: answered,
         });
     } catch (error) {
@@ -661,13 +724,10 @@ async function withdrawOffer(req, res) {
     }
 }
 
-/*
- * End a tenancy and hand the stall back.
- *
- * A tenancy is ended today unless the operator names another day. An agreement
- * that has already run out can be ended too, because that is how a stall still
- * showing a tenant who left long ago is released.
- */
+/* End a tenancy and hand the stall back.
+ A tenancy is ended today unless the operator names another day. An agreement
+ that has already run out can be ended too, because that is how a stall still
+ showing a tenant who left long ago is released.*/
 async function endAgreement(req, res) {
     try {
         const operatorId = await requireOperatorId(req, res);
@@ -694,9 +754,22 @@ async function endAgreement(req, res) {
             return res.status(409).json({
                 error:
                     "This tenancy was already ended on " +
-                    new Date(agreement.TerminatedOn)
-                        .toISOString()
-                        .slice(0, 10),
+                    formatDate(agreement.TerminatedOn),
+            });
+        }
+
+        /*
+         * Only a tenancy the vendor actually took on can be handed back. One
+         * still waiting on their signature is withdrawn through its offer
+         * instead, and one they turned down never started.
+         */
+        if (!agreement.AcceptedOn) {
+            return res.status(409).json({
+                error: agreement.CancelledOn
+                    ? `${agreement.VendorName} did not take on this tenancy, so there is ` +
+                      "nothing to end"
+                    : `${agreement.VendorName} has not signed this tenancy yet. ` +
+                      "Withdraw the offer instead of ending it.",
             });
         }
 

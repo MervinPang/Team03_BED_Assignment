@@ -3,19 +3,15 @@
 const sql = require("mssql");
 const dbConfig = require("../dbConfig");
 
-/*
- * sql.connect() returns the connection pool shared by the whole application, so
- * closing it after a query would close it for every request that is still
- * running. The pool is left open here and app.js closes it on shutdown.
- */
+/*sql.connect() returns the connection pool shared by the whole application, so
+closing it after a query would close it for every request that is still
+running. The pool is left open here and app.js closes it on shutdown.*/
 
-/*
- * A notification is a short line of text, but the inbox has to show what the
- * line is about as it stands now rather than as it stood when it was written.
- * An order that has since been collected and an offer that has since been
- * signed both have to read correctly, so the subject of each notification is
- * joined back in and never copied into the message.
- */
+/*A notification is a short line of text, but the inbox has to show what the
+ line is about as it stands now rather than as it stood when it was written.
+ An order that has since been collected and an offer that has since been
+ signed both have to read correctly, so the subject of each notification is
+ joined back in and never copied into the message */
 const NOTIFICATION_COLUMNS = `
     n.NotificationID,
     n.RecipientUserID,
@@ -32,13 +28,19 @@ const NOTIFICATION_COLUMNS = `
     co.OrderDateTime,
     ISNULL(customer.Username, co.GuestName) AS CustomerName,
     ao.OfferStatus,
+    ao.OfferType,
     ao.ProposedEndDate,
     ao.ProposedRentalPrice,
     ao.OfferNote,
     ra.AgreementID,
+    ra.StartDate AS TenancyStartDate,
     ra.EndDate AS CurrentEndDate,
     ra.RentalPrice AS CurrentRentalPrice,
+    ra.TermCondition,
+    ra.AcceptedOn,
+    ra.CancelledOn,
     fs.StallName,
+    fs.StallUnitNo,
     hc.HCName,
     o.OperatorName
 `;
@@ -61,11 +63,9 @@ const NOTIFICATION_JOINS = `
         ON hc.OperatorID = o.OperatorID
 `;
 
-/*
- * The inbox of one account, newest first. Only the recipient's own rows are
- * read, so the account on the token decides the contents of the list and no
- * request can ask for somebody else's inbox.
- */
+/* The inbox of one account, newest first. Only the recipient's own rows are
+ read, so the account on the token decides the contents of the list and no
+ request can ask for somebody else's inbox.*/
 async function getNotifications(recipientUserId, { unreadOnly = false } = {}) {
     let connection;
 
@@ -117,10 +117,9 @@ async function getUnreadCount(recipientUserId) {
 
 /*
  * Write a notification. Called when an operator puts terms to a vendor and when
- * the vendor answers. New orders are not written here: they are raised by the
- * TR_OrderItem_NotifyVendor trigger, because an order reaches a stall through
- * its items and the order row is written before those items exist.
- */
+ the vendor answers. New orders are not written here: they are raised by the
+ TR_OrderItem_NotifyVendor trigger, because an order reaches a stall through
+ its items and the order row is written before those items exist.*/
 async function createNotification({
     recipientUserId,
     notificationType,
@@ -157,11 +156,9 @@ async function createNotification({
     }
 }
 
-/*
- * Mark one notification read. The recipient is part of the WHERE clause rather
- * than checked beforehand, so an ID belonging to another account simply matches
- * nothing and the caller is told it was not found.
- */
+/*Mark one notification read. The recipient is part of the WHERE clause rather
+  than checked beforehand, so an ID belonging to another account simply matches
+  nothing and the caller is told it was not found.*/
 async function markAsRead(notificationId, recipientUserId) {
     let connection;
 

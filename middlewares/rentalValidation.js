@@ -1,7 +1,18 @@
 const Joi = require("joi"); // Import Joi for validation
 
-// Ended means the operator closed the tenancy before its agreed end date
-const AGREEMENT_STATUSES = ["Active", "Upcoming", "Expired", "Ended"];
+/*
+ * Awaiting Signature is an agreement the vendor has been offered but not yet
+ * signed, Cancelled is one they turned down or the operator took back, and
+ * Ended means the operator closed a running tenancy before its agreed end date.
+ */
+const AGREEMENT_STATUSES = [
+    "Awaiting Signature",
+    "Active",
+    "Upcoming",
+    "Expired",
+    "Ended",
+    "Cancelled",
+];
 
 // Where a set of proposed terms has got to between the operator and the vendor
 const OFFER_STATUSES = [
@@ -145,7 +156,7 @@ function validateAgreementQuery(req, res, next) {
 
     if (status !== undefined && !AGREEMENT_STATUSES.includes(status)) {
         return res.status(400).json({
-            error: "Invalid status. Use Active, Upcoming or Expired",
+            error: "Invalid status. Use " + AGREEMENT_STATUSES.join(", "),
         });
     }
 
