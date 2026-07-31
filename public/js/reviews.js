@@ -40,16 +40,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         document.getElementById("reviewsEyebrow").textContent =
-            "Your customer feedback";
+            "Your Customer Feedback";
 
         document.getElementById("reviewsTitle").textContent =
-            "My stall reviews";
+            "My Stall Reviews";
 
         document.getElementById("reviewsLead").textContent =
             "Read the reviews customers have left for the food stalls assigned to your vendor account.";
 
         document.getElementById("reviewStallLabel").textContent =
-            "Your stall";
+            "Your Stall";
     }
 
     async function loadStalls() {

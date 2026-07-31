@@ -10,6 +10,23 @@ document.addEventListener("DOMContentLoaded", async () => {
   const metrics =
     document.getElementById("metrics");
 
+  /*
+   The tab bar sits inside #metrics together with the figures, so hiding that
+   whole section takes the Inbox and Reviews tabs away with it. A vendor who
+   holds no stall yet has no analytics to show, but still has to reach the
+   inbox to answer a tenancy offer, so only the analytics content is hidden.
+   */
+  const analyticsFigures =
+    metrics.querySelector(".metrics");
+
+  const topItemsCard =
+    document.getElementById("topItems").closest(".card");
+
+  function showAnalyticsContent(visible) {
+    analyticsFigures.hidden = !visible;
+    topItemsCard.hidden = !visible;
+  }
+
   const ordersPanel =
     document.getElementById("vendorOrdersPanel");
 
@@ -75,11 +92,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
         setMessage(
           message,
-          "No food stall is assigned to your vendor account yet. Please contact the hawker centre operator.",
+          "No food stall is assigned to your vendor account yet. If an operator has offered you one, the offer is waiting in your Inbox for you to accept.",
           "warning"
         );
 
-        metrics.hidden = true;
+        showAnalyticsContent(false);
         return false;
       }
 
@@ -96,6 +113,12 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (submitButton) {
         submitButton.disabled = false;
       }
+
+      /*
+       Clears the "no stall assigned" warning for a vendor who has just signed
+       a tenancy offer, because the stall list is read again at that point.
+       */
+      setMessage(message);
 
       return true;
     } catch (error) {
@@ -898,7 +921,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           );
         }
 
-        metrics.hidden = false;
+        showAnalyticsContent(true);
       }
 
       return true;
@@ -1693,14 +1716,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const stallsLoaded = await loadVendorStalls();
 
-  /*
-   * Inbox
-   *
-   * Two things reach a vendor without them going looking for it: an order
-   * arriving at the stall, and the operator putting new tenancy terms to them.
-   * Both are rows of the same Notification table, so they are shown in one list
-   * and told apart by what the notification points at.
-   */
+  /*Inbox 
+   Two things reach a vendor without them going looking for it: an order
+   arriving at the stall, and the operator putting new tenancy terms to them.
+   Both are rows of the same Notification table, so they are shown in one list
+   and told apart by what the notification points at.*/
   const inboxPanel = document.getElementById("vendorInboxPanel");
   const inboxList = document.getElementById("inboxList");
   const inboxMessage = document.getElementById("inboxMessage");
@@ -1791,12 +1811,47 @@ document.addEventListener("DOMContentLoaded", async () => {
     markAllReadButton.disabled = counts.unread === 0;
   }
 
+  function isNewTenancy(notification) {
+    return notification.OfferType === "New Tenancy";
+  }
+
   /*
-   * What the vendor is being asked to accept, set against what they already
-   * hold. The difference between the two is the whole of the decision, so it is
-   * spelled out rather than left for the vendor to work out.
+   * What the vendor is being asked to accept.
+   *
+   * A renewal is shown against the terms they already hold, because the
+   * difference between the two is the whole of the decision. A new stall has no
+   * such comparison to make, so it shows the tenancy being offered on its own.
    */
   function renderOfferSummary(notification) {
+    if (isNewTenancy(notification)) {
+      return `
+        <div class="offer-new-tenancy">
+          <div>
+            <span class="small muted">Stall</span>
+            <strong>${esc(notification.StallName)}</strong>
+            <span class="small muted">
+              ${esc(notification.StallUnitNo || "")}
+              ${notification.HCName ? `· ${esc(notification.HCName)}` : ""}
+            </span>
+          </div>
+
+          <div>
+            <span class="small muted">Monthly rent</span>
+            <strong>${money(notification.ProposedRentalPrice)}</strong>
+          </div>
+
+          <div>
+            <span class="small muted">Tenancy runs</span>
+            <strong>
+              ${formatDate(notification.TenancyStartDate).split(",")[0]}
+              &ndash;
+              ${formatDate(notification.ProposedEndDate).split(",")[0]}
+            </strong>
+          </div>
+        </div>
+      `;
+    }
+
     const priceChange =
       Number(notification.ProposedRentalPrice) -
       Number(notification.CurrentRentalPrice);
@@ -1872,7 +1927,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           type="button"
           data-open-offer="${esc(notification.NotificationID)}"
         >
-          Review and sign
+          ${isNewTenancy(notification)
+        ? "Review and accept stall"
+        : "Review and sign"
+      }
         </button>
       `
       : "";
@@ -2063,11 +2121,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     activeOffer = notification;
 
     offerIdInput.value = notification.OfferID;
-    offerStallName.textContent = `Renewal offer for ${notification.StallName}`;
+
+    offerStallName.textContent = isNewTenancy(notification)
+      ? `Tenancy offer for ${notification.StallName}`
+      : `Renewal offer for ${notification.StallName}`;
 
     offerFrom.textContent =
       `Sent by ${notification.OperatorName} on ` +
-      `${formatDate(notification.CreatedAt)}.`;
+      `${formatDate(notification.CreatedAt)}. ` +
+      (isNewTenancy(notification)
+        ? "Signing takes on the stall. Rejecting cancels the offer and nothing changes."
+        : "Signing moves your tenancy onto these terms. Rejecting keeps your current agreement.");
 
     offerTerms.innerHTML = renderOfferSummary(notification);
 
@@ -2101,6 +2165,9 @@ document.addEventListener("DOMContentLoaded", async () => {
     const isSigning = action === "sign";
     const button = isSigning ? signOfferButton : rejectOfferButton;
     const originalLabel = button.textContent;
+
+    // Read before the sheet closes, because closing forgets the offer
+    const wasNewTenancy = isNewTenancy(activeOffer);
 
     if (isSigning && !offerAgree.checked) {
       setMessage(
@@ -2136,6 +2203,21 @@ document.addEventListener("DOMContentLoaded", async () => {
       closeOfferModal();
 
       await loadInbox();
+
+      /*
+       Signing a new tenancy hands over a stall the page has never seen, so the
+       selector, the order queue and the analytics are all working from a list
+       that is now out of date. The stalls are read again rather than asking
+       the vendor to reload the page.
+       */
+      if (isSigning && wasNewTenancy) {
+        const holdsStall = await loadVendorStalls();
+
+        if (holdsStall) {
+          currentStallId = Number(stallSelect.value);
+          await loadOrders();
+        }
+      }
 
       // A signed offer changes the rent and end date shown on the tenancy card
       if (isSigning && !menuPanel.hidden) {
@@ -2410,61 +2492,74 @@ document.addEventListener("DOMContentLoaded", async () => {
   loadOrders();
   refreshUnreadBadge();
 
+  /*
+   Opening a tab also decides what is read from the API, so the same work has
+   to happen whether the vendor clicked the tab or the page opened it for them.
+   */
+  function showVendorTab(name) {
+    document
+      .querySelectorAll("[data-vendor-tab]")
+      .forEach(item => {
+        item.classList.toggle(
+          "active",
+          item.dataset.vendorTab === name
+        );
+      });
+
+    const showAnalytics = name === "analytics";
+    const showOrders = name === "orders";
+    const showMenu = name === "menu";
+    const showInbox = name === "inbox";
+    const showReviews = name === "reviews";
+
+    // A vendor holding no stall has only empty figures to show
+    showAnalyticsContent(
+      showAnalytics && vendorStalls.length > 0
+    );
+
+    ordersPanel.hidden = !showOrders;
+    menuPanel.hidden = !showMenu;
+    inboxPanel.hidden = !showInbox;
+    reviewsPanel.hidden = !showReviews;
+
+    // Returning to the analytics tab always shows current figures.
+    if (showAnalytics) {
+      refreshAnalytics();
+    }
+
+    // The menu and tenancy are read when the tab is opened
+    if (showMenu) {
+      loadMenu();
+      loadTenancy();
+    }
+
+    // The inbox and the reviews are read fresh each time they are opened,
+    // because both change from outside this browser
+    if (showInbox) {
+      loadInbox();
+    }
+
+    if (showReviews) {
+      loadVendorReviews();
+    }
+  }
+
   document
     .querySelectorAll("[data-vendor-tab]")
     .forEach(tab => {
-      tab.addEventListener("click", () => {
-        document
-          .querySelectorAll("[data-vendor-tab]")
-          .forEach(item => {
-            item.classList.toggle(
-              "active",
-              item === tab
-            );
-          });
-
-        const activeTab = tab.dataset.vendorTab;
-
-        const showAnalytics = activeTab === "analytics";
-        const showOrders = activeTab === "orders";
-        const showMenu = activeTab === "menu";
-        const showInbox = activeTab === "inbox";
-        const showReviews = activeTab === "reviews";
-
-        document.querySelector(".metrics").hidden =
-          !showAnalytics;
-
-        document.getElementById("topItems")
-          .closest(".card").hidden =
-          !showAnalytics;
-
-        ordersPanel.hidden = !showOrders;
-        menuPanel.hidden = !showMenu;
-        inboxPanel.hidden = !showInbox;
-        reviewsPanel.hidden = !showReviews;
-
-        // Returning to the analytics tab always shows current figures.
-        if (showAnalytics) {
-          refreshAnalytics();
-        }
-
-        // The menu and tenancy are read when the tab is opened
-        if (showMenu) {
-          loadMenu();
-          loadTenancy();
-        }
-
-        // The inbox and the reviews are read fresh each time they are opened,
-        // because both change from outside this browser
-        if (showInbox) {
-          loadInbox();
-        }
-
-        if (showReviews) {
-          loadVendorReviews();
-        }
-      });
+      tab.addEventListener("click", () =>
+        showVendorTab(tab.dataset.vendorTab)
+      );
     });
+
+  /*
+   Nothing on the analytics tab applies until a stall is held, and a vendor
+   without one is most likely here to answer a tenancy offer, so the inbox is
+   opened for them rather than an empty dashboard.
+   */
+  if (!vendorStalls.length) {
+    showVendorTab("inbox");
+  }
 
   // Changing the selected stall reloads whatever the menu tab is showing
   stallSelect.addEventListener("change", () => {

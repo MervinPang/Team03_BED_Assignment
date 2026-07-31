@@ -227,10 +227,15 @@
                                           </label>
                                           <textarea class="textarea" id="agreementTerms" maxlength="800"></textarea>
                                     </div>
+                                    <p class="small muted">
+                                          The stall is offered to the vendor, not handed over. It stays vacant
+                                          until they sign the agreement, and the offer is cancelled if they
+                                          turn it down.
+                                    </p>
                                     <div class="form-message" id="agreementMessage">
                                     </div>
                                     <button class="button primary" id="agreementSubmitButton" type="submit">
-                                          Create agreement
+                                          Send for signature
                                     </button>
                               </form>
                         </section>
@@ -257,6 +262,9 @@
                                                 <option value="">
                                                       All agreements
                                                 </option>
+                                                <option value="Awaiting Signature">
+                                                      Awaiting signature
+                                                </option>
                                                 <option value="Active">
                                                       Active
                                                 </option>
@@ -268,6 +276,9 @@
                                                 </option>
                                                 <option value="Ended">
                                                       Ended early
+                                                </option>
+                                                <option value="Cancelled">
+                                                      Cancelled
                                                 </option>
                                                 <option value="expiring">
                                                       Expiring within 30 days

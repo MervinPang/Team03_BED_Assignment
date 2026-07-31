@@ -880,3 +880,29 @@
     transform: rotate(90deg);
   }
 }
+
+/* --- A stall being offered for the first time, which has no current terms
+       to be set against --- */
+.offer-new-tenancy {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  padding: 14px;
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+}
+
+.offer-new-tenancy div {
+  display: grid;
+  gap: 2px;
+}
+
+.offer-new-tenancy strong {
+  font-size: 1.05rem;
+}
+
+@media (max-width: 620px) {
+  .offer-new-tenancy {
+    grid-template-columns: 1fr;
+  }
+}

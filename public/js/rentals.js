@@ -46,9 +46,14 @@ document.addEventListener("DOMContentLoaded", async () => {
     function statusBadgeClass(status) {
         if (status === "Active") return "success";
         if (status === "Upcoming") return "warning";
+        if (status === "Awaiting Signature") return "warning";
         if (status === "Ended") return "neutral";
 
         return "unavailable";
+    }
+
+    function offerTypeLabel(offerType) {
+        return offerType === "New Tenancy" ? "New tenancy" : "Renewal";
     }
 
     function dateOnly(value) {
@@ -183,7 +188,16 @@ document.addEventListener("DOMContentLoaded", async () => {
                                    >
                                        End tenancy
                                    </button>`
-                        : `<span class="small muted">Ready to let</span>`
+                        : stall.PendingOfferID
+                            /*
+                             * The unit is empty but already promised to someone,
+                             * so calling it ready to let would invite a second
+                             * offer the register would then refuse.
+                             */
+                            ? `<span class="small muted">
+                                       Offered to ${esc(stall.PendingOfferVendor)}
+                                   </span>`
+                            : `<span class="small muted">Ready to let</span>`
                     }
                         </td>
                     </tr>
@@ -424,11 +438,30 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 `
                         : ""
                     }
+
+                            ${agreement.AgreementStatus === "Awaiting Signature"
+                        ? `
+                                    <p class="small agreement-warning">
+                                        Waiting on ${esc(agreement.VendorName)} to sign.
+                                        The stall stays vacant until they do.
+                                    </p>
+                                `
+                        : ""
+                    }
                         </div>
 
-                        ${agreement.TerminatedOn
-                        ? `<span class="small muted">Closed</span>`
-                        : `<button
+                        ${/*
+                           * Only a tenancy the vendor has signed can be renewed.
+                           * One still awaiting a signature is dealt with through
+                           * its offer, and a cancelled or closed one is finished.
+                           */
+                        agreement.AgreementStatus === "Awaiting Signature"
+                            ? `<span class="small muted">Unsigned</span>`
+                            : agreement.AgreementStatus === "Cancelled"
+                                ? `<span class="small muted">Cancelled</span>`
+                                : agreement.TerminatedOn
+                                    ? `<span class="small muted">Closed</span>`
+                                    : `<button
                                     class="button secondary"
                                     type="button"
                                     data-renew="${agreement.AgreementID}"
@@ -551,12 +584,15 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 ? `down $${Math.abs(priceChange).toFixed(2)}`
                                 : "rent unchanged";
 
+                    const isNew = offer.OfferType === "New Tenancy";
+
                     return `
                         <article class="agreement-row">
                             <div class="row-between wrap">
                                 <div>
                                     <strong>${esc(offer.StallName)}</strong>
                                     <p class="small muted">
+                                        ${offerTypeLabel(offer.OfferType)} ·
                                         ${esc(offer.VendorName)} ·
                                         sent ${dateOnly(offer.CreatedAt)}
                                     </p>
@@ -567,21 +603,35 @@ document.addEventListener("DOMContentLoaded", async () => {
                                 </span>
                             </div>
 
-                            <p class="small muted">
-                                $${Number(offer.CurrentRentalPrice).toFixed(2)}
-                                until ${dateOnly(offer.CurrentEndDate)}
-                                &rarr;
-                                $${Number(offer.ProposedRentalPrice).toFixed(2)}
-                                until ${dateOnly(offer.ProposedEndDate)}
-                                (${changeLabel})
-                            </p>
+                            ${isNew
+                            ? `
+                                    <p class="small muted">
+                                        $${Number(offer.ProposedRentalPrice).toFixed(2)} a month,
+                                        ${dateOnly(offer.StartDate)}
+                                        to ${dateOnly(offer.ProposedEndDate)}
+                                    </p>
+                                `
+                            : `
+                                    <p class="small muted">
+                                        $${Number(offer.CurrentRentalPrice).toFixed(2)}
+                                        until ${dateOnly(offer.CurrentEndDate)}
+                                        &rarr;
+                                        $${Number(offer.ProposedRentalPrice).toFixed(2)}
+                                        until ${dateOnly(offer.ProposedEndDate)}
+                                        (${changeLabel})
+                                    </p>
+                                `
+                        }
 
                             ${offer.OfferStatus === "Signed"
                             ? `
                                     <p class="small muted">
                                         Signed by ${esc(offer.SignatureName)} on
-                                        ${dateOnly(offer.RespondedAt)}. The tenancy
-                                        is now on these terms.
+                                        ${dateOnly(offer.RespondedAt)}.
+                                        ${isNew
+                                ? "The vendor has taken on the stall."
+                                : "The tenancy is now on these terms."
+                            }
                                     </p>
                                 `
                             : ""
@@ -591,7 +641,11 @@ document.addEventListener("DOMContentLoaded", async () => {
                             ? `
                                     <p class="small muted">
                                         Rejected on ${dateOnly(offer.RespondedAt)} and
-                                        cancelled. The tenancy stays on its current terms.${offer.ResponseNote
+                                        cancelled.
+                                        ${isNew
+                                ? "The stall stays vacant and can be offered again."
+                                : "The tenancy stays on its current terms."
+                            }${offer.ResponseNote
                                 ? ` Reason given: ${esc(offer.ResponseNote)}`
                                 : ""
                             }
@@ -711,7 +765,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         }
 
         submitButton.disabled = true;
-        submitButton.textContent = "Creating agreement…";
+        submitButton.textContent = "Sending for signature…";
 
         try {
             const response = await apiRequest("/rental-agreements", {
@@ -724,7 +778,13 @@ document.addEventListener("DOMContentLoaded", async () => {
 
             agreementForm.reset();
 
-            // A new tenancy fills a unit, so the occupancy figures move too
+            /*
+             * The unit is not filled yet: the tenancy is only offered, so what
+             * moves is the list of offers. The register and the occupancy
+             * figures are reloaded too, because the agreement now shows there
+             * as awaiting the vendor's signature.
+             */
+            await loadOffers();
             await loadAgreements();
             await loadManagedStalls();
             await loadCentres();
@@ -733,7 +793,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             showToast(error.message, "error");
         } finally {
             submitButton.disabled = false;
-            submitButton.textContent = "Create agreement";
+            submitButton.textContent = "Send for signature";
         }
     });
 
