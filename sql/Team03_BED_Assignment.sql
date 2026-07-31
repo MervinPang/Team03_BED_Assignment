@@ -307,6 +307,11 @@ CREATE TABLE InspectionRemark
 );
 
 /* Table: RentalAgreement */
+/* AcceptedOn and CancelledOn are how a tenancy needs both sides to agree.
+   An agreement is written when the operator offers it, but it holds no stall
+   and binds nobody until the vendor signs it and AcceptedOn is filled in.
+   CancelledOn records the offer coming to nothing, either because the vendor
+   turned it down or because the operator took it back. */
 CREATE TABLE RentalAgreement
 (
     AgreementID       INT IDENTITY(1,1)     NOT NULL,
@@ -316,6 +321,8 @@ CREATE TABLE RentalAgreement
     EndDate           DATE                  NOT NULL,
     RentalPrice       DECIMAL(8,2)          NOT NULL,
     TermCondition     VARCHAR(800)          NULL,
+    AcceptedOn        DATETIME              NULL,
+    CancelledOn       DATETIME              NULL,
     TerminatedOn      DATE                  NULL,
 
     CONSTRAINT        PK_RentalAgreement    PRIMARY KEY (AgreementID),
@@ -326,19 +333,28 @@ CREATE TABLE RentalAgreement
     CONSTRAINT        CHK_RentalAgreement_EndDate
         CHECK (EndDate >= StartDate),
     CONSTRAINT        CHK_RentalAgreement_RentalPrice
-        CHECK (RentalPrice >= 0.01)
+        CHECK (RentalPrice >= 0.01),
+    /* A tenancy cannot have been both agreed to and called off */
+    CONSTRAINT        CHK_RentalAgreement_Outcome
+        CHECK (AcceptedOn IS NULL OR CancelledOn IS NULL),
+    /* Only a tenancy the vendor accepted can later be ended early */
+    CONSTRAINT        CHK_RentalAgreement_Terminated
+        CHECK (TerminatedOn IS NULL OR AcceptedOn IS NOT NULL)
 );
 
 /* Table: AgreementOffer */
-/* New tenancy terms an operator puts to a vendor. The RentalAgreement itself is
-   left alone until the vendor signs, so a vendor who rejects a higher rent
-   simply keeps the agreement that is already in force. The signature is the
-   vendor typing their own name, kept next to a hash of what they agreed to so
-   the signed terms can be shown to have not been altered afterwards. */
+/* Terms an operator puts to a vendor, covering both a brand new tenancy and the
+   renewal of one already running. Neither takes effect on its own: a new
+   tenancy holds no stall until it is signed, and a renewal leaves the agreement
+   on its existing terms, so a vendor who says no simply keeps what they had.
+   The signature is the vendor typing their own name, kept next to a hash of
+   what they agreed to so the signed terms can be shown to have not been
+   altered afterwards. */
 CREATE TABLE AgreementOffer
 (
     OfferID              INT IDENTITY(1,1)  NOT NULL,
     AgreementID          INT                NOT NULL,
+    OfferType            VARCHAR(20)        NOT NULL DEFAULT 'Renewal',
     OfferedByUserID      INT                NOT NULL,
     ProposedEndDate      DATE               NOT NULL,
     ProposedRentalPrice  DECIMAL(8,2)       NOT NULL,
@@ -355,6 +371,8 @@ CREATE TABLE AgreementOffer
         FOREIGN KEY (AgreementID) REFERENCES RentalAgreement(AgreementID),
     CONSTRAINT           FK_AgreementOffer_UserAccount
         FOREIGN KEY (OfferedByUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT           CHK_AgreementOffer_Type
+        CHECK (OfferType IN ('New Tenancy', 'Renewal')),
     CONSTRAINT           CHK_AgreementOffer_Status
         CHECK (OfferStatus IN ('Pending Signature', 'Signed', 'Rejected', 'Withdrawn')),
     CONSTRAINT           CHK_AgreementOffer_RentalPrice
@@ -642,19 +660,22 @@ VALUES
 (2, 'Minor cleanliness improvements required near preparation area.'),
 (3, 'Good hygiene standards observed.');
 
-INSERT INTO RentalAgreement (StallID, VendorUserID, StartDate, EndDate, RentalPrice, TermCondition)
+-- AcceptedOn is filled in because these three tenancies are already running.
+-- An agreement created from the operator dashboard starts with AcceptedOn NULL
+-- and only becomes a tenancy once the vendor signs it.
+INSERT INTO RentalAgreement (StallID, VendorUserID, StartDate, EndDate, RentalPrice, TermCondition, AcceptedOn)
 VALUES
-(1, 3, '2026-01-01', '2026-12-31', 1200.00, 'Monthly rental agreement for stall operations.'),
-(2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.'),
-(3, 3, '2026-01-01', '2026-12-31', 1150.00, 'Vendor must comply with hygiene and food safety requirements.');
+(1, 3, '2026-01-01', '2026-12-31', 1200.00, 'Monthly rental agreement for stall operations.', '2025-12-20'),
+(2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.', '2025-12-20'),
+(3, 3, '2026-01-01', '2026-12-31', 1150.00, 'Vendor must comply with hygiene and food safety requirements.', '2025-12-20');
 
 -- A renewal of the Ah Tan Chicken Rice tenancy at a higher rent, put to the
 -- vendor by the operator of Beauty World Food Centre and still unsigned, so the
 -- vendor inbox has a live offer to accept or turn down
 INSERT INTO AgreementOffer
-    (AgreementID, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
+    (AgreementID, OfferType, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
 VALUES
-(1, 8, '2027-12-31', 1450.00, 'Renewal for the 2027 term. The rent reflects the centre-wide revision of unit rates.');
+(1, 'Renewal', 8, '2027-12-31', 1450.00, 'Renewal for the 2027 term. The rent reflects the centre-wide revision of unit rates.');
 
 INSERT INTO Notification (RecipientUserID, NotificationType, Title, Message, OfferID)
 VALUES
