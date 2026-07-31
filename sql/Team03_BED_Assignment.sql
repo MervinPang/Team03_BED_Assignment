@@ -329,6 +329,146 @@ CREATE TABLE RentalAgreement
         CHECK (RentalPrice >= 0.01)
 );
 
+/* Table: AgreementOffer */
+/* New tenancy terms an operator puts to a vendor. The RentalAgreement itself is
+   left alone until the vendor signs, so a vendor who rejects a higher rent
+   simply keeps the agreement that is already in force. The signature is the
+   vendor typing their own name, kept next to a hash of what they agreed to so
+   the signed terms can be shown to have not been altered afterwards. */
+CREATE TABLE AgreementOffer
+(
+    OfferID              INT IDENTITY(1,1)  NOT NULL,
+    AgreementID          INT                NOT NULL,
+    OfferedByUserID      INT                NOT NULL,
+    ProposedEndDate      DATE               NOT NULL,
+    ProposedRentalPrice  DECIMAL(8,2)       NOT NULL,
+    OfferNote            VARCHAR(500)       NULL,
+    OfferStatus          VARCHAR(30)        NOT NULL DEFAULT 'Pending Signature',
+    CreatedAt            DATETIME           NOT NULL DEFAULT GETDATE(),
+    RespondedAt          DATETIME           NULL,
+    SignatureName        VARCHAR(80)        NULL,
+    SignatureHash        CHAR(64)           NULL,
+    ResponseNote         VARCHAR(300)       NULL,
+
+    CONSTRAINT           PK_AgreementOffer  PRIMARY KEY (OfferID),
+    CONSTRAINT           FK_AgreementOffer_RentalAgreement
+        FOREIGN KEY (AgreementID) REFERENCES RentalAgreement(AgreementID),
+    CONSTRAINT           FK_AgreementOffer_UserAccount
+        FOREIGN KEY (OfferedByUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT           CHK_AgreementOffer_Status
+        CHECK (OfferStatus IN ('Pending Signature', 'Signed', 'Rejected', 'Withdrawn')),
+    CONSTRAINT           CHK_AgreementOffer_RentalPrice
+        CHECK (ProposedRentalPrice >= 0.01),
+    /* A signed offer has to carry the name that was signed against it */
+    CONSTRAINT           CHK_AgreementOffer_Signature
+        CHECK (
+            (OfferStatus = 'Signed' AND SignatureName IS NOT NULL AND SignatureHash IS NOT NULL)
+            OR
+            (OfferStatus <> 'Signed' AND SignatureName IS NULL AND SignatureHash IS NULL)
+        )
+);
+
+/* An agreement may only have one offer waiting on the vendor at a time, so an
+   operator cannot leave several conflicting sets of terms open at once */
+CREATE UNIQUE INDEX UX_AgreementOffer_OpenPerAgreement
+ON AgreementOffer(AgreementID)
+WHERE OfferStatus = 'Pending Signature';
+
+/* Table: Notification */
+/* The inbox behind the vendor dashboard. OrderID and OfferID say what the
+   notification is about, and exactly one of them is filled in. */
+CREATE TABLE Notification
+(
+    NotificationID    INT IDENTITY(1,1)   NOT NULL,
+    RecipientUserID   INT                 NOT NULL,
+    NotificationType  VARCHAR(30)         NOT NULL,
+    Title             VARCHAR(120)        NOT NULL,
+    Message           VARCHAR(500)        NOT NULL,
+    OrderID           INT                 NULL,
+    OfferID           INT                 NULL,
+    IsRead            BIT                 NOT NULL DEFAULT 0,
+    CreatedAt         DATETIME            NOT NULL DEFAULT GETDATE(),
+    ReadAt            DATETIME            NULL,
+
+    CONSTRAINT        PK_Notification     PRIMARY KEY (NotificationID),
+    CONSTRAINT        FK_Notification_UserAccount
+        FOREIGN KEY (RecipientUserID) REFERENCES UserAccount(UserID),
+    CONSTRAINT        FK_Notification_CustomerOrder
+        FOREIGN KEY (OrderID) REFERENCES CustomerOrder(OrderID)
+        ON DELETE CASCADE,
+    CONSTRAINT        FK_Notification_AgreementOffer
+        FOREIGN KEY (OfferID) REFERENCES AgreementOffer(OfferID),
+    CONSTRAINT        CHK_Notification_Type
+        CHECK (NotificationType IN ('Order', 'Agreement Offer', 'Agreement Signed', 'Agreement Rejected')),
+    CONSTRAINT        CHK_Notification_Subject
+        CHECK (
+            (NotificationType = 'Order' AND OrderID IS NOT NULL AND OfferID IS NULL)
+            OR
+            (NotificationType <> 'Order' AND OfferID IS NOT NULL AND OrderID IS NULL)
+        )
+);
+
+CREATE INDEX IX_Notification_RecipientUserID_CreatedAt
+ON Notification(RecipientUserID, CreatedAt DESC);
+
+/* Table: ReviewReply */
+/* The vendor's public answer to a customer review. One reply per review keeps
+   the exchange readable and leaves the last word with the customer's review. */
+CREATE TABLE ReviewReply
+(
+    ReplyID         INT IDENTITY(1,1)   NOT NULL,
+    ReviewID        INT                 NOT NULL,
+    VendorUserID    INT                 NOT NULL,
+    ReplyText       VARCHAR(500)        NOT NULL,
+    CreatedAt       DATETIME            NOT NULL DEFAULT GETDATE(),
+    UpdatedAt       DATETIME            NULL,
+
+    CONSTRAINT      PK_ReviewReply      PRIMARY KEY (ReplyID),
+    CONSTRAINT      UQ_ReviewReply_ReviewID UNIQUE (ReviewID),
+    CONSTRAINT      FK_ReviewReply_Review
+        FOREIGN KEY (ReviewID) REFERENCES Review(ReviewID)
+        ON DELETE CASCADE,
+    CONSTRAINT      FK_ReviewReply_UserAccount
+        FOREIGN KEY (VendorUserID) REFERENCES UserAccount(UserID)
+);
+GO
+
+/* Trigger: notify the vendor of a stall whenever an order reaches it */
+/* The trigger sits on OrderItem rather than CustomerOrder because the order row
+   is written before its items, so the stall behind an order is only knowable
+   once the items exist. Grouping by vendor and order means one notification per
+   vendor per order however many items that order holds. */
+CREATE TRIGGER TR_OrderItem_NotifyVendor
+ON OrderItem
+AFTER INSERT
+AS
+BEGIN
+    SET NOCOUNT ON;
+
+    INSERT INTO Notification (RecipientUserID, NotificationType, Title, Message, OrderID)
+    SELECT
+        fs.VendorUserID,
+        'Order',
+        'New order #' + CAST(i.OrderID AS VARCHAR(12)),
+        'A new order was placed at ' + MIN(fs.StallName) + '.',
+        i.OrderID
+    FROM inserted i
+    JOIN MenuItem mi
+        ON i.MenuItemID = mi.MenuItemID
+    JOIN FoodStall fs
+        ON mi.StallID = fs.StallID
+    WHERE fs.VendorUserID IS NOT NULL
+      AND NOT EXISTS (
+            SELECT 1
+            FROM Notification n
+            WHERE n.OrderID = i.OrderID
+              AND n.RecipientUserID = fs.VendorUserID
+              AND n.NotificationType = 'Order'
+        )
+    GROUP BY fs.VendorUserID, i.OrderID;
+END;
+GO
+
 ------------------------------------------------------------
 -- Insert Sample Data (HawkerManagementDB)
 ------------------------------------------------------------
@@ -508,6 +648,23 @@ VALUES
 (2, 3, '2026-01-01', '2026-12-31', 1100.00, 'Vendor must comply with hygiene requirements.'),
 (3, 3, '2026-01-01', '2026-12-31', 1150.00, 'Vendor must comply with hygiene and food safety requirements.');
 
+-- A renewal of the Ah Tan Chicken Rice tenancy at a higher rent, put to the
+-- vendor by the operator of Beauty World Food Centre and still unsigned, so the
+-- vendor inbox has a live offer to accept or turn down
+INSERT INTO AgreementOffer
+    (AgreementID, OfferedByUserID, ProposedEndDate, ProposedRentalPrice, OfferNote)
+VALUES
+(1, 8, '2027-12-31', 1450.00, 'Renewal for the 2027 term. The rent reflects the centre-wide revision of unit rates.');
+
+INSERT INTO Notification (RecipientUserID, NotificationType, Title, Message, OfferID)
+VALUES
+(3, 'Agreement Offer', 'Renewal offer for Ah Tan Chicken Rice',
+ 'Pang Food Operations has proposed new tenancy terms of $1450.00 per month until 31 Dec 2027. Sign the offer to accept it, or reject it to stay on your current agreement.', 1);
+
+INSERT INTO ReviewReply (ReviewID, VendorUserID, ReplyText)
+VALUES
+(1, 3, 'Thank you for the kind words. We steam the chicken in small batches through the day so it stays tender.');
+
 ------------------------------------------------------------
 -- Verification Queries (HawkerManagementDB)
 ------------------------------------------------------------
@@ -523,6 +680,9 @@ SELECT * FROM Review;
 SELECT * FROM Complaint;
 SELECT * FROM Inspection;
 SELECT * FROM RentalAgreement;
+SELECT * FROM AgreementOffer;
+SELECT * FROM Notification;
+SELECT * FROM ReviewReply;
 
 ------------------------------------------------------------
 -- Stalls by Area Query
