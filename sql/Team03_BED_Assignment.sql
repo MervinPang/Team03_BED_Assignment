@@ -575,7 +575,19 @@ VALUES
 (4, 2),
 (5, 2),
 (6, 3),
-(7, 4);
+(7, 4),
+(8, 1),
+(9, 1),
+(10, 4),
+(11, 3),
+(12, 3),
+(13, 4),
+(14, 1),
+(15, 1),
+(16, 4),
+(17, 1),
+(18, 1),
+(19, 4);
 
 INSERT INTO CustomerOrder (UserID, GuestName, GuestEmail, GuestOrderReference, OrderType, OrderStatus, TotalAmount, SpecialInstructions, OrderDateTime, UpdatedAt)
 VALUES
