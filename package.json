@@ -4,7 +4,25 @@
   "description": "Back-End Development Group Project for a Singapore Hawker Centre Management System built with Node.js, Express, RESTful APIs, and Microsoft SQL Server. (Mervin, Rayne, &amp; Louis)",
   "main": "app.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js",
+    "swagger": "node swagger.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": [
+      "**/tests/**/*.test.js"
+    ],
+    "setupFilesAfterEnv": [
+      "<rootDir>/tests/setup.js"
+    ],
+    "coverageProvider": "v8",
+    "collectCoverageFrom": [
+      "controllers/**/*.js",
+      "models/**/*.js"
+    ]
   },
   "repository": {
     "type": "git",
@@ -24,7 +42,9 @@
     "express": "^5.2.1",
     "joi": "^18.2.3",
     "jsonwebtoken": "^9.0.3",
-    "mssql": "^12.7.0"
+    "mssql": "^12.7.0",
+    "swagger-autogen": "^2.23.7",
+    "swagger-ui-express": "^5.0.1"
   },
   "devDependencies": {
     "jest": "^30.4.2"
