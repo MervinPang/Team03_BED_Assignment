@@ -2,6 +2,8 @@ const express = require("express");
 const sql = require("mssql");
 const dotenv = require("dotenv");
 const path = require("path");
+const swaggerUi = require("swagger-ui-express");
+const swaggerDocument = require("./swagger-output.json"); // Import generated spec
 
 // Load environment variables
 dotenv.config();
@@ -62,6 +64,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // Serve static files from the public directory
 app.use(express.static(path.join(__dirname, "public")));
+
+// Serve the Swagger UI at a specific route
+// Regenerate the spec with "npm run swagger" after adding or changing a route
+app.use("/api-docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 // Routes for Food Stalls and Menu Items
 app.get("/stalls/filter-options", stallController.getStallFilterOptions);
@@ -144,7 +150,7 @@ app.post("/login", validateLogin, userController.loginUser);
 app.post("/inspections", verifyJWT, validateInspection, inspectionController.submitInspection);
 app.get("/inspections/:stallId", verifyJWT, inspectionController.getInspectionHistory);
 
-//Routes for Complaints 
+//Routes for Complaints
 app.post("/complaints", verifyJWT, validateComplaint, complaintController.submitComplaint);
 app.get("/complaints/:stallId", verifyJWT, complaintController.getComplaintsByStall);
 app.put("/complaints/:complaintId/status", verifyJWT, validateComplaintStatus, complaintController.updateComplaintStatus);
@@ -155,7 +161,7 @@ app.put("/feedback/:id", verifyJWT, validateReviewId, validateFeedback, feedback
 app.delete("/feedback/:id", verifyJWT, validateReviewId, feedbackController.deleteFeedback);
 app.get("/feedback/stall/:stallId", feedbackController.getReviewsByStall);
 
-// Routes for Vendor Sales Analytics 
+// Routes for Vendor Sales Analytics
 app.get("/analytics/revenue/:stallId", verifyJWT, validateStallOwnership, analyticsController.getRevenueAnalytics);
 app.get("/analytics/orders/:stallId", verifyJWT, validateStallOwnership, analyticsController.getOrderVolumeAnalytics);
 app.get("/analytics/top-items/:stallId", verifyJWT, validateStallOwnership, analyticsController.getTopSellingItems);
