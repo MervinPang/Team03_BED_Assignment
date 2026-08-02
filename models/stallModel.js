@@ -44,7 +44,17 @@ async function getAllStalls(filters = {}) {
             JOIN HawkerCentre hc
                 ON fs.HawkerCentreID = hc.HawkerCentreID
             OUTER APPLY (
-                SELECT STRING_AGG(CuisineName, ', ') AS Cuisine
+                /*
+                 * Drinks is sorted to the end so a card always leads with the
+                 * food the stall is known for. Every stall sells a drink, so
+                 * listing it first would tell the customer nothing.
+                 */
+                SELECT STRING_AGG(CuisineName, ', ')
+                    WITHIN GROUP (
+                        ORDER BY
+                            CASE WHEN CuisineName = 'Drinks' THEN 1 ELSE 0 END,
+                            CuisineName
+                    ) AS Cuisine
                 FROM (
                     SELECT DISTINCT c.CuisineName
                     FROM MenuItem mi
@@ -160,29 +170,40 @@ async function getStallById(stallId) {
                 fs.HawkerCentreID,
                 hc.HCName,
                 hc.HCAddress,
-                STRING_AGG(c.CuisineName, ', ') AS Cuisine
+                cuisineData.Cuisine
             FROM FoodStall fs
             JOIN HawkerCentre hc
                 ON fs.HawkerCentreID = hc.HawkerCentreID
-            LEFT JOIN MenuItem mi
-                ON fs.StallID = mi.StallID
-            LEFT JOIN MenuItemCuisine mic
-                ON mi.MenuItemID = mic.MenuItemID
-            LEFT JOIN Cuisine c
-                ON mic.CuisineID = c.CuisineID
+            /*
+             * The cuisines are collected in a subquery rather than by joining
+             * the menu in and grouping. A stall reaches a cuisine once per menu
+             * item that carries it, so joining directly listed Chinese three
+             * times for a stall with three Chinese dishes. STRING_AGG has no
+             * DISTINCT of its own, so the duplicates have to be removed before
+             * the names are joined up.
+             *
+             * Drinks is sorted to the end so the stall leads with the food it
+             * is known for.
+             */
+            OUTER APPLY (
+                SELECT STRING_AGG(CuisineName, ', ')
+                    WITHIN GROUP (
+                        ORDER BY
+                            CASE WHEN CuisineName = 'Drinks' THEN 1 ELSE 0 END,
+                            CuisineName
+                    ) AS Cuisine
+                FROM (
+                    SELECT DISTINCT c.CuisineName
+                    FROM MenuItem mi
+                    JOIN MenuItemCuisine mic
+                        ON mi.MenuItemID = mic.MenuItemID
+                    JOIN Cuisine c
+                        ON mic.CuisineID = c.CuisineID
+                    WHERE mi.StallID = fs.StallID
+                ) distinctCuisines
+            ) cuisineData
             WHERE fs.StallID = @StallID
-              AND fs.IsActive = 1
-            GROUP BY
-                fs.StallID,
-                fs.StallName,
-                fs.StallDesc,
-                fs.StallImage,
-                fs.IsActive,
-                fs.StallUnitNo,
-                fs.VendorUserID,
-                fs.HawkerCentreID,
-                hc.HCName,
-                hc.HCAddress;
+              AND fs.IsActive = 1;
         `);
 
         return result.recordset[0] || null;
@@ -216,7 +237,12 @@ async function getMenuItemsByStallId(stallId) {
                 mi.ItemCategory,
                 mi.ItemImage,
                 mi.IsAvailable,
-                STRING_AGG(c.CuisineName, ', ') AS Cuisine
+                STRING_AGG(c.CuisineName, ', ')
+                    WITHIN GROUP (
+                        ORDER BY
+                            CASE WHEN c.CuisineName = 'Drinks' THEN 1 ELSE 0 END,
+                            c.CuisineName
+                    ) AS Cuisine
             FROM MenuItem mi
             JOIN FoodStall fs
                 ON mi.StallID = fs.StallID
@@ -285,6 +311,15 @@ async function getStallsByVendorId(vendorUserId) {
                     STRING_AGG(
                         distinctCuisines.CuisineName,
                         ', '
+                    )
+                    WITHIN GROUP (
+                        ORDER BY
+                            CASE
+                                WHEN distinctCuisines.CuisineName = 'Drinks'
+                                THEN 1
+                                ELSE 0
+                            END,
+                            distinctCuisines.CuisineName
                     ) AS Cuisine
                 FROM (
                     SELECT DISTINCT
